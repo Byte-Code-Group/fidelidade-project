@@ -66,6 +66,8 @@ export async function proxy(request: NextRequest) {
       cookieSlug &&
       pathname !== "/" &&
       !pathname.startsWith("/superadmin") &&
+      !pathname.startsWith("/conta") &&
+      !pathname.startsWith("/painel") &&
       !pathname.startsWith("/api/")
     ) {
       // Redireciona para URL canônica /p/[slug]/... para manter slug visível

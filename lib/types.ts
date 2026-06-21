@@ -9,7 +9,7 @@ export interface Tenant {
   custom_domain: string | null;
   segment_template: string;
   saas_plan: string;
-  status: string;
+  status: "trial" | "pending" | "active" | "suspended" | string;
   checkin_token: string;
   owner_email?: string | null;
   owner_cpf_cnpj?: string | null;

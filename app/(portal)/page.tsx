@@ -54,7 +54,7 @@ function LandingPage({ trialUrl }: { trialUrl?: string }) {
               Quero testar grátis
             </Button>
           </a>
-          <Link href="/superadmin/login">
+          <Link href="/conta/login">
             <Button variant="outline" className="h-12 px-8 text-base">
               Já tenho conta
             </Button>

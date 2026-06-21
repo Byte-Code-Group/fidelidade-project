@@ -31,8 +31,8 @@ export default async function PortalLayout({
     tenant.trial_ends_at != null &&
     new Date(tenant.trial_ends_at) < new Date();
 
-  // Conta suspensa ou trial expirado → bloqueia portal.
-  if (tenant.status === "suspended" || trialExpired) {
+  // Conta suspensa, trial expirado ou pagamento pendente → bloqueia portal.
+  if (tenant.status === "suspended" || tenant.status === "pending" || trialExpired) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-gray-50 p-6 text-center">
         <div className="max-w-sm">
@@ -43,6 +43,8 @@ export default async function PortalLayout({
           <p className="mt-2 text-sm text-gray-500">
             {trialExpired
               ? "O período de trial gratuito deste portal encerrou. Entre em contato com a empresa para regularizar."
+              : tenant.status === "pending"
+              ? "Este portal está aguardando a confirmação do pagamento. Tente novamente em alguns minutos."
               : "O acesso a este portal está temporariamente suspenso. Entre em contato com a empresa para regularizar."}
           </p>
         </div>

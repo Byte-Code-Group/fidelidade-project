@@ -90,3 +90,21 @@ export async function cancelSubscription(
 ): Promise<void> {
   await request(`/subscriptions/${subscriptionId}`, { method: "DELETE" });
 }
+
+export interface AsaasPayment {
+  id: string;
+  status: string;
+  invoiceUrl: string;
+  bankSlipUrl: string | null;
+  value: number;
+  dueDate: string;
+}
+
+export async function getSubscriptionFirstPayment(
+  subscriptionId: string,
+): Promise<AsaasPayment | null> {
+  const res = await request<{ data: AsaasPayment[] }>(
+    `/subscriptions/${subscriptionId}/payments?limit=1&offset=0`,
+  );
+  return res.data?.[0] ?? null;
+}

@@ -1,0 +1,106 @@
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { configureBusiness } from "../actions";
+
+export default async function ConfigurarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/conta/login");
+
+  const { error } = await searchParams;
+
+  // Pre-fill if tenant already exists
+  const db = createAdminClient();
+  const { data: pu } = await db
+    .from("platform_users")
+    .select("tenant_id")
+    .eq("user_id", user.id)
+    .maybeSingle<{ tenant_id: string | null }>();
+
+  let defaults = { name: "", segment: "", cpfCnpj: "" };
+  if (pu?.tenant_id) {
+    const { data: t } = await db
+      .from("tenants")
+      .select("name, segment_template, owner_cpf_cnpj")
+      .eq("id", pu.tenant_id)
+      .maybeSingle<{ name: string; segment_template: string; owner_cpf_cnpj: string | null }>();
+    if (t) {
+      defaults = {
+        name: t.name,
+        segment: t.segment_template,
+        cpfCnpj: t.owner_cpf_cnpj ?? "",
+      };
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent>
+        <div className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-600">
+          Passo 1 de 2
+        </div>
+        <h1 className="text-xl font-bold">Sobre o seu negócio</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Estas informações personalizam o seu portal de fidelidade.
+        </p>
+
+        {error && (
+          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            {error === "campos" ? "Preencha todos os campos obrigatórios." : decodeURIComponent(error)}
+          </p>
+        )}
+
+        <form action={configureBusiness} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Nome do negócio</label>
+            <Input
+              name="business_name"
+              required
+              placeholder="Ex: Studio Silva"
+              defaultValue={defaults.name}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Segmento</label>
+            <Select name="segment" defaultValue={defaults.segment || ""}>
+              <option value="" disabled>Escolha o segmento</option>
+              <option value="odonto">Odontologia</option>
+              <option value="academia">Academia / Fitness</option>
+              <option value="barbearia">Barbearia</option>
+              <option value="salao">Salão de beleza</option>
+              <option value="restaurante">Restaurante / Food</option>
+              <option value="estetica">Estética</option>
+              <option value="generico">Outro</option>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">CPF / CNPJ</label>
+            <Input
+              name="owner_cpf_cnpj"
+              required
+              placeholder="00.000.000/0001-00"
+              defaultValue={defaults.cpfCnpj}
+            />
+            <p className="mt-1 text-xs text-gray-400">Necessário para emissão de cobranças.</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">WhatsApp (opcional)</label>
+            <Input name="phone" type="tel" placeholder="(00) 00000-0000" />
+          </div>
+          <Button type="submit" className="w-full">
+            Continuar →
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
