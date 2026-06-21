@@ -15,6 +15,7 @@ export interface Tenant {
   owner_cpf_cnpj?: string | null;
   asaas_customer_id?: string | null;
   asaas_subscription_id?: string | null;
+  trial_ends_at?: string | null;
   created_at: string;
 }
 

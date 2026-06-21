@@ -11,9 +11,9 @@ import {
   type LoyaltyFrequency,
 } from "@/lib/loyalty";
 import type { BusinessPlan, Checkin, Membership } from "@/lib/types";
-import { submitLead } from "./landing-actions";
+import { startTrial } from "./landing-actions";
 
-function LandingPage() {
+function LandingPage({ trialUrl }: { trialUrl?: string }) {
   const features = [
     { icon: "star" as const, title: "Carteirinha digital", desc: "QR Code e carteirinha personalizada com a marca do seu negócio." },
     { icon: "award" as const, title: "Pontos e recompensas", desc: "Seu cliente acumula pontos a cada visita e troca por prêmios." },
@@ -94,12 +94,27 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Lead form */}
+      {/* Trial form */}
       <section id="contato" className="bg-blue-600 py-16 text-white">
         <div className="mx-auto max-w-lg px-5">
-          <h2 className="mb-2 text-center text-2xl font-bold">Comece agora — é grátis</h2>
-          <p className="mb-8 text-center text-blue-100">Preencha e entraremos em contato em até 24h.</p>
-          <form action={submitLead} className="space-y-4">
+          {trialUrl ? (
+            <div className="rounded-2xl bg-white/10 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-3xl">🎉</div>
+              <h2 className="text-2xl font-bold">Seu portal está no ar!</h2>
+              <p className="mt-2 text-blue-100">Acesse agora e explore os 14 dias gratuitos.</p>
+              <a
+                href={trialUrl}
+                className="mt-6 inline-block rounded-xl bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50"
+              >
+                Abrir meu portal →
+              </a>
+              <p className="mt-4 text-sm text-blue-200">Enviamos o link também para o seu e-mail.</p>
+            </div>
+          ) : (
+            <>
+              <h2 className="mb-2 text-center text-2xl font-bold">Comece grátis — 14 dias</h2>
+              <p className="mb-8 text-center text-blue-100">Seu portal fica pronto em segundos, sem cartão de crédito.</p>
+              <form action={startTrial} className="space-y-4">
             <input
               name="name"
               required
@@ -141,12 +156,14 @@ function LandingPage() {
               className="w-full rounded-xl border-0 px-4 py-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-white"
             />
             <button
-              type="submit"
-              className="w-full rounded-xl bg-white py-3 text-base font-semibold text-blue-600 transition hover:bg-blue-50"
-            >
-              Quero meu portal de fidelidade
-            </button>
-          </form>
+                type="submit"
+                className="w-full rounded-xl bg-white py-3 text-base font-semibold text-blue-600 transition hover:bg-blue-50"
+              >
+                Criar meu portal grátis →
+              </button>
+            </form>
+            </>
+          )}
         </div>
       </section>
 
@@ -167,9 +184,16 @@ function initials(name: string): string {
     .join("");
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ trial?: string }>;
+}) {
   const ctx = await getCurrentTenant();
-  if (!ctx) return <LandingPage />;
+  if (!ctx) {
+    const { trial } = await searchParams;
+    return <LandingPage trialUrl={trial} />;
+  }
   const { settings } = ctx;
   const supabase = await createClient();
 
