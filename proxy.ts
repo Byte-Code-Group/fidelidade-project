@@ -28,6 +28,26 @@ function resolveTenantSlug(host: string | null): string | null {
 }
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const parts = pathname.split("/");
+
+  // Path-based portal: /p/[slug]/... → rewrite to /... with tenant header
+  if (parts[1] === "p" && parts[2]) {
+    const slug = parts[2];
+    const rest = "/" + parts.slice(3).join("/");
+
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = rest || "/";
+
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(TENANT_SLUG_HEADER, slug);
+
+    const response = NextResponse.rewrite(rewriteUrl, {
+      request: { headers: requestHeaders },
+    });
+    return updateSession(request, response);
+  }
+
   const slug = resolveTenantSlug(request.headers.get("host"));
 
   const requestHeaders = new Headers(request.headers);

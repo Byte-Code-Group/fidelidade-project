@@ -136,7 +136,11 @@ export default async function EmpresasPage({
                   </td>
                   <td className="px-5 py-3.5 text-right whitespace-nowrap">
                     <a
-                      href={`http://${t.slug}.${ROOT_DOMAIN}`}
+                      href={
+                        t.custom_domain
+                          ? `https://${t.custom_domain}`
+                          : `/p/${t.slug}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mr-3 opacity-50 hover:opacity-100"

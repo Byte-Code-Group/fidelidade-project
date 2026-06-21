@@ -177,7 +177,7 @@ export default async function EditTenantPage({
         segment={tenant.segment_template}
         templateLabel={tpl.label}
         templateEmoji={tpl.emoji}
-        portalUrl={`http://${tenant.slug}.${ROOT_DOMAIN}`}
+        portalUrl={tenant.custom_domain ? `https://${tenant.custom_domain}` : `/p/${tenant.slug}`}
         settings={settings}
         allowedModules={allowedModules}
         saveAction={updateTenantSettings.bind(null, id)}
