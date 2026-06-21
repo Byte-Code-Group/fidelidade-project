@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "obsidian": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "obsidian-mcp-server"
+      ],
+      "env": {
+        "OBSIDIAN_API_KEY": "f834677711006ae92dcfbd37ff2abe3994638284d858eb51978a1b64eb4e1d65",
+        "OBSIDIAN_API_URL": "https://127.0.0.1:27124",
+        "OBSIDIAN_READ_PATHS": "Dev/Personal/Fidelidade",
+        "OBSIDIAN_WRITE_PATHS": "Dev/Personal/Fidelidade"
+      }
+    }
+  }
+}

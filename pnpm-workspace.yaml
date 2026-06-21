@@ -1,0 +1,7 @@
+# Build scripts nativos não necessários para dev/build aqui (next dev/build
+# funcionam sem compilá-los). false = decisão explícita de não executar o build,
+# o que satisfaz o gate de supply-chain do pnpm desta máquina.
+allowBuilds:
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
