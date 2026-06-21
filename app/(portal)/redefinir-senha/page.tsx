@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RedefinirSenhaPage() {
+  const pathname = usePathname();
+  const pathMatch = pathname.match(/^(\/p\/[^/]+)/);
+  const basePath = pathMatch?.[1] ?? "";
+
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -48,9 +54,9 @@ export default function RedefinirSenhaPage() {
           <p className="mt-2 text-sm opacity-70">
             Sua senha foi redefinida com sucesso.
           </p>
-          <a href="/" className="mt-5 block">
+          <Link href={basePath + "/"} className="mt-5 block">
             <Button className="w-full">Ir para o início</Button>
-          </a>
+          </Link>
         </CardContent>
       </Card>
     );

@@ -22,8 +22,14 @@ export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProp
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  // Path-based portal: /p/[slug]/... → detect base so links and isActive work correctly
+  const pathMatch = pathname.match(/^(\/p\/[^/]+)/);
+  const basePath = pathMatch?.[1] ?? "";
+
+  const isActive = (href: string) => {
+    const rel = basePath ? pathname.slice(basePath.length) || "/" : pathname;
+    return href === "/" ? rel === "/" : rel.startsWith(href);
+  };
 
   return (
     <>
@@ -37,7 +43,7 @@ export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProp
         >
           <Icon name="menu" />
         </button>
-        <Brand brand={brand} compact />
+        <Brand brand={brand} basePath={basePath} compact />
       </header>
 
       {/* Backdrop mobile */}
@@ -57,7 +63,7 @@ export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProp
         )}
       >
         <div className="flex items-center justify-between px-5 py-5">
-          <Brand brand={brand} />
+          <Brand brand={brand} basePath={basePath} />
           <button
             type="button"
             onClick={() => setOpen(false)}
@@ -71,10 +77,11 @@ export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProp
         <nav className="flex-1 space-y-1 overflow-y-auto px-3">
           {items.map((item) => {
             const active = isActive(item.href);
+            const href = basePath + item.href;
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={href}
                 onClick={() => setOpen(false)}
                 className={cn(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
@@ -108,13 +115,15 @@ export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProp
 
 function Brand({
   brand,
+  basePath,
   compact,
 }: {
   brand: PortalSidebarProps["brand"];
+  basePath: string;
   compact?: boolean;
 }) {
   return (
-    <Link href="/" className="flex min-w-0 items-center gap-3">
+    <Link href={basePath + "/"} className="flex min-w-0 items-center gap-3">
       {brand.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
