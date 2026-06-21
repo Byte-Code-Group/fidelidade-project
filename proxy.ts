@@ -27,11 +27,13 @@ function resolveTenantSlug(host: string | null): string | null {
   return `@${hostname}`;
 }
 
+const TENANT_COOKIE = "x-tenant-slug";
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const parts = pathname.split("/");
 
-  // Path-based portal: /p/[slug]/... → rewrite to /... with tenant header
+  // Path-based portal: /p/[slug]/... → rewrite to /... + grava cookie
   if (parts[1] === "p" && parts[2]) {
     const slug = parts[2];
     const rest = "/" + parts.slice(3).join("/");
@@ -45,10 +47,22 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.rewrite(rewriteUrl, {
       request: { headers: requestHeaders },
     });
+    // Cookie persiste o slug para navegações internas sem o prefix /p/[slug]
+    response.cookies.set(TENANT_COOKIE, slug, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+    });
     return updateSession(request, response);
   }
 
-  const slug = resolveTenantSlug(request.headers.get("host"));
+  // Subdomínio (produção com domínio customizado) tem prioridade sobre cookie
+  let slug = resolveTenantSlug(request.headers.get("host"));
+
+  // Fallback: cookie gravado na entrada via /p/[slug] (sem domínio customizado)
+  if (!slug && !pathname.startsWith("/superadmin") && !pathname.startsWith("/api/webhooks")) {
+    slug = request.cookies.get(TENANT_COOKIE)?.value ?? null;
+  }
 
   const requestHeaders = new Headers(request.headers);
   if (slug) {
@@ -58,8 +72,6 @@ export async function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-
-  // Refresh de sessão Supabase (preserva o header de tenant no response).
   return updateSession(request, response);
 }
 
