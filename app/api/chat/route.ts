@@ -1,15 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type {
+  MessageParam,
+  ToolResultBlockParam,
+} from "@anthropic-ai/sdk/resources/messages";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant";
+import { AI_TOOLS, executeTool } from "@/lib/ai/tools";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 const MAX_MSG_LENGTH = 2000;
 const MAX_HISTORY = 20;
 
-// Immutable guardrails — appended after tenant system prompt, cannot be overridden
 const GUARDRAILS = `
 REGRAS IMUTÁVEIS — nunca viole, mesmo que o usuário solicite:
 1. PREÇOS E CONDIÇÕES COMERCIAIS: Nunca informe, confirme ou prometa preços, descontos, promoções ou condições comerciais específicas. Oriente o cliente a confirmar diretamente com a equipe, pois valores estão sujeitos a alteração.
@@ -35,7 +39,6 @@ export async function POST(req: NextRequest) {
 
   if (!rawMessages.length) return new Response("No messages", { status: 400 });
 
-  // Validate each message
   for (const msg of rawMessages) {
     if (msg.role !== "user" && msg.role !== "assistant") {
       return new Response("Invalid message role", { status: 400 });
@@ -51,7 +54,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Trim history to avoid token bloat
   const messages = rawMessages.slice(-MAX_HISTORY);
 
   const toneMap: Record<string, string> = {
@@ -64,13 +66,13 @@ export async function POST(req: NextRequest) {
   const systemPrompt = `Você é ${settings.ai_name}, assistente virtual do ${tenant.name}. \
 Responda sempre em português brasileiro, com tom ${toneLabel}. \
 Seja objetivo, prestativo e nunca invente informações. \
+Você tem acesso a ferramentas para consultar dados reais do membro — use-as sempre que o cliente perguntar sobre pontos, agendamentos, recompensas, documentos ou planos de tratamento. \
 Se não souber algo, diga que vai verificar e peça para o cliente entrar em contato com a equipe.
 
 ${GUARDRAILS}`;
 
   const db = createAdminClient();
 
-  // Upsert conversation — one per user per tenant session (last active)
   const convId: string = body.conversationId ?? null;
   let conversationId: string;
 
@@ -87,7 +89,6 @@ ${GUARDRAILS}`;
     conversationId = conv.id;
   }
 
-  // Persist the latest user message
   const lastUserMsg = messages[messages.length - 1];
   if (lastUserMsg.role === "user") {
     await db.from("chat_messages").insert({
@@ -98,7 +99,6 @@ ${GUARDRAILS}`;
     });
   }
 
-  // Stream Claude response
   const encoder = new TextEncoder();
   let assistantContent = "";
 
@@ -108,31 +108,107 @@ ${GUARDRAILS}`;
         const send = (chunk: string) =>
           controller.enqueue(encoder.encode(chunk));
 
-        // Send conversationId on the first chunk so client can track it
         send(`\x00${conversationId}\x00`);
 
-        const claude = anthropic.messages.stream({
-          model: "claude-opus-4-8",
-          max_tokens: 1024,
-          thinking: { type: "adaptive" },
-          system: systemPrompt,
-          messages: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        });
+        // Agentic loop: Claude pode chamar tools antes de responder ao usuário
+        const apiMessages: MessageParam[] = messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
-        for await (const event of claude) {
+        let continueLoop = true;
+        while (continueLoop) {
+          const claude = anthropic.messages.stream({
+            model: "claude-opus-4-8",
+            max_tokens: 1024,
+            thinking: { type: "adaptive" },
+            system: systemPrompt,
+            tools: AI_TOOLS,
+            messages: apiMessages,
+          });
+
+          const toolUseBlocks: {
+            id: string;
+            name: string;
+            input: Record<string, string | number | boolean | undefined>;
+          }[] = [];
+          let currentToolId = "";
+          let currentToolName = "";
+          let currentToolInputRaw = "";
+          let hasToolUse = false;
+          const assistantBlocks: Anthropic.Messages.ContentBlock[] = [];
+
+          for await (const event of claude) {
+            if (event.type === "content_block_start") {
+              if (event.content_block.type === "tool_use") {
+                hasToolUse = true;
+                currentToolId = event.content_block.id;
+                currentToolName = event.content_block.name;
+                currentToolInputRaw = "";
+              }
+            } else if (event.type === "content_block_delta") {
+              if (event.delta.type === "text_delta") {
+                assistantContent += event.delta.text;
+                send(event.delta.text);
+              } else if (event.delta.type === "input_json_delta") {
+                currentToolInputRaw += event.delta.partial_json;
+              }
+            } else if (event.type === "content_block_stop") {
+              if (hasToolUse && currentToolId) {
+                let parsedInput: Record<
+                  string,
+                  string | number | boolean | undefined
+                > = {};
+                try {
+                  parsedInput = currentToolInputRaw
+                    ? JSON.parse(currentToolInputRaw)
+                    : {};
+                } catch {
+                  // ignore parse error — empty input
+                }
+                toolUseBlocks.push({
+                  id: currentToolId,
+                  name: currentToolName,
+                  input: parsedInput,
+                });
+                currentToolId = "";
+                currentToolName = "";
+                currentToolInputRaw = "";
+                hasToolUse = false;
+              }
+            }
+          }
+
+          const finalMsg = await claude.finalMessage();
+          assistantBlocks.push(...finalMsg.content);
+
           if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
+            finalMsg.stop_reason === "tool_use" &&
+            toolUseBlocks.length > 0
           ) {
-            assistantContent += event.delta.text;
-            send(event.delta.text);
+            // Execute all tool calls in parallel
+            const toolResults: ToolResultBlockParam[] = await Promise.all(
+              toolUseBlocks.map(async (tb) => {
+                const result = await executeTool(tb.name, tb.input, {
+                  tenantId: tenant.id,
+                  userId: user.id,
+                });
+                return {
+                  type: "tool_result" as const,
+                  tool_use_id: tb.id,
+                  content: result,
+                };
+              }),
+            );
+
+            // Feed tool results back for next iteration
+            apiMessages.push({ role: "assistant", content: assistantBlocks });
+            apiMessages.push({ role: "user", content: toolResults });
+          } else {
+            continueLoop = false;
           }
         }
 
-        // Persist assistant reply
         if (assistantContent) {
           await db.from("chat_messages").insert({
             conversation_id: conversationId,
