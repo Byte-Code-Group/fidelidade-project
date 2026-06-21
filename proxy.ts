@@ -59,9 +59,19 @@ export async function proxy(request: NextRequest) {
   // Subdomínio (produção com domínio customizado) tem prioridade sobre cookie
   let slug = resolveTenantSlug(request.headers.get("host"));
 
-  // Fallback: cookie gravado na entrada via /p/[slug] (sem domínio customizado)
-  if (!slug && !pathname.startsWith("/superadmin") && !pathname.startsWith("/api/webhooks")) {
-    slug = request.cookies.get(TENANT_COOKIE)?.value ?? null;
+  if (!slug) {
+    const cookieSlug = request.cookies.get(TENANT_COOKIE)?.value ?? null;
+
+    if (
+      cookieSlug &&
+      !pathname.startsWith("/superadmin") &&
+      !pathname.startsWith("/api/")
+    ) {
+      // Redireciona para URL canônica /p/[slug]/... para manter slug visível
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = `/p/${cookieSlug}${pathname === "/" ? "" : pathname}`;
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   const requestHeaders = new Headers(request.headers);
