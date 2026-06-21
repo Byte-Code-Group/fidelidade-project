@@ -156,6 +156,7 @@ export async function updateTenantCore(tenantId: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const customDomain = String(formData.get("custom_domain") ?? "").trim();
   const ownerEmail = String(formData.get("owner_email") ?? "").trim();
+  const ownerCpfCnpj = String(formData.get("owner_cpf_cnpj") ?? "").trim();
   const { error } = await db
     .from("tenants")
     .update({
@@ -163,6 +164,7 @@ export async function updateTenantCore(tenantId: string, formData: FormData) {
       slug: slugify(name), // subdomínio derivado automaticamente do nome
       custom_domain: customDomain || null,
       owner_email: ownerEmail || null,
+      owner_cpf_cnpj: ownerCpfCnpj || null,
       saas_plan: String(formData.get("saas_plan") ?? "starter"),
       status: String(formData.get("status") ?? "trial"),
     })
@@ -921,11 +923,12 @@ export async function activateTenantBilling(tenantId: string) {
   const db = createAdminClient();
   const { data: tenant } = await db
     .from("tenants")
-    .select("name, owner_email, saas_plan, asaas_customer_id")
+    .select("name, owner_email, owner_cpf_cnpj, saas_plan, asaas_customer_id")
     .eq("id", tenantId)
     .maybeSingle<{
       name: string;
       owner_email: string | null;
+      owner_cpf_cnpj: string | null;
       saas_plan: string;
       asaas_customer_id: string | null;
     }>();
@@ -936,6 +939,11 @@ export async function activateTenantBilling(tenantId: string) {
       `/superadmin/tenants/${tenantId}?error=${encodeURIComponent("Preencha o e-mail do responsável antes de ativar o billing.")}`,
     );
   }
+  if (!tenant.owner_cpf_cnpj) {
+    redirect(
+      `/superadmin/tenants/${tenantId}?error=${encodeURIComponent("Preencha o CPF/CNPJ do responsável antes de ativar o billing.")}`,
+    );
+  }
 
   try {
     // Reusa cliente existente ou cria novo
@@ -944,6 +952,7 @@ export async function activateTenantBilling(tenantId: string) {
       const customer = await createCustomer({
         name: tenant.name,
         email: tenant.owner_email,
+        cpfCnpj: tenant.owner_cpf_cnpj,
       });
       customerId = customer.id;
     }

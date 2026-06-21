@@ -12,6 +12,7 @@ export interface Tenant {
   status: string;
   checkin_token: string;
   owner_email?: string | null;
+  owner_cpf_cnpj?: string | null;
   asaas_customer_id?: string | null;
   asaas_subscription_id?: string | null;
   created_at: string;

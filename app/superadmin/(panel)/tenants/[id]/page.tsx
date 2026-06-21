@@ -89,6 +89,13 @@ export default async function EditTenantPage({
               placeholder="dono@empresa.com.br"
             />
           </Field>
+          <Field label="CPF / CNPJ do responsável" hint="obrigatório no Asaas">
+            <Input
+              name="owner_cpf_cnpj"
+              defaultValue={tenant.owner_cpf_cnpj ?? ""}
+              placeholder="00.000.000/0001-00"
+            />
+          </Field>
           <Field label="Domínio próprio" hint="opcional">
             <Input
               name="custom_domain"
