@@ -1,8 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY ?? "");
-
 const FROM = process.env.EMAIL_FROM ?? "Fideliza.OS <no-reply@fideliza.com.br>";
 
 export interface SendEmailOptions {
@@ -12,8 +10,9 @@ export interface SendEmailOptions {
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<void> {
-  if (!process.env.RESEND_API_KEY) return; // silently skip in dev without key
+  if (!process.env.RESEND_API_KEY) return;
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: FROM,
     to: opts.to,
