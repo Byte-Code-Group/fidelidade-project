@@ -35,6 +35,27 @@ export async function superSignIn(formData: FormData) {
   redirect("/superadmin");
 }
 
+export async function requestSuperadminPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent("Informe o e-mail."));
+  }
+
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000"}`;
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/superadmin/redefinir-senha`,
+  });
+
+  if (error) {
+    redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent(error.message));
+  }
+  redirect("/superadmin/esqueci-senha?sent=1");
+}
+
 export async function superSignOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,11 @@ export default async function SuperLoginPage({
               Entrar
             </Button>
           </form>
+          <p className="mt-4 text-center text-sm opacity-60">
+            <Link href="/superadmin/esqueci-senha" className="hover:underline">
+              Esqueci minha senha
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

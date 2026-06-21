@@ -71,7 +71,30 @@ Se não souber algo, diga que vai verificar e peça para o cliente entrar em con
 
 ${GUARDRAILS}`;
 
+  // Token limits per plan (tokens/month; -1 = unlimited)
+  const TOKEN_LIMITS: Record<string, number> = {
+    starter: 50_000,
+    pro: 500_000,
+    premium: -1,
+  };
+
   const db = createAdminClient();
+
+  // Check monthly token quota
+  if (process.env.ANTHROPIC_API_KEY) {
+    const yearMonth = new Date().toISOString().slice(0, 7);
+    const { data: usage } = await db
+      .from("tenant_ai_usage")
+      .select("tokens_used")
+      .eq("tenant_id", tenant.id)
+      .eq("year_month", yearMonth)
+      .maybeSingle<{ tokens_used: number }>();
+
+    const limit = TOKEN_LIMITS[tenant.saas_plan] ?? TOKEN_LIMITS.starter;
+    if (limit !== -1 && (usage?.tokens_used ?? 0) >= limit) {
+      return new Response("Limite de mensagens do mês atingido.", { status: 429 });
+    }
+  }
 
   const convId: string = body.conversationId ?? null;
   let conversationId: string;
@@ -117,6 +140,7 @@ ${GUARDRAILS}`;
         }));
 
         let continueLoop = true;
+        let totalTokensUsed = 0;
         while (continueLoop) {
           const claude = anthropic.messages.stream({
             model: "claude-opus-4-8",
@@ -181,6 +205,9 @@ ${GUARDRAILS}`;
 
           const finalMsg = await claude.finalMessage();
           assistantBlocks.push(...finalMsg.content);
+          totalTokensUsed +=
+            (finalMsg.usage.input_tokens ?? 0) +
+            (finalMsg.usage.output_tokens ?? 0);
 
           if (
             finalMsg.stop_reason === "tool_use" &&
@@ -215,6 +242,16 @@ ${GUARDRAILS}`;
             tenant_id: tenant.id,
             role: "assistant",
             content: assistantContent,
+          });
+        }
+
+        // Increment monthly token usage
+        if (totalTokensUsed > 0) {
+          const yearMonth = new Date().toISOString().slice(0, 7);
+          await db.rpc("increment_ai_usage", {
+            p_tenant_id: tenant.id,
+            p_year_month: yearMonth,
+            p_tokens: totalTokensUsed,
           });
         }
 
