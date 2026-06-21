@@ -21,9 +21,17 @@ const STATUS_COLOR: Record<string, string> = {
   suspended: "bg-red-100 text-red-600",
 };
 
+function thirtyDaysAgo() {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString();
+}
+
 export default async function PainelPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/conta/login");
 
   const db = createAdminClient();
@@ -33,37 +41,60 @@ export default async function PainelPage() {
     .eq("user_id", user.id)
     .maybeSingle<{ tenant_id: string | null }>();
 
-  // No tenant yet → send to onboarding
   if (!pu?.tenant_id) redirect("/conta/configurar");
 
-  const [{ data: tenant }, { data: settings }, { data: members }, { data: checkins }] =
-    await Promise.all([
-      db
-        .from("tenants")
-        .select("name, slug, status, saas_plan, trial_ends_at, asaas_subscription_id")
-        .eq("id", pu.tenant_id)
-        .maybeSingle<{
-          name: string;
-          slug: string;
-          status: string;
-          saas_plan: string;
-          trial_ends_at: string | null;
-          asaas_subscription_id: string | null;
-        }>(),
-      db
-        .from("tenant_settings")
-        .select("primary_color, logo_url")
-        .eq("tenant_id", pu.tenant_id)
-        .maybeSingle<{ primary_color: string; logo_url: string | null }>(),
-      db
-        .from("memberships")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", pu.tenant_id),
-      db
-        .from("checkins")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", pu.tenant_id),
-    ]);
+  const tenantId = pu.tenant_id;
+  const since = thirtyDaysAgo();
+
+  const [
+    { data: tenant },
+    { data: members },
+    { data: checkins },
+    { data: pendingValidations },
+    { data: pendingRedemptions },
+    { data: missions },
+  ] = await Promise.all([
+    db
+      .from("tenants")
+      .select("name, slug, status, saas_plan, trial_ends_at, asaas_subscription_id")
+      .eq("id", tenantId)
+      .maybeSingle<{
+        name: string;
+        slug: string;
+        status: string;
+        saas_plan: string;
+        trial_ends_at: string | null;
+        asaas_subscription_id: string | null;
+      }>(),
+    db
+      .from("memberships")
+      .select("id, user_id, points_total")
+      .eq("tenant_id", tenantId)
+      .order("points_total", { ascending: false })
+      .returns<{ id: string; user_id: string; points_total: number }[]>(),
+    db
+      .from("checkins")
+      .select("created_at")
+      .eq("tenant_id", tenantId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: true })
+      .returns<{ created_at: string }[]>(),
+    db
+      .from("mission_completions")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending"),
+    db
+      .from("reward_redemptions")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending"),
+    db
+      .from("missions")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true),
+  ]);
 
   if (!tenant) redirect("/conta/configurar");
 
@@ -71,13 +102,44 @@ export default async function PainelPage() {
   const isPending = tenant.status === "pending";
   const isTrial = tenant.status === "trial";
   const trialExpired =
-    isTrial && tenant.trial_ends_at != null && new Date(tenant.trial_ends_at) < new Date();
+    isTrial &&
+    tenant.trial_ends_at != null &&
+    new Date(tenant.trial_ends_at) < new Date();
+
+  // Check-in chart: bucket by day (last 30 days)
+  const dayBuckets: Record<string, number> = {};
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dayBuckets[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const c of checkins ?? []) {
+    const day = c.created_at.slice(0, 10);
+    if (day in dayBuckets) dayBuckets[day]++;
+  }
+  const chartDays = Object.entries(dayBuckets);
+  const maxCheckins = Math.max(1, ...chartDays.map(([, v]) => v));
+
+  // Top 5 members by points
+  const top5 = (members ?? []).slice(0, 5);
+
+  // Fetch names for top members
+  const topUserIds = top5.map((m) => m.user_id);
+  const { data: topUsers } = topUserIds.length
+    ? await db
+        .from("users")
+        .select("id, full_name, email")
+        .in("id", topUserIds)
+        .returns<{ id: string; full_name: string | null; email: string | null }[]>()
+    : { data: [] };
+  const nameById = new Map((topUsers ?? []).map((u) => [u.id, u.full_name ?? u.email ?? "—"]));
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
+          <p className="text-xs text-gray-400">Meu painel</p>
           <h1 className="text-2xl font-bold">{tenant.name}</h1>
           <span
             className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[tenant.status] ?? "bg-gray-100 text-gray-600"}`}
@@ -92,97 +154,152 @@ export default async function PainelPage() {
         </form>
       </div>
 
-      {/* Pending payment banner */}
+      {/* Banners */}
       {isPending && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
           <p className="text-sm font-medium text-blue-800">Aguardando confirmação do pagamento</p>
           <p className="mt-1 text-sm text-blue-600">
-            Seu portal será ativado automaticamente após o pagamento.{" "}
+            Seu portal será ativado automaticamente.{" "}
             <Link href="/conta/planos" className="underline">
               Pagar agora
             </Link>
           </p>
         </div>
       )}
-
-      {/* Trial expiring banner */}
       {isTrial && !trialExpired && tenant.trial_ends_at && (
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
           <p className="text-sm font-medium text-yellow-800">
-            Trial gratuito expira em{" "}
-            {new Date(tenant.trial_ends_at).toLocaleDateString("pt-BR")}
+            Trial expira em {new Date(tenant.trial_ends_at).toLocaleDateString("pt-BR")}
           </p>
-          <p className="mt-1 text-sm text-yellow-600">
-            <Link href="/conta/planos" className="underline">
-              Assinar para continuar
-            </Link>
-          </p>
+          <Link href="/conta/planos" className="text-sm text-yellow-600 underline">
+            Assinar para continuar
+          </Link>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Membros", value: members?.length ?? 0 },
+          { label: "Check-ins (30d)", value: checkins?.length ?? 0 },
+          { label: "Missões ativas", value: missions?.length ?? 0 },
+          {
+            label: "Pendências",
+            value: (pendingValidations?.length ?? 0) + (pendingRedemptions?.length ?? 0),
+            alert: ((pendingValidations?.length ?? 0) + (pendingRedemptions?.length ?? 0)) > 0,
+          },
+        ].map((kpi) => (
+          <Card key={kpi.label}>
+            <CardContent>
+              <p className="text-xs uppercase tracking-wider text-gray-400">{kpi.label}</p>
+              <p
+                className={`mt-1 text-3xl font-bold ${kpi.alert ? "text-rose-500" : ""}`}
+              >
+                {kpi.value}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Check-in chart */}
+      <Card>
+        <CardContent>
+          <h2 className="mb-4 text-sm font-semibold">Check-ins — últimos 30 dias</h2>
+          {checkins?.length === 0 ? (
+            <p className="py-6 text-center text-sm text-gray-400">Nenhum check-in ainda.</p>
+          ) : (
+            <div className="flex h-24 items-end gap-0.5">
+              {chartDays.map(([day, count]) => (
+                <div
+                  key={day}
+                  title={`${day}: ${count}`}
+                  className="flex-1 rounded-t bg-blue-500/80 transition-all hover:bg-blue-600"
+                  style={{ height: `${Math.max(4, (count / maxCheckins) * 100)}%` }}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Top members + pending */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Top members */}
         <Card>
           <CardContent>
-            <p className="text-xs uppercase tracking-wider text-gray-400">Membros</p>
-            <p className="mt-1 text-3xl font-bold">{members?.length ?? 0}</p>
+            <h2 className="mb-3 text-sm font-semibold">Top membros por pontos</h2>
+            {top5.length === 0 ? (
+              <p className="text-sm text-gray-400">Nenhum membro ainda.</p>
+            ) : (
+              <ol className="space-y-2">
+                {top5.map((m, i) => (
+                  <li key={m.id} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">
+                      <span className="mr-2 font-bold text-gray-300">#{i + 1}</span>
+                      {nameById.get(m.user_id) ?? "—"}
+                    </span>
+                    <span className="font-semibold">{m.points_total} pts</span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </CardContent>
         </Card>
+
+        {/* Pending actions */}
         <Card>
           <CardContent>
-            <p className="text-xs uppercase tracking-wider text-gray-400">Check-ins</p>
-            <p className="mt-1 text-3xl font-bold">{checkins?.length ?? 0}</p>
+            <h2 className="mb-3 text-sm font-semibold">Pendências</h2>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center justify-between">
+                <span className="text-gray-500">Validações de missão</span>
+                <span className={`font-semibold ${(pendingValidations?.length ?? 0) > 0 ? "text-rose-500" : "text-gray-400"}`}>
+                  {pendingValidations?.length ?? 0}
+                </span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-gray-500">Resgates a processar</span>
+                <span className={`font-semibold ${(pendingRedemptions?.length ?? 0) > 0 ? "text-rose-500" : "text-gray-400"}`}>
+                  {pendingRedemptions?.length ?? 0}
+                </span>
+              </li>
+            </ul>
+            <p className="mt-4 text-xs text-gray-400">
+              Gerencie pelo superadmin ou solicite ao administrador da plataforma.
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Portal link */}
+      {/* Portal + quick actions */}
       <Card>
         <CardContent>
-          <p className="text-sm font-medium text-gray-500">Seu portal</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Seu portal</p>
           <a
             href={portalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 block text-blue-600 hover:underline text-sm break-all"
+            className="mt-1 block break-all text-sm text-blue-600 hover:underline"
           >
             {portalUrl} ↗
           </a>
-          <p className="mt-2 text-xs text-gray-400">
-            Compartilhe este link com seus clientes para que eles se cadastrem.
-          </p>
         </CardContent>
       </Card>
 
-      {/* Plan + billing */}
-      <Card>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Plano</p>
-              <p className="font-semibold capitalize">{tenant.saas_plan}</p>
-            </div>
-            {!tenant.asaas_subscription_id && !isPending && (
-              <Link href="/conta/planos">
-                <Button className="text-sm">Assinar</Button>
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">
         <Link href="/conta/configurar">
-          <Button variant="outline" className="w-full text-sm">
-            Editar negócio
-          </Button>
+          <Button variant="outline" className="w-full text-sm">Editar negócio</Button>
         </Link>
-        <a href={portalUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" className="w-full text-sm">
-            Ver portal ↗
-          </Button>
-        </a>
+        {!tenant.asaas_subscription_id && !isPending ? (
+          <Link href="/conta/planos">
+            <Button className="w-full text-sm">Assinar plano</Button>
+          </Link>
+        ) : (
+          <a href={portalUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" className="w-full text-sm">Ver portal ↗</Button>
+          </a>
+        )}
       </div>
     </div>
   );

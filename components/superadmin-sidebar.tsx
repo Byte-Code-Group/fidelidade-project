@@ -18,6 +18,7 @@ const ITEMS: NavItem[] = [
   { href: "/superadmin/empresas", label: "Empresas", icon: "building" },
   { href: "/superadmin/templates", label: "Templates", icon: "template" },
   { href: "/superadmin/faturamento", label: "Faturamento", icon: "receipt" },
+  { href: "/superadmin/relatorios", label: "Relatórios", icon: "activity" },
 ];
 
 export function SuperadminSidebar({
