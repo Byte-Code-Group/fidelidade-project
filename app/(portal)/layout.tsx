@@ -14,9 +14,14 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const ctx = await getCurrentTenant();
-  // Sem subdomínio (apex) ou tenant inexistente → manda pro console do operador
-  // em vez de um 404 sem saída.
-  if (!ctx) redirect("/superadmin");
+  // Apex domain (sem subdomínio) → landing page de marketing.
+  if (!ctx) {
+    return (
+      <div className="min-h-dvh bg-white text-gray-900">
+        {children}
+      </div>
+    );
+  }
 
   const { tenant, settings } = ctx;
 
