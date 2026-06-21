@@ -6,8 +6,15 @@ import { Select } from "@/components/ui/select";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULES, getTemplate } from "@/lib/segment-templates";
 import type { Tenant, TenantSettings } from "@/lib/types";
-import { updateTenantCore, updateTenantSettings, uploadLogo } from "../../../actions";
+import {
+  updateTenantCore,
+  updateTenantSettings,
+  uploadLogo,
+  activateTenantBilling,
+  cancelTenantBilling,
+} from "../../../actions";
 import { CustomizationForm } from "./customization-form";
+import { getSubscription } from "@/lib/asaas";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
 
@@ -28,6 +35,16 @@ export default async function EditTenantPage({
     .eq("id", id)
     .maybeSingle<Tenant>();
   if (!tenant) notFound();
+
+  // Fetch subscription status from Asaas if exists
+  let subscription: { status: string; nextDueDate: string; value: number } | null = null;
+  if (tenant.asaas_subscription_id && process.env.ASAAS_API_KEY) {
+    try {
+      subscription = await getSubscription(tenant.asaas_subscription_id);
+    } catch {
+      // ignore — Asaas offline or invalid ID
+    }
+  }
 
   const { data: settings } = await db
     .from("tenant_settings")
@@ -64,6 +81,14 @@ export default async function EditTenantPage({
           <Field label="Nome" hint={`subdomínio: ${tenant.slug}.${ROOT_DOMAIN}`}>
             <Input name="name" defaultValue={tenant.name} required />
           </Field>
+          <Field label="E-mail do responsável" hint="usado no billing">
+            <Input
+              name="owner_email"
+              type="email"
+              defaultValue={tenant.owner_email ?? ""}
+              placeholder="dono@empresa.com.br"
+            />
+          </Field>
           <Field label="Domínio próprio" hint="opcional">
             <Input
               name="custom_domain"
@@ -73,9 +98,9 @@ export default async function EditTenantPage({
           </Field>
           <Field label="Plano SaaS">
             <Select name="saas_plan" defaultValue={tenant.saas_plan}>
-              <option value="starter">Starter</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
+              <option value="starter">Starter — R$ 97/mês</option>
+              <option value="pro">Pro — R$ 297/mês</option>
+              <option value="premium">Premium — R$ 697/mês</option>
             </Select>
           </Field>
           <Field label="Status">
@@ -89,6 +114,54 @@ export default async function EditTenantPage({
             <Button type="submit">Salvar conta</Button>
           </div>
         </form>
+      </Section>
+
+      {/* ---------- Billing Asaas ---------- */}
+      <Section title="Billing">
+        {subscription ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <p className="opacity-50">Status</p>
+                <p className="font-medium capitalize">{subscription.status}</p>
+              </div>
+              <div>
+                <p className="opacity-50">Próximo vencimento</p>
+                <p className="font-medium">{subscription.nextDueDate}</p>
+              </div>
+              <div>
+                <p className="opacity-50">Valor</p>
+                <p className="font-medium">
+                  {subscription.value.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
+                  /mês
+                </p>
+              </div>
+            </div>
+            <form action={cancelTenantBilling.bind(null, id)}>
+              <Button type="submit" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+                Cancelar assinatura
+              </Button>
+            </form>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm opacity-60">
+              {tenant.asaas_subscription_id
+                ? "Assinatura encontrada, mas ASAAS_API_KEY não está configurada neste ambiente."
+                : "Nenhuma assinatura ativa. Ative o billing para cobrar automaticamente via Pix."}
+            </p>
+            {!tenant.asaas_subscription_id && (
+              <form action={activateTenantBilling.bind(null, id)}>
+                <Button type="submit" disabled={!tenant.owner_email}>
+                  Criar assinatura no Asaas
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
       </Section>
 
       {/* ---------- Customização com preview ao vivo ---------- */}

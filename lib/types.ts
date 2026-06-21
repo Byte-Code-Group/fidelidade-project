@@ -11,6 +11,9 @@ export interface Tenant {
   saas_plan: string;
   status: string;
   checkin_token: string;
+  owner_email: string | null;
+  asaas_customer_id: string | null;
+  asaas_subscription_id: string | null;
   created_at: string;
 }
 

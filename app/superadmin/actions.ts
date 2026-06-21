@@ -11,6 +11,11 @@ import {
   clampModulesToTemplate,
   MODULES,
 } from "@/lib/segment-templates";
+import {
+  createCustomer,
+  createSubscription,
+  cancelSubscription,
+} from "@/lib/asaas";
 
 // ---------- Auth ----------
 
@@ -150,12 +155,14 @@ export async function updateTenantCore(tenantId: string, formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   const customDomain = String(formData.get("custom_domain") ?? "").trim();
+  const ownerEmail = String(formData.get("owner_email") ?? "").trim();
   const { error } = await db
     .from("tenants")
     .update({
       name,
       slug: slugify(name), // subdomínio derivado automaticamente do nome
       custom_domain: customDomain || null,
+      owner_email: ownerEmail || null,
       saas_plan: String(formData.get("saas_plan") ?? "starter"),
       status: String(formData.get("status") ?? "trial"),
     })
@@ -898,4 +905,96 @@ export async function deletePartnership(
     .eq("id", partnershipId)
     .eq("tenant_id", tenantId);
   revalidatePath(`/superadmin/tenants/${tenantId}/partnerships`);
+}
+
+// ---------- Billing (Asaas) ----------
+
+export async function activateTenantBilling(tenantId: string) {
+  await requirePlatformAdmin();
+
+  if (!process.env.ASAAS_API_KEY) {
+    redirect(
+      `/superadmin/tenants/${tenantId}?error=${encodeURIComponent("ASAAS_API_KEY não configurada.")}`,
+    );
+  }
+
+  const db = createAdminClient();
+  const { data: tenant } = await db
+    .from("tenants")
+    .select("name, owner_email, saas_plan, asaas_customer_id")
+    .eq("id", tenantId)
+    .maybeSingle<{
+      name: string;
+      owner_email: string | null;
+      saas_plan: string;
+      asaas_customer_id: string | null;
+    }>();
+
+  if (!tenant) redirect(`/superadmin/tenants/${tenantId}?error=Tenant+não+encontrado.`);
+  if (!tenant.owner_email) {
+    redirect(
+      `/superadmin/tenants/${tenantId}?error=${encodeURIComponent("Preencha o e-mail do responsável antes de ativar o billing.")}`,
+    );
+  }
+
+  try {
+    // Reusa cliente existente ou cria novo
+    let customerId = tenant.asaas_customer_id;
+    if (!customerId) {
+      const customer = await createCustomer({
+        name: tenant.name,
+        email: tenant.owner_email,
+      });
+      customerId = customer.id;
+    }
+
+    const subscription = await createSubscription({
+      customer: customerId,
+      plan: tenant.saas_plan,
+      email: tenant.owner_email,
+    });
+
+    await db
+      .from("tenants")
+      .update({
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscription.id,
+        status: "active",
+      })
+      .eq("id", tenantId);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Erro ao criar assinatura.";
+    redirect(`/superadmin/tenants/${tenantId}?error=${encodeURIComponent(msg)}`);
+  }
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin");
+  redirect(`/superadmin/tenants/${tenantId}?saved=1`);
+}
+
+export async function cancelTenantBilling(tenantId: string) {
+  await requirePlatformAdmin();
+  const db = createAdminClient();
+
+  const { data: tenant } = await db
+    .from("tenants")
+    .select("asaas_subscription_id")
+    .eq("id", tenantId)
+    .maybeSingle<{ asaas_subscription_id: string | null }>();
+
+  if (tenant?.asaas_subscription_id) {
+    try {
+      await cancelSubscription(tenant.asaas_subscription_id);
+    } catch {
+      // ignora erro do Asaas — suspende o tenant mesmo assim
+    }
+    await db
+      .from("tenants")
+      .update({ status: "suspended", asaas_subscription_id: null })
+      .eq("id", tenantId);
+  }
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+  revalidatePath("/superadmin");
+  redirect(`/superadmin/tenants/${tenantId}?saved=1`);
 }
