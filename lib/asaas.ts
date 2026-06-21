@@ -66,7 +66,7 @@ export async function createSubscription(opts: {
     method: "POST",
     body: JSON.stringify({
       customer: opts.customer,
-      billingType: "PIX",
+      billingType: "BOLETO",
       value,
       nextDueDate: nextDueDate.toISOString().slice(0, 10),
       cycle: "MONTHLY",
