@@ -11,9 +11,31 @@ import {
   type LoyaltyFrequency,
 } from "@/lib/loyalty";
 import type { BusinessPlan, Checkin, Membership } from "@/lib/types";
-import { startTrial } from "./landing-actions";
+import { submitLead } from "./landing-actions";
 
-function LandingPage({ trialUrl }: { trialUrl?: string }) {
+const PLANS = [
+  {
+    key: "starter",
+    name: "Starter",
+    price: 97,
+    features: ["Até 200 membros", "IA com 50k tokens/mês", "Carteirinha + pontos + loja"],
+  },
+  {
+    key: "pro",
+    name: "Pro",
+    price: 297,
+    features: ["Até 1.000 membros", "IA com 500k tokens/mês", "Todos os módulos"],
+    highlight: true,
+  },
+  {
+    key: "premium",
+    name: "Premium",
+    price: 697,
+    features: ["Membros ilimitados", "IA ilimitada", "Suporte prioritário"],
+  },
+];
+
+function LandingPage({ sent }: { sent?: boolean }) {
   const features = [
     { icon: "star" as const, title: "Carteirinha digital", desc: "QR Code e carteirinha personalizada com a marca do seu negócio." },
     { icon: "award" as const, title: "Pontos e recompensas", desc: "Seu cliente acumula pontos a cada visita e troca por prêmios." },
@@ -28,11 +50,20 @@ function LandingPage({ trialUrl }: { trialUrl?: string }) {
   return (
     <div className="min-h-dvh bg-white font-sans text-gray-900">
       {/* Nav */}
-      <nav className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
-        <span className="text-xl font-bold tracking-tight">Fideliza<span className="text-blue-600">.OS</span></span>
-        <Link href="/superadmin/login">
-          <Button variant="outline" className="text-sm">Entrar</Button>
-        </Link>
+      <nav className="sticky top-0 z-10 border-b border-black/5 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+          <span className="text-xl font-bold tracking-tight">Fideliza<span className="text-blue-600">.OS</span></span>
+          <div className="flex items-center gap-3">
+            <Link href="/conta/login" className="text-sm text-gray-500 hover:text-gray-900">
+              Entrar
+            </Link>
+            <Link href="/conta/cadastro">
+              <Button className="text-sm bg-blue-600 hover:bg-blue-700 text-white">
+                Criar conta grátis
+              </Button>
+            </Link>
+          </div>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -49,17 +80,18 @@ function LandingPage({ trialUrl }: { trialUrl?: string }) {
           Para clínicas, academias, barbearias e muito mais.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <a href="#contato">
+          <Link href="/conta/cadastro">
             <Button className="h-12 px-8 text-base bg-blue-600 hover:bg-blue-700 text-white">
-              Quero testar grátis
-            </Button>
-          </a>
-          <Link href="/conta/login">
-            <Button variant="outline" className="h-12 px-8 text-base">
-              Já tenho conta
+              Criar meu portal agora →
             </Button>
           </Link>
+          <a href="#planos" className="text-sm text-gray-500 hover:underline">
+            Ver planos e preços
+          </a>
         </div>
+        <p className="mt-4 text-sm text-gray-400">
+          Sem taxa de setup · Cancele quando quiser
+        </p>
       </section>
 
       {/* Features */}
@@ -94,82 +126,108 @@ function LandingPage({ trialUrl }: { trialUrl?: string }) {
         </div>
       </section>
 
-      {/* Trial form */}
-      <section id="contato" className="bg-blue-600 py-16 text-white">
+      {/* Planos */}
+      <section id="planos" className="bg-gray-50 py-16">
+        <div className="mx-auto max-w-4xl px-5">
+          <h2 className="mb-2 text-center text-2xl font-bold">Planos e preços</h2>
+          <p className="mb-10 text-center text-gray-500">Cancele a qualquer momento.</p>
+          <div className="grid gap-5 sm:grid-cols-3">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.key}
+                className={`rounded-2xl bg-white p-6 shadow-sm ${plan.highlight ? "ring-2 ring-blue-600" : ""}`}
+              >
+                {plan.highlight && (
+                  <span className="mb-3 inline-block rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                    Mais popular
+                  </span>
+                )}
+                <h3 className="text-lg font-bold">{plan.name}</h3>
+                <p className="mt-1 text-3xl font-extrabold">
+                  R$ {plan.price}
+                  <span className="text-base font-normal text-gray-400">/mês</span>
+                </p>
+                <ul className="mt-4 space-y-1.5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="mt-0.5 text-blue-500">✓</span> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/conta/cadastro" className="mt-6 block">
+                  <Button
+                    className={`w-full ${plan.highlight ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
+                    variant={plan.highlight ? "primary" : "outline"}
+                  >
+                    Assinar {plan.name}
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA final */}
+      <section className="bg-blue-600 py-16 text-white">
+        <div className="mx-auto max-w-lg px-5 text-center">
+          <h2 className="text-2xl font-bold">Comece agora mesmo</h2>
+          <p className="mt-2 text-blue-100">
+            Configure seu portal em menos de 5 minutos.
+          </p>
+          <Link href="/conta/cadastro" className="mt-8 inline-block">
+            <button className="rounded-xl bg-white px-10 py-3 text-base font-semibold text-blue-600 transition hover:bg-blue-50">
+              Criar conta grátis →
+            </button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Contato / lead */}
+      <section id="contato" className="py-14">
         <div className="mx-auto max-w-lg px-5">
-          {trialUrl ? (
-            <div className="rounded-2xl bg-white/10 p-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-3xl">🎉</div>
-              <h2 className="text-2xl font-bold">Seu portal está no ar!</h2>
-              <p className="mt-2 text-blue-100">Acesse agora e explore os 14 dias gratuitos.</p>
-              <a
-                href={trialUrl}
-                className="mt-6 inline-block rounded-xl bg-white px-8 py-3 text-base font-semibold text-blue-600 hover:bg-blue-50"
-              >
-                Abrir meu portal →
-              </a>
-              <p className="mt-4 text-sm text-blue-200">Enviamos o link também para o seu e-mail.</p>
-            </div>
+          <h2 className="mb-2 text-center text-xl font-bold">Prefere falar com a gente?</h2>
+          <p className="mb-8 text-center text-sm text-gray-500">
+            Deixe seu contato e retornamos em até 24h.
+          </p>
+          {sent ? (
+            <p className="rounded-xl bg-green-50 px-4 py-3 text-center text-sm font-medium text-green-700">
+              ✓ Recebemos seu contato! Retornaremos em breve.
+            </p>
           ) : (
-            <>
-              <h2 className="mb-2 text-center text-2xl font-bold">Comece grátis — 14 dias</h2>
-              <p className="mb-8 text-center text-blue-100">Seu portal fica pronto em segundos, sem cartão de crédito.</p>
-              <form action={startTrial} className="space-y-4">
-            <input
-              name="name"
-              required
-              placeholder="Seu nome"
-              className="w-full rounded-xl border-0 px-4 py-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-white"
-            />
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="E-mail"
-              className="w-full rounded-xl border-0 px-4 py-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-white"
-            />
-            <input
-              name="business"
-              required
-              placeholder="Nome do negócio"
-              className="w-full rounded-xl border-0 px-4 py-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-white"
-            />
-            <select
-              name="segment"
-              required
-              defaultValue=""
-              className="w-full rounded-xl border-0 px-4 py-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-white"
-            >
-              <option value="" disabled>Segmento</option>
-              <option value="odonto">Odontologia</option>
-              <option value="academia">Academia</option>
-              <option value="barbearia">Barbearia</option>
-              <option value="salao">Salão de beleza</option>
-              <option value="restaurante">Restaurante</option>
-              <option value="estetica">Estética</option>
-              <option value="generico">Outro</option>
-            </select>
-            <input
-              name="phone"
-              type="tel"
-              placeholder="WhatsApp (opcional)"
-              className="w-full rounded-xl border-0 px-4 py-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-white"
-            />
-            <button
-                type="submit"
-                className="w-full rounded-xl bg-white py-3 text-base font-semibold text-blue-600 transition hover:bg-blue-50"
-              >
-                Criar meu portal grátis →
+            <form action={submitLead} className="space-y-3">
+              <input name="name" required placeholder="Seu nome"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input name="email" type="email" required placeholder="E-mail"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input name="business" required placeholder="Nome do negócio"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <select name="segment" required defaultValue=""
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled>Segmento</option>
+                <option value="odonto">Odontologia</option>
+                <option value="academia">Academia</option>
+                <option value="barbearia">Barbearia</option>
+                <option value="salao">Salão de beleza</option>
+                <option value="restaurante">Restaurante</option>
+                <option value="estetica">Estética</option>
+                <option value="generico">Outro</option>
+              </select>
+              <input name="phone" type="tel" placeholder="WhatsApp (opcional)"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button type="submit"
+                className="w-full rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white transition hover:bg-gray-800">
+                Enviar mensagem
               </button>
             </form>
-            </>
           )}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} Fideliza.OS · Todos os direitos reservados
+      <footer className="border-t border-black/5 py-8 text-center text-sm text-gray-400">
+        © {new Date().getFullYear()} Fideliza.OS · Todos os direitos reservados ·{" "}
+        <Link href="/conta/login" className="hover:underline">Entrar</Link>
       </footer>
     </div>
   );
@@ -187,12 +245,12 @@ function initials(name: string): string {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ trial?: string }>;
+  searchParams: Promise<{ sent?: string }>;
 }) {
   const ctx = await getCurrentTenant();
   if (!ctx) {
-    const { trial } = await searchParams;
-    return <LandingPage trialUrl={trial} />;
+    const { sent } = await searchParams;
+    return <LandingPage sent={!!sent} />;
   }
   const { settings } = ctx;
   const supabase = await createClient();
