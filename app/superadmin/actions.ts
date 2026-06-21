@@ -911,7 +911,7 @@ export async function deletePartnership(
 
 // ---------- Billing (Asaas) ----------
 
-export async function activateTenantBilling(tenantId: string) {
+export async function activateTenantBilling(tenantId: string, formData: FormData) {
   await requirePlatformAdmin();
 
   if (!process.env.ASAAS_API_KEY) {
@@ -957,10 +957,16 @@ export async function activateTenantBilling(tenantId: string) {
       customerId = customer.id;
     }
 
+    const rawBillingType = String(formData.get("billing_type") ?? "PIX").toUpperCase();
+    const billingType = (["PIX", "BOLETO", "CREDIT_CARD"].includes(rawBillingType)
+      ? rawBillingType
+      : "PIX") as import("@/lib/asaas").BillingType;
+
     const subscription = await createSubscription({
       customer: customerId,
       plan: tenant.saas_plan,
       email: tenant.owner_email,
+      billingType,
     });
 
     await db

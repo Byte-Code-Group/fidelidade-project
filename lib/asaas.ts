@@ -53,10 +53,13 @@ export async function createCustomer(opts: {
   });
 }
 
+export type BillingType = "BOLETO" | "PIX" | "CREDIT_CARD";
+
 export async function createSubscription(opts: {
   customer: string;
   plan: string;
   email: string;
+  billingType?: BillingType;
 }): Promise<AsaasSubscription> {
   const value = PLAN_PRICES[opts.plan] ?? PLAN_PRICES.starter;
   const nextDueDate = new Date();
@@ -66,7 +69,7 @@ export async function createSubscription(opts: {
     method: "POST",
     body: JSON.stringify({
       customer: opts.customer,
-      billingType: "BOLETO",
+      billingType: opts.billingType ?? "PIX",
       value,
       nextDueDate: nextDueDate.toISOString().slice(0, 10),
       cycle: "MONTHLY",

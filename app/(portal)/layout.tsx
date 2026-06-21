@@ -25,6 +25,23 @@ export default async function PortalLayout({
 
   const { tenant, settings } = ctx;
 
+  // Conta suspensa → bloqueia portal para todos (incluindo usuários logados).
+  if (tenant.status === "suspended") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-gray-50 p-6 text-center">
+        <div className="max-w-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-2xl">
+            🔒
+          </div>
+          <h1 className="text-lg font-semibold text-gray-900">Portal suspenso</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            O acesso a este portal está temporariamente suspenso. Entre em contato com a empresa para regularizar.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

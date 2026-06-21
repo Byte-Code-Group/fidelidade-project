@@ -161,9 +161,16 @@ export default async function EditTenantPage({
                 : "Nenhuma assinatura ativa. Ative o billing para cobrar automaticamente via Pix."}
             </p>
             {!tenant.asaas_subscription_id && (
-              <form action={activateTenantBilling.bind(null, id)}>
-                <Button type="submit" disabled={!tenant.owner_email}>
-                  Criar assinatura no Asaas
+              <form action={activateTenantBilling.bind(null, id)} className="flex items-end gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs opacity-50">Forma de cobrança</label>
+                  <Select name="billing_type" defaultValue="PIX">
+                    <option value="PIX">PIX (gerado mensalmente)</option>
+                    <option value="BOLETO">Boleto bancário</option>
+                  </Select>
+                </div>
+                <Button type="submit" disabled={!tenant.owner_email || !tenant.owner_cpf_cnpj}>
+                  Criar assinatura
                 </Button>
               </form>
             )}
