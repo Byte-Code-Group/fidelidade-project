@@ -98,41 +98,21 @@ export default async function EditTenantPage({
           </Field>
           <Field
             label="Domínio próprio"
-            hint={tenant.custom_domain ? "configurado" : "opcional"}
+            hint={tenant.custom_domain ? "✓ configurado" : "opcional"}
           >
             <Input
               name="custom_domain"
               defaultValue={tenant.custom_domain ?? ""}
-              placeholder="clinica.com.br"
+              placeholder="fidelidade.suaempresa.com.br"
             />
-            {tenant.custom_domain && (
-              <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 space-y-1">
-                <p className="font-medium">Instruções CNAME para o cliente:</p>
-                <p>
-                  No painel DNS do domínio{" "}
-                  <code className="font-mono">{tenant.custom_domain}</code>,
-                  adicione:
-                </p>
-                <div className="font-mono bg-white rounded px-2 py-1 border border-blue-100 space-y-0.5">
-                  <p>
-                    <span className="text-blue-500">Tipo:</span> CNAME
-                  </p>
-                  <p>
-                    <span className="text-blue-500">Nome:</span>{" "}
-                    {tenant.custom_domain.split(".").length > 2
-                      ? tenant.custom_domain.split(".")[0]
-                      : "@"}
-                  </p>
-                  <p>
-                    <span className="text-blue-500">Valor:</span>{" "}
-                    cname.vercel-dns.com
-                  </p>
-                </div>
-                <p className="opacity-70">
-                  Depois adicione o domínio no projeto Vercel em Settings →
-                  Domains.
-                </p>
-              </div>
+            {tenant.custom_domain ? (
+              <CustomDomainInstructions domain={tenant.custom_domain} />
+            ) : (
+              <p className="mt-1 text-xs opacity-50">
+                Use um subdomínio do cliente, ex:{" "}
+                <code className="font-mono">fidelidade.oraldents.com.br</code>.
+                Evite o domínio raiz (sem subdomínio).
+              </p>
             )}
           </Field>
           <Field label="Plano SaaS">
@@ -260,5 +240,85 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+function CustomDomainInstructions({ domain }: { domain: string }) {
+  const parts = domain.split(".");
+  // subdomínio: "fidelidade.oraldents.com.br" → nome = "fidelidade"
+  // domínio raiz: "oraldents.com.br" → CNAME no apex não é suportado (avisa)
+  const isApex = parts.length <= 2 || (parts.length === 3 && parts[1].length === 2);
+  const cnameHost = isApex ? null : parts[0];
+
+  return (
+    <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-base">🌐</span>
+        <p className="font-semibold">Configuração do domínio próprio</p>
+      </div>
+
+      {isApex ? (
+        <div className="rounded-md bg-amber-100 border border-amber-200 px-3 py-2 text-amber-800 text-xs">
+          ⚠️ <strong>{domain}</strong> é um domínio raiz. CNAME no apex não é suportado pela maioria dos registradores. Use um subdomínio, ex:{" "}
+          <code className="font-mono">fidelidade.{domain}</code>.
+        </div>
+      ) : (
+        <>
+          <div className="space-y-1.5">
+            <p className="font-medium text-xs uppercase tracking-wide opacity-60">
+              Passo 1 — Cliente: configurar DNS
+            </p>
+            <p className="text-xs">
+              No painel DNS do domínio <code className="font-mono font-semibold">{domain}</code> (GoDaddy, Cloudflare, Registro.br etc.), adicionar o registro:
+            </p>
+            <div className="rounded-md bg-white border border-blue-100 overflow-hidden">
+              <table className="w-full text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-blue-100 bg-blue-50/60">
+                    <th className="text-left px-3 py-1.5 font-semibold">Tipo</th>
+                    <th className="text-left px-3 py-1.5 font-semibold">Nome / Host</th>
+                    <th className="text-left px-3 py-1.5 font-semibold">Valor / Destino</th>
+                    <th className="text-left px-3 py-1.5 font-semibold">TTL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="px-3 py-2 text-blue-700 font-bold">CNAME</td>
+                    <td className="px-3 py-2">{cnameHost}</td>
+                    <td className="px-3 py-2">cname.vercel-dns.com</td>
+                    <td className="px-3 py-2 opacity-60">3600</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs opacity-60">
+              Propagação DNS pode levar até 24h, mas costuma ser minutos.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="font-medium text-xs uppercase tracking-wide opacity-60">
+              Passo 2 — Você: adicionar na Vercel
+            </p>
+            <p className="text-xs">
+              No projeto Vercel → <strong>Settings → Domains</strong> → adicionar{" "}
+              <code className="font-mono font-semibold">{domain}</code>.
+              A Vercel valida o CNAME e emite o SSL automaticamente.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="font-medium text-xs uppercase tracking-wide opacity-60">
+              Passo 3 — Pronto
+            </p>
+            <p className="text-xs">
+              O portal do cliente estará disponível em{" "}
+              <code className="font-mono font-semibold">https://{domain}</code>{" "}
+              com SSL e tema da marca automaticamente.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
