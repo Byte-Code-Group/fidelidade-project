@@ -96,12 +96,44 @@ export default async function EditTenantPage({
               placeholder="00.000.000/0001-00"
             />
           </Field>
-          <Field label="Domínio próprio" hint="opcional">
+          <Field
+            label="Domínio próprio"
+            hint={tenant.custom_domain ? "configurado" : "opcional"}
+          >
             <Input
               name="custom_domain"
               defaultValue={tenant.custom_domain ?? ""}
               placeholder="clinica.com.br"
             />
+            {tenant.custom_domain && (
+              <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 space-y-1">
+                <p className="font-medium">Instruções CNAME para o cliente:</p>
+                <p>
+                  No painel DNS do domínio{" "}
+                  <code className="font-mono">{tenant.custom_domain}</code>,
+                  adicione:
+                </p>
+                <div className="font-mono bg-white rounded px-2 py-1 border border-blue-100 space-y-0.5">
+                  <p>
+                    <span className="text-blue-500">Tipo:</span> CNAME
+                  </p>
+                  <p>
+                    <span className="text-blue-500">Nome:</span>{" "}
+                    {tenant.custom_domain.split(".").length > 2
+                      ? tenant.custom_domain.split(".")[0]
+                      : "@"}
+                  </p>
+                  <p>
+                    <span className="text-blue-500">Valor:</span>{" "}
+                    cname.vercel-dns.com
+                  </p>
+                </div>
+                <p className="opacity-70">
+                  Depois adicione o domínio no projeto Vercel em Settings →
+                  Domains.
+                </p>
+              </div>
+            )}
           </Field>
           <Field label="Plano SaaS">
             <Select name="saas_plan" defaultValue={tenant.saas_plan}>

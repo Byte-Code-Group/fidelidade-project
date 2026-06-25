@@ -15,15 +15,25 @@ export async function getTenantSlug(): Promise<string | null> {
 
 // Busca tenant + settings por slug. Cacheado por request (React cache()).
 // Usa admin client: branding é público e precisa carregar antes do login.
+// Slug prefixado com "@" indica custom domain — ex.: "@clinica.com.br".
 export const getTenantBySlug = cache(
   async (slug: string): Promise<TenantContext | null> => {
     const supabase = createAdminClient();
 
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle<Tenant>();
+    const isCustomDomain = slug.startsWith("@");
+    const query = isCustomDomain
+      ? supabase
+          .from("tenants")
+          .select("*")
+          .eq("custom_domain", slug.slice(1))
+          .maybeSingle<Tenant>()
+      : supabase
+          .from("tenants")
+          .select("*")
+          .eq("slug", slug)
+          .maybeSingle<Tenant>();
+
+    const { data: tenant } = await query;
 
     if (!tenant) return null;
 
