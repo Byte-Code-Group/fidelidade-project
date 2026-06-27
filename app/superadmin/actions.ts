@@ -16,6 +16,7 @@ import {
   createSubscription,
   cancelSubscription,
 } from "@/lib/asaas";
+import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
 
 // ---------- Auth ----------
 
@@ -154,21 +155,34 @@ export async function updateTenantCore(tenantId: string, formData: FormData) {
   const db = createAdminClient();
 
   const name = String(formData.get("name") ?? "").trim();
-  const customDomain = String(formData.get("custom_domain") ?? "").trim();
+  const newDomain = String(formData.get("custom_domain") ?? "").trim() || null;
   const ownerEmail = String(formData.get("owner_email") ?? "").trim();
   const ownerCpfCnpj = String(formData.get("owner_cpf_cnpj") ?? "").trim();
+
+  const { data: prev } = await db
+    .from("tenants")
+    .select("custom_domain")
+    .eq("id", tenantId)
+    .maybeSingle<{ custom_domain: string | null }>();
+  const oldDomain = prev?.custom_domain ?? null;
+
   const { error } = await db
     .from("tenants")
     .update({
       name,
-      slug: slugify(name), // subdomínio derivado automaticamente do nome
-      custom_domain: customDomain || null,
+      slug: slugify(name),
+      custom_domain: newDomain,
       owner_email: ownerEmail || null,
       owner_cpf_cnpj: ownerCpfCnpj || null,
       saas_plan: String(formData.get("saas_plan") ?? "starter"),
       status: String(formData.get("status") ?? "trial"),
     })
     .eq("id", tenantId);
+
+  if (!error && oldDomain !== newDomain) {
+    if (oldDomain) await removeVercelDomain(oldDomain);
+    if (newDomain) await addVercelDomain(newDomain);
+  }
 
   redirectBack(tenantId, error?.message);
 }
