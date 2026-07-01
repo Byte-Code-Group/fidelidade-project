@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPlatformAdmin } from "@/lib/superadmin";
 import { platformSignOut } from "../conta/actions";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
@@ -41,7 +42,11 @@ export default async function PainelPage() {
     .eq("user_id", user.id)
     .maybeSingle<{ tenant_id: string | null }>();
 
-  if (!pu?.tenant_id) redirect("/conta/configurar");
+  if (!pu?.tenant_id) {
+    const admin = await getPlatformAdmin();
+    if (admin) redirect("/superadmin");
+    redirect("/conta/configurar");
+  }
 
   const tenantId = pu.tenant_id;
   const since = thirtyDaysAgo();
