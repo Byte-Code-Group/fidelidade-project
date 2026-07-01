@@ -1,38 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { sendEmail } from "@/lib/email";
 import { confirmEmailTemplate } from "@/lib/emails/confirm-email";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const WEBHOOK_SECRET = process.env.SUPABASE_WEBHOOK_SECRET || "";
 
-export async function POST(req: NextRequest) {
+async function verifySignature(
+  req: NextRequest,
+  body: string
+): Promise<boolean> {
   const signature = req.headers.get("x-webhook-signature");
-  if (!signature || !WEBHOOK_SECRET) {
+  if (!signature || !WEBHOOK_SECRET) return false;
+
+  // Supabase format: v1,whsec_<base64>
+  const secret = WEBHOOK_SECRET.split(",")[1]?.replace("whsec_", "") || "";
+  if (!secret) return false;
+
+  const secretBytes = Buffer.from(secret, "base64");
+  const hash = crypto
+    .createHmac("sha256", secretBytes)
+    .update(body)
+    .digest("base64");
+
+  return `v1,${hash}` === signature;
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.text();
+
+  if (!(await verifySignature(req, body))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: unknown;
+  let payload: unknown;
   try {
-    body = await req.json();
+    payload = JSON.parse(body);
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const payload = body as {
+  const webhookPayload = payload as {
     type?: string;
     record?: { email?: string; user_metadata?: { full_name?: string } };
     user?: { email?: string; user_metadata?: { full_name?: string } };
   };
 
   // Apenas processar confirmEmail
-  if (payload.type !== "auth.user_confirmation_email_requested") {
+  if (webhookPayload.type !== "auth.user_confirmation_email_requested") {
     return NextResponse.json({ ok: true });
   }
 
-  const email = payload.record?.email || payload.user?.email;
+  const email = webhookPayload.record?.email || webhookPayload.user?.email;
   const fullName =
-    payload.record?.user_metadata?.full_name ||
-    payload.user?.user_metadata?.full_name;
+    webhookPayload.record?.user_metadata?.full_name ||
+    webhookPayload.user?.user_metadata?.full_name;
 
   if (!email) {
     return NextResponse.json(
