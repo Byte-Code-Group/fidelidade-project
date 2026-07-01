@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   // Apenas processar confirmEmail
   if (webhookPayload.type !== "auth.user_confirmation_email_requested") {
     console.log("[webhook] Skipping non-confirmation event");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
 
   const email = webhookPayload.record?.email || webhookPayload.user?.email;
@@ -116,7 +116,13 @@ export async function POST(req: NextRequest) {
     await sendEmail({ to: email, subject, html });
     console.log("[webhook] Email sent successfully");
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Email sent via webhook",
+      },
+      { status: 200 }
+    );
   } catch (err) {
     console.error("[webhook] Error:", err);
     return NextResponse.json(
