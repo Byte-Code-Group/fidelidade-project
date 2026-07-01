@@ -28,6 +28,7 @@ async function verifySignature(
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
+  console.log("[webhook] Received:", body);
 
   // TODO: Validar signature corretamente
   // if (!(await verifySignature(req, body))) {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     payload = JSON.parse(body);
   } catch {
+    console.error("[webhook] JSON parse error");
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -47,8 +49,11 @@ export async function POST(req: NextRequest) {
     user?: { email?: string; user_metadata?: { full_name?: string } };
   };
 
+  console.log("[webhook] Type:", webhookPayload.type);
+
   // Apenas processar confirmEmail
   if (webhookPayload.type !== "auth.user_confirmation_email_requested") {
+    console.log("[webhook] Skipping non-confirmation event");
     return NextResponse.json({ ok: true });
   }
 
@@ -57,7 +62,10 @@ export async function POST(req: NextRequest) {
     webhookPayload.record?.user_metadata?.full_name ||
     webhookPayload.user?.user_metadata?.full_name;
 
+  console.log("[webhook] Email:", email, "Name:", fullName);
+
   if (!email) {
+    console.error("[webhook] Missing email");
     return NextResponse.json(
       { error: "Missing email" },
       { status: 400 }
@@ -104,11 +112,13 @@ export async function POST(req: NextRequest) {
       userName: fullName,
     });
 
+    console.log("[webhook] Sending email to:", email);
     await sendEmail({ to: email, subject, html });
+    console.log("[webhook] Email sent successfully");
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[auth/email]", err);
+    console.error("[webhook] Error:", err);
     return NextResponse.json(
       { error: "Failed to send email" },
       { status: 500 }
