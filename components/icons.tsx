@@ -29,6 +29,7 @@ export type IconKey =
   | "edit"
   | "arrowRight"
   | "chevronLeft"
+  | "chevronRight"
   | "history"
   | "users"
   | "gift"
@@ -80,6 +81,7 @@ const paths: Record<IconKey, React.ReactNode> = {
   edit: <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />,
   arrowRight: <path d="M5 12h14m0 0-6-6m6 6-6 6" />,
   chevronLeft: <path d="m15 18-6-6 6-6" />,
+  chevronRight: <path d="m9 18 6-6-6-6" />,
   history: <path d="M3 12a9 9 0 1 0 3-6.7L3 8m0 0V4m0 4h4M12 7v5l3 2" />,
   gift: (
     <path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8M2 7h20v5H2V7Zm10 0v14M12 7S11 3 8.5 3 6 5 6 5s.5 2 6 2Zm0 0s1-4 3.5-4S18 5 18 5s-.5 2-6 2Z" />

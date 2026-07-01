@@ -35,45 +35,57 @@ export default async function TemplatesPage() {
         personalizá-lo depois.
       </p>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {entries.map(([key, tpl]) => (
-          <Card key={key}>
-            <CardContent className="space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black/5 text-2xl dark:bg-white/10">
-                  {tpl.emoji}
-                </div>
-                <span className="rounded-full bg-black/5 px-2.5 py-1 text-xs opacity-70 dark:bg-white/10">
-                  {countBySegment.get(key) ?? 0} empresas
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold">{tpl.label}</h3>
-                <p className="text-xs uppercase tracking-wider opacity-40">{key}</p>
-              </div>
-
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <p className="text-xs opacity-50">Cliente</p>
-                  <p className="font-medium">{tpl.label_client}</p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-50">Módulos</p>
-                  <p className="font-medium">{tpl.modules.length}</p>
-                </div>
-              </div>
-
-              <Link
-                href={`/superadmin/templates/${key}`}
-                className="inline-flex items-center gap-1 text-sm font-medium text-[var(--primary)] hover:underline"
-              >
-                Visualizar <Icon name="arrowRight" className="h-4 w-4" />
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wider opacity-50">
+                <th className="px-5 py-3 font-medium">Template</th>
+                <th className="px-5 py-3 font-medium">Rótulo do Cliente</th>
+                <th className="px-5 py-3 font-medium text-center">Módulos</th>
+                <th className="px-5 py-3 text-right font-medium">Empresas</th>
+                <th className="px-5 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {entries.map(([key, tpl]) => (
+                <tr key={key} className="hover:bg-black/[0.02]">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/5 text-lg dark:bg-white/10">
+                        {tpl.emoji}
+                      </div>
+                      <div>
+                        <p className="font-medium">{tpl.label}</p>
+                        <p className="text-xs uppercase tracking-wider opacity-40">
+                          {key}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 opacity-70">{tpl.label_client}</td>
+                  <td className="px-5 py-3.5 text-center">
+                    <span className="inline-block rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium dark:bg-white/10">
+                      {tpl.modules.length}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-right font-medium">
+                    {countBySegment.get(key) ?? 0}
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
+                    <Link
+                      href={`/superadmin/templates/${key}`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-[var(--primary)] hover:underline"
+                    >
+                      Ver <Icon name="arrowRight" className="h-4 w-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

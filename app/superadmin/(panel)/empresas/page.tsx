@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
 import { Icon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,6 +11,7 @@ import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
 import type { Tenant } from "@/lib/types";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
+const PAGE_SIZE = 10;
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/15 text-green-600",
@@ -33,9 +35,10 @@ const FILTERS = [
 export default async function EmpresasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string }>;
 }) {
-  const { status = "all" } = await searchParams;
+  const { status = "all", page = "1" } = await searchParams;
+  const currentPage = parseInt(page, 10) || 1;
   const db = createAdminClient();
 
   const [{ data: tenants }, { data: members }] = await Promise.all([
@@ -54,7 +57,12 @@ export default async function EmpresasPage({
   }
 
   const activeFilter = FILTERS.find((f) => f.key === status) ?? FILTERS[0];
-  const rows = all.filter(activeFilter.match);
+  const filtered = all.filter(activeFilter.match);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const rows = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   return (
     <div>
@@ -174,6 +182,20 @@ export default async function EmpresasPage({
           </table>
         </div>
       </Card>
+
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            baseUrl={
+              status === "all"
+                ? "/superadmin/empresas"
+                : `/superadmin/empresas?status=${status}`
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

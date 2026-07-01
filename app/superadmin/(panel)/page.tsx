@@ -2,10 +2,13 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
 import { Icon, type IconKey } from "@/components/icons";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
 import type { Tenant } from "@/lib/types";
+
+const ACTIVITY_PAGE_SIZE = 15;
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/15 text-green-600",
@@ -30,7 +33,13 @@ function timeAgo(iso: string): string {
   return d === 1 ? "há 1 dia" : `há ${d} dias`;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page = "1" } = await searchParams;
+  const currentPage = parseInt(page, 10) || 1;
   const db = createAdminClient();
   const since = thirtyDaysAgoIso();
 
@@ -146,37 +155,72 @@ export default async function DashboardPage() {
         <Card>
           <CardContent className="space-y-4">
             <h2 className="font-semibold">Atividade recente</h2>
-            <ul className="space-y-4">
-              {all.slice(0, 6).map((t) => (
-                <li key={t.id} className="flex items-start gap-3 text-sm">
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--primary)]" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate">
-                      <Link
-                        href={`/superadmin/tenants/${t.id}`}
-                        className="font-medium hover:underline"
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wider opacity-50">
+                    <th className="px-3 py-3 font-medium">Empresa</th>
+                    <th className="px-3 py-3 font-medium">Segmento</th>
+                    <th className="px-3 py-3 font-medium">Status</th>
+                    <th className="px-3 py-3 font-medium">Cadastrada</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/5">
+                  {all
+                    .slice(
+                      (currentPage - 1) * ACTIVITY_PAGE_SIZE,
+                      currentPage * ACTIVITY_PAGE_SIZE,
+                    )
+                    .map((t) => (
+                      <tr key={t.id} className="hover:bg-black/[0.02]">
+                        <td className="px-3 py-3.5">
+                          <Link
+                            href={`/superadmin/tenants/${t.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {t.name}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-3.5 opacity-70 text-xs">
+                          {SEGMENT_TEMPLATES[t.segment_template]?.label ??
+                            t.segment_template}
+                        </td>
+                        <td className="px-3 py-3.5">
+                          <Badge
+                            className={
+                              statusStyle[t.status] ?? "bg-black/5"
+                            }
+                          >
+                            {t.status}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-3.5 text-xs opacity-70">
+                          {timeAgo(t.created_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  {all.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-10 text-center opacity-50"
                       >
-                        {t.name}
-                      </Link>{" "}
-                      <span className="opacity-60">
-                        ·{" "}
-                        {SEGMENT_TEMPLATES[t.segment_template]?.label ??
-                          t.segment_template}
-                      </span>
-                    </p>
-                    <p className="text-xs opacity-50">
-                      Cadastrada {timeAgo(t.created_at)}
-                    </p>
-                  </div>
-                  <Badge className={statusStyle[t.status] ?? "bg-black/5"}>
-                    {t.status}
-                  </Badge>
-                </li>
-              ))}
-              {all.length === 0 && (
-                <li className="text-sm opacity-50">Nenhuma empresa ainda.</li>
-              )}
-            </ul>
+                        Nenhuma empresa ainda.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {Math.ceil(all.length / ACTIVITY_PAGE_SIZE) > 1 && (
+              <div className="mt-4 flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(all.length / ACTIVITY_PAGE_SIZE)}
+                  baseUrl="/superadmin"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
