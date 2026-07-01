@@ -10,6 +10,7 @@ import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/emails/welcome";
 import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, Reward } from "@/lib/types";
+import { confirmEmailTemplate } from "@/lib/emails/confirm-email";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -124,6 +125,7 @@ export async function signUp(formData: FormData) {
     portalUrl: origin,
   });
   await sendEmail({ to: email, subject, html });
+// Enviar email de confirmacao com link magic const confirmLink = `${origin}/auth/confirm`; const { subject: confirmSubject, html: confirmHtml } = confirmEmailTemplate({ tenantName: tenant.name, primaryColor: settings.primary_color, confirmLink, userName: fullName, }); await sendEmail({ to: email, subject: confirmSubject, html: confirmHtml });
 
   redirect("/");
 }
