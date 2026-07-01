@@ -15,9 +15,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  trial: "bg-yellow-100 text-yellow-700",
-  active: "bg-green-100 text-green-700",
-  suspended: "bg-red-100 text-red-600",
+  trial: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/25 dark:text-yellow-400",
+  active: "bg-green-100 text-green-700 dark:bg-green-900/25 dark:text-green-400",
+  suspended: "bg-red-100 text-red-600 dark:bg-red-900/25 dark:text-red-400",
 };
 
 export default async function FaturamentoPage() {

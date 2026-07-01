@@ -271,7 +271,7 @@ function CustomDomainInstructions({ domain }: { domain: string }) {
             <p className="text-xs">
               No painel DNS do domínio <code className="font-mono font-semibold">{domain}</code> (GoDaddy, Cloudflare, Registro.br etc.), adicionar o registro:
             </p>
-            <div className="rounded-md bg-white border border-blue-100 overflow-hidden">
+            <div className="rounded-md bg-white dark:bg-white/5 border border-blue-100 dark:border-white/10 overflow-hidden">
               <table className="w-full text-xs font-mono">
                 <thead>
                   <tr className="border-b border-blue-100 bg-blue-50/60">

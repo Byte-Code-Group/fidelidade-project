@@ -17,7 +17,7 @@ export default async function LoginPage({
         <h1 className="text-xl font-bold">Entrar na sua conta</h1>
 
         {error && (
-          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
             {decodeURIComponent(error)}
           </p>
         )}

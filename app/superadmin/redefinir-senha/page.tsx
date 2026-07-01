@@ -39,7 +39,7 @@ export default function SuperadminRedefinirSenhaPage() {
 
   if (status === "done") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-gray-50 px-5">
+      <div className="flex min-h-dvh items-center justify-center bg-gray-50 dark:bg-neutral-950 px-5">
         <Card className="w-full max-w-sm">
           <CardContent className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-600 text-2xl">
@@ -57,7 +57,7 @@ export default function SuperadminRedefinirSenhaPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-gray-50 px-5">
+    <div className="flex min-h-dvh items-center justify-center bg-gray-50 dark:bg-neutral-950 px-5">
       <Card className="w-full max-w-sm">
         <CardContent>
           <h1 className="text-xl font-semibold">Redefinir senha</h1>
