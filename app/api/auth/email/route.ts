@@ -28,12 +28,7 @@ async function verifySignature(
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  console.log("[webhook] Received:", body);
-
-  // TODO: Validar signature corretamente
-  // if (!(await verifySignature(req, body))) {
-  //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  // }
+  console.log("[webhook] Full payload:", body);
 
   let payload: unknown;
   try {
@@ -43,17 +38,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const webhookPayload = payload as {
-    type?: string;
-    record?: { email?: string; user_metadata?: { full_name?: string } };
-    user?: { email?: string; user_metadata?: { full_name?: string } };
-  };
+  const webhookPayload = payload as Record<string, any>;
+  console.log("[webhook] Parsed:", JSON.stringify(webhookPayload, null, 2));
+  console.log("[webhook] Event type:", webhookPayload.type);
 
-  console.log("[webhook] Type:", webhookPayload.type);
+  // Aceitar qualquer evento de confirmação/email
+  const isConfirmEmail =
+    webhookPayload.type === "auth.user_confirmation_email_requested" ||
+    webhookPayload.type === "auth.user_signup" ||
+    webhookPayload.type === "user.confirmation_email";
 
-  // Apenas processar confirmEmail
-  if (webhookPayload.type !== "auth.user_confirmation_email_requested") {
-    console.log("[webhook] Skipping non-confirmation event");
+  if (!isConfirmEmail) {
+    console.log("[webhook] Skipping event type:", webhookPayload.type);
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
