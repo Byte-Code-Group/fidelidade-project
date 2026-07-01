@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon, type IconKey } from "@/components/icons";
@@ -90,13 +89,6 @@ export default async function DashboardPage() {
       <PageHeader
         title="Dashboard"
         subtitle="Visão geral de toda a plataforma."
-        action={
-          <Link href="/superadmin/tenants/new">
-            <Button>
-              <Icon name="plus" className="mr-2 h-4 w-4" /> Nova Empresa
-            </Button>
-          </Link>
-        }
       />
 
       {/* KPIs */}
