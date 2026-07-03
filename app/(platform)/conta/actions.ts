@@ -248,6 +248,8 @@ export async function initiatePayment(formData: FormData) {
     .update({ saas_plan: plan })
     .eq("id", platformUser.tenant_id);
 
+  let invoiceUrl: string | undefined;
+
   try {
     // Reuse or create Asaas customer
     let customerId = tenant.asaas_customer_id;
@@ -282,15 +284,11 @@ export async function initiatePayment(formData: FormData) {
 
     // Get invoice URL from first payment
     const payment = await getSubscriptionFirstPayment(subscriptionId);
-    const invoiceUrl = payment?.invoiceUrl;
-
-    if (invoiceUrl) {
-      redirect(invoiceUrl);
-    } else {
-      redirect("/conta/aguardando");
-    }
+    invoiceUrl = payment?.invoiceUrl;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro ao processar pagamento.";
     redirect(`/conta/planos?error=${encodeURIComponent(msg)}`);
   }
+
+  redirect(invoiceUrl || "/conta/aguardando");
 }

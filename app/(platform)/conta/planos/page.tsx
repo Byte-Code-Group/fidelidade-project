@@ -64,7 +64,7 @@ export default async function PlanosPage({
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid max-w-4xl gap-6 sm:grid-cols-3">
         {PLANS.map((plan) => (
           <Card
             key={plan.key}
