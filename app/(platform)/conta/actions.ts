@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
+import { isValidCpfCnpj } from "@/lib/masks";
 import {
   SEGMENT_TEMPLATES,
   modulesEnabledFromTemplate,
@@ -112,6 +113,10 @@ export async function configureBusiness(formData: FormData) {
 
   if (!businessName || !segment || !ownerCpfCnpj) {
     redirect("/conta/configurar?error=campos");
+  }
+
+  if (!isValidCpfCnpj(ownerCpfCnpj)) {
+    redirect("/conta/configurar?error=" + encodeURIComponent("CPF/CNPJ inválido."));
   }
 
   const db = createAdminClient();

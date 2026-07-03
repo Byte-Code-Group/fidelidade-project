@@ -1,0 +1,85 @@
+export function onlyDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+export function formatCpfCnpj(value: string): string {
+  const digits = onlyDigits(value).slice(0, 14);
+
+  if (digits.length <= 11) {
+    return digits
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+  }
+
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+export function formatPhone(value: string): string {
+  const digits = onlyDigits(value).slice(0, 11);
+
+  if (digits.length <= 10) {
+    return digits
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+  }
+
+  return digits
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+}
+
+function isValidCpf(digits: string): boolean {
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+
+  const calcCheckDigit = (base: string, factor: number) => {
+    let total = 0;
+    for (const digit of base) {
+      total += Number(digit) * factor--;
+    }
+    const rest = total % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+
+  const digit1 = calcCheckDigit(digits.slice(0, 9), 10);
+  const digit2 = calcCheckDigit(digits.slice(0, 10), 11);
+
+  return digit1 === Number(digits[9]) && digit2 === Number(digits[10]);
+}
+
+function isValidCnpj(digits: string): boolean {
+  if (digits.length !== 14 || /^(\d)\1{13}$/.test(digits)) return false;
+
+  const calcCheckDigit = (base: string) => {
+    const factors = base.length === 12
+      ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    let total = 0;
+    for (let i = 0; i < base.length; i++) {
+      total += Number(base[i]) * factors[i];
+    }
+    const rest = total % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+
+  const digit1 = calcCheckDigit(digits.slice(0, 12));
+  const digit2 = calcCheckDigit(digits.slice(0, 13));
+
+  return digit1 === Number(digits[12]) && digit2 === Number(digits[13]);
+}
+
+export function isValidCpfCnpj(value: string): boolean {
+  const digits = onlyDigits(value);
+  if (digits.length === 11) return isValidCpf(digits);
+  if (digits.length === 14) return isValidCnpj(digits);
+  return false;
+}
+
+export function isValidPhone(value: string): boolean {
+  const digits = onlyDigits(value);
+  return digits.length === 10 || digits.length === 11;
+}

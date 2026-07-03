@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -84,7 +85,8 @@ export default async function ConfigurarPage({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">CPF / CNPJ</label>
-            <Input
+            <MaskedInput
+              mask="cpf-cnpj"
               name="owner_cpf_cnpj"
               required
               placeholder="00.000.000/0001-00"
@@ -94,7 +96,7 @@ export default async function ConfigurarPage({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">WhatsApp (opcional)</label>
-            <Input name="phone" type="tel" placeholder="(00) 00000-0000" />
+            <MaskedInput mask="phone" name="phone" type="tel" placeholder="(00) 00000-0000" />
           </div>
           <Button type="submit" className="w-full">
             Continuar →
