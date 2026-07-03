@@ -64,44 +64,38 @@ export default async function PlanosPage({
         </p>
       )}
 
-      <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {PLANS.map((plan) => (
           <Card
             key={plan.key}
-            className={plan.highlight ? "border-2 border-blue-600" : ""}
+            className={plan.highlight ? "flex flex-col border-2 border-blue-600" : "flex flex-col"}
           >
-            <CardContent>
+            <CardContent className="flex flex-1 flex-col">
               {plan.highlight && (
-                <span className="mb-2 inline-block rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                <span className="mb-2 inline-block w-fit rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
                   Mais popular
                 </span>
               )}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-bold">{plan.name}</h2>
-                  <ul className="mt-1 space-y-0.5">
-                    {plan.features.map((f) => (
-                      <li key={f} className="text-sm text-gray-500">
-                        ✓ {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold">
-                    R$ {plan.price}
-                  </p>
-                  <p className="text-xs text-gray-400">/mês</p>
-                </div>
-              </div>
+              <h2 className="font-bold">{plan.name}</h2>
+              <p className="mt-1">
+                <span className="text-2xl font-bold">R$ {plan.price}</span>
+                <span className="text-xs text-gray-400">/mês</span>
+              </p>
+              <ul className="mt-2 flex-1 space-y-0.5">
+                {plan.features.map((f) => (
+                  <li key={f} className="text-sm text-gray-500">
+                    ✓ {f}
+                  </li>
+                ))}
+              </ul>
 
-              <form action={initiatePayment} className="mt-4 flex items-center gap-3">
+              <form action={initiatePayment} className="mt-4 space-y-2">
                 <input type="hidden" name="plan" value={plan.key} />
-                <Select name="billing_type" defaultValue="PIX" className="text-sm">
+                <Select name="billing_type" defaultValue="CREDIT_CARD" className="w-full text-sm">
+                  <option value="CREDIT_CARD">Cartão de crédito</option>
                   <option value="PIX">PIX</option>
-                  <option value="BOLETO">Boleto</option>
                 </Select>
-                <Button type="submit" className="flex-1" variant={plan.highlight ? "primary" : "outline"}>
+                <Button type="submit" className="w-full" variant={plan.highlight ? "primary" : "outline"}>
                   Assinar {plan.name}
                 </Button>
               </form>
