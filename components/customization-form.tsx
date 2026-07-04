@@ -82,7 +82,7 @@ export function CustomizationForm({
               <ColorRow name="secondary_color" value={settings.secondary_color} />
             </Field>
           </div>
-          <Field label="Tema do portal">
+          <Field label="Tema padrão" hint="cada cliente pode alternar claro/escuro no portal">
             <Select name="theme_mode" defaultValue={settings.theme_mode}>
               <option value="light">Claro</option>
               <option value="dark">Escuro</option>

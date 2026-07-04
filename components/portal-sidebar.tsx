@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -16,11 +16,28 @@ interface PortalSidebarProps {
   brand: { name: string; subtitle: string; logoUrl: string | null };
   items: NavItem[];
   signOutAction: () => Promise<void>;
+  defaultTheme: "light" | "dark";
 }
 
-export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProps) {
+export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: PortalSidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(defaultTheme);
+
+  // Preferência salva do cliente > tema padrão definido pelo dono do tenant.
+  useEffect(() => {
+    const stored = localStorage.getItem("portal-theme") as "light" | "dark" | null;
+    const initial = stored ?? defaultTheme;
+    setTheme(initial);
+    document.documentElement.setAttribute("data-theme", initial);
+  }, [defaultTheme]);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("portal-theme", next);
+    document.documentElement.setAttribute("data-theme", next);
+  };
 
   // Path-based portal: /p/[slug]/... → detect base so links and isActive work correctly
   const pathMatch = pathname.match(/^(\/p\/[^/]+)/);
@@ -97,7 +114,15 @@ export function PortalSidebar({ brand, items, signOutAction }: PortalSidebarProp
           })}
         </nav>
 
-        <div className="border-t border-black/5 p-3">
+        <div className="border-t border-black/5 dark:border-white/5 p-3 space-y-1">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium opacity-70 transition hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100"
+          >
+            <Icon name={theme === "dark" ? "sun" : "moon"} />
+            {theme === "dark" ? "Modo claro" : "Modo escuro"}
+          </button>
           <form action={signOutAction}>
             <button
               type="submit"

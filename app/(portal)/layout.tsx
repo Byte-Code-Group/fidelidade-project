@@ -91,6 +91,7 @@ export default async function PortalLayout({
         }}
         items={items}
         signOutAction={signOut}
+        defaultTheme={settings.theme_mode}
       />
 
       <main className="mx-auto w-full max-w-5xl px-5 py-8 md:px-10 md:py-10">
