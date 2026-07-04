@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import type { ProfileField } from "@/lib/types";
+import type { ProfileField, ProfileFieldType } from "@/lib/types";
 
 const FIELD_TYPES = [
   ["text", "Texto"],
@@ -18,6 +21,10 @@ export const FIELD_TYPE_LABELS = Object.fromEntries(FIELD_TYPES) as Record<
 >;
 
 export function ProfileFieldForm({ field }: { field?: ProfileField }) {
+  const [fieldType, setFieldType] = useState<ProfileFieldType>(
+    field?.field_type ?? "text",
+  );
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
@@ -36,7 +43,11 @@ export function ProfileFieldForm({ field }: { field?: ProfileField }) {
 
       <div className="grid grid-cols-3 gap-3">
         <FieldWrapper label="Tipo">
-          <Select name="field_type" defaultValue={field?.field_type ?? "text"}>
+          <Select
+            name="field_type"
+            value={fieldType}
+            onChange={(e) => setFieldType(e.target.value as ProfileFieldType)}
+          >
             {FIELD_TYPES.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
@@ -64,41 +75,39 @@ export function ProfileFieldForm({ field }: { field?: ProfileField }) {
         </div>
       </div>
 
-      <FieldWrapper
-        label="Limite de caracteres"
-        hint="opcional — só vale para tipo Texto e Texto longo"
-      >
-        <Input
-          name="max_length"
-          type="number"
-          min={1}
-          defaultValue={field?.max_length ?? ""}
-          placeholder="ex.: 200"
-        />
-      </FieldWrapper>
+      {fieldType === "text" && (
+        <FieldWrapper label="Limite de caracteres" hint="opcional">
+          <Input
+            name="max_length"
+            type="number"
+            min={1}
+            defaultValue={field?.max_length ?? ""}
+            placeholder="ex.: 200"
+          />
+        </FieldWrapper>
+      )}
 
-      <FieldWrapper
-        label="Opções"
-        hint="apenas para tipo Lista de opções — uma por linha"
-      >
-        <textarea
-          name="options"
-          defaultValue={(field?.options ?? []).join("\n")}
-          rows={3}
-          placeholder={"Opção 1\nOpção 2\nOpção 3"}
-          style={{
-            width: "100%",
-            minHeight: 80,
-            resize: "vertical",
-            borderRadius: 8,
-            border: "1px solid rgba(128,128,128,0.4)",
-            background: "transparent",
-            padding: "8px 12px",
-            fontSize: 13,
-            color: "inherit",
-          }}
-        />
-      </FieldWrapper>
+      {fieldType === "select" && (
+        <FieldWrapper label="Opções" hint="uma por linha">
+          <textarea
+            name="options"
+            defaultValue={(field?.options ?? []).join("\n")}
+            rows={3}
+            placeholder={"Opção 1\nOpção 2\nOpção 3"}
+            style={{
+              width: "100%",
+              minHeight: 80,
+              resize: "vertical",
+              borderRadius: 8,
+              border: "1px solid rgba(128,128,128,0.4)",
+              background: "transparent",
+              padding: "8px 12px",
+              fontSize: 13,
+              color: "inherit",
+            }}
+          />
+        </FieldWrapper>
+      )}
     </>
   );
 }

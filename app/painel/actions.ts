@@ -42,18 +42,21 @@ export async function ownerUploadLogo(formData: FormData) {
 export async function ownerCreateProfileField(formData: FormData) {
   const { tenantId } = await requireTenantOwner();
   const { error } = await insertProfileField(tenantId, formData);
+  revalidatePath("/perfil");
   redirectBack("/painel/customizacao", error);
 }
 
 export async function ownerUpdateProfileField(fieldId: string, formData: FormData) {
   const { tenantId } = await requireTenantOwner();
   const { error } = await applyProfileFieldUpdate(tenantId, fieldId, formData);
+  revalidatePath("/perfil");
   redirectBack("/painel/customizacao", error);
 }
 
 export async function ownerDeleteProfileField(fieldId: string) {
   const { tenantId } = await requireTenantOwner();
   await removeProfileField(tenantId, fieldId);
+  revalidatePath("/perfil");
   redirectBack("/painel/customizacao");
 }
 
