@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/icons";
+import { LogoUploadForm } from "@/components/logo-upload-form";
 import type { TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
@@ -65,18 +66,7 @@ export function CustomizationForm({
               </div>
             )}
           </div>
-          <form action={uploadAction} className="flex-1 space-y-2">
-            <input
-              type="file"
-              name="logo"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--primary)] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[var(--primary-foreground)]"
-            />
-            <div className="flex items-center gap-2">
-              <Button type="submit" className="px-3 py-1.5">Enviar logo</Button>
-              <span className="text-xs opacity-50">PNG/JPG/WEBP/SVG · até 2MB</span>
-            </div>
-          </form>
+          <LogoUploadForm uploadAction={uploadAction} />
         </div>
       </Section>
 
@@ -84,9 +74,6 @@ export function CustomizationForm({
       <form action={saveAction} className="space-y-5">
         {/* Marca */}
         <Section title="Marca">
-          <Field label="Logo por URL" hint="alternativa ao upload">
-            <Input name="logo_url" defaultValue={settings.logo_url ?? ""} placeholder="https://..." />
-          </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Cor primária">
               <ColorRow name="primary_color" value={settings.primary_color} />
