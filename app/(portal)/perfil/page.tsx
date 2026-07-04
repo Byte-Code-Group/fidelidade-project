@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FlashToast } from "@/components/flash-toast";
 import type { Membership, ProfileField } from "@/lib/types";
 import { saveProfile } from "../actions";
 
@@ -85,16 +86,7 @@ export default async function PerfilPage({
     <div>
       <PageHeader title="Perfil" subtitle="Gerencie seus dados e preferências." />
 
-      {error && (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          {decodeURIComponent(error)}
-        </p>
-      )}
-      {saved && (
-        <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
-          Alterações salvas.
-        </p>
-      )}
+      <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
 
       {/* Resumo */}
       <Card className="mb-5">

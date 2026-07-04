@@ -14,6 +14,7 @@ import {
   cancelTenantBilling,
 } from "../../../actions";
 import { CustomizationForm } from "@/components/customization-form";
+import { FlashToast } from "@/components/flash-toast";
 import { getSubscription } from "@/lib/asaas";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
@@ -61,16 +62,7 @@ export default async function EditTenantPage({
 
   return (
     <div className="space-y-5">
-      {saved && (
-        <p className="rounded-lg bg-green-500/10 px-3 py-2 text-sm text-green-600">
-          ✓ Alterações salvas.
-        </p>
-      )}
-      {error && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600">
-          {error}
-        </p>
-      )}
+      <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
 
       {/* ---------- Dados da conta ---------- */}
       <Section title="Conta">

@@ -63,9 +63,10 @@ export async function ownerDeleteProfileField(fieldId: string) {
 
 export async function ownerReorderProfileFields(orderedIds: string[]) {
   const { tenantId } = await requireTenantOwner();
-  await reorderProfileFields(tenantId, orderedIds);
+  const { error } = await reorderProfileFields(tenantId, orderedIds);
   revalidatePath("/perfil");
   revalidatePath("/painel/customizacao");
+  return { error };
 }
 
 // ---------- Missões ----------

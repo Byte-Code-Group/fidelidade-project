@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
+import { FlashToast } from "@/components/flash-toast";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import type { Membership, Reward } from "@/lib/types";
@@ -63,16 +64,11 @@ export default async function LojaPage({
         }
       />
 
-      {done && (
-        <p className="mb-4 rounded-lg bg-green-500/10 px-3 py-2 text-sm text-green-600">
-          🎉 Resgate solicitado! Retire seu prêmio na recepção.
-        </p>
-      )}
-      {error && (
-        <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600">
-          {ERRORS[error] ?? "Não foi possível resgatar agora."}
-        </p>
-      )}
+      <FlashToast
+        saved={done}
+        error={error ? ERRORS[error] ?? "Não foi possível resgatar agora." : undefined}
+        successMessage="🎉 Resgate solicitado! Retire seu prêmio na recepção."
+      />
 
       {!rewards || rewards.length === 0 ? (
         <EmptyState

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULES, getTemplate } from "@/lib/segment-templates";
 import type { ProfileField, Tenant, TenantSettings } from "@/lib/types";
 import { CustomizationForm } from "@/components/customization-form";
+import { FlashToast } from "@/components/flash-toast";
 import {
   ownerUpdateTenantSettings,
   ownerUploadLogo,
@@ -58,16 +59,7 @@ export default async function OwnerCustomizacaoPage({
         </p>
       </div>
 
-      {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          {decodeURIComponent(error)}
-        </p>
-      )}
-      {saved && (
-        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
-          Alterações salvas.
-        </p>
-      )}
+      <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
 
       <CustomizationForm
         tenantName={tenant.name}

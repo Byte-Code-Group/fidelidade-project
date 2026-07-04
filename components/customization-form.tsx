@@ -21,7 +21,7 @@ interface CustomizationFormProps {
   createProfileFieldAction?: (formData: FormData) => void;
   updateProfileFieldAction?: (fieldId: string, formData: FormData) => void;
   deleteProfileFieldAction?: (fieldId: string) => void;
-  reorderProfileFieldsAction?: (orderedIds: string[]) => void;
+  reorderProfileFieldsAction?: (orderedIds: string[]) => Promise<{ error?: string }>;
 }
 
 // Editor de customização — form 100% nativo (sem JS obrigatório). Para ver o
@@ -82,7 +82,7 @@ export function CustomizationForm({
       </Section>
 
       {/* Form principal (nativo) */}
-      <form action={saveAction} className="space-y-5">
+      <form id="customization-form" action={saveAction} className="space-y-5">
         {/* Marca */}
         <Section title="Marca">
           <div className="grid grid-cols-2 gap-4">
@@ -224,12 +224,6 @@ export function CustomizationForm({
           </div>
         </Section>
 
-        <div className="flex items-center justify-end gap-3">
-          <a href={portalUrl} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" type="button">Ver como ficou ↗</Button>
-          </a>
-          <Button type="submit">Salvar customização</Button>
-        </div>
       </form>
 
       {/* Campos do cadastro — formulários independentes (não aninham no form acima) */}
@@ -250,6 +244,13 @@ export function CustomizationForm({
             />
           </Section>
         )}
+
+      <div className="flex items-center justify-end gap-3">
+        <a href={portalUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" type="button">Ver como ficou ↗</Button>
+        </a>
+        <Button type="submit" form="customization-form">Salvar customização</Button>
+      </div>
     </div>
   );
 }

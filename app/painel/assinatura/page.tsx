@@ -4,6 +4,7 @@ import { Select } from "@/components/ui/select";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, PLAN_PRICES } from "@/lib/asaas";
+import { FlashToast } from "@/components/flash-toast";
 import { ownerCancelSubscription, ownerChangePlan } from "../actions";
 
 const PLAN_LABEL: Record<string, string> = {
@@ -49,16 +50,7 @@ export default async function OwnerAssinaturaPage({
         </p>
       </div>
 
-      {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          {decodeURIComponent(error)}
-        </p>
-      )}
-      {saved && (
-        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
-          Alterações salvas.
-        </p>
-      )}
+      <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
 
       <Card>
         <CardContent className="space-y-2">
