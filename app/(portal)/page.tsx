@@ -310,7 +310,12 @@ export default async function HomePage({
     planName = plan?.name ?? null;
   }
 
-  const memberName = profile?.full_name ?? profile?.email ?? user.email ?? "Membro";
+  const memberName =
+    profile?.full_name ??
+    (user.user_metadata?.full_name as string | undefined) ??
+    profile?.email ??
+    user.email ??
+    "Membro";
   const points = membership?.points_total ?? 0;
 
   // Fidelidade
