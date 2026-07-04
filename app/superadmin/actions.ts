@@ -9,6 +9,11 @@ import { SEGMENT_TEMPLATES, modulesEnabledFromTemplate } from "@/lib/segment-tem
 import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-settings";
 import { insertMission, applyMissionUpdate, removeMission } from "@/lib/missions";
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
+import {
+  insertProfileField,
+  applyProfileFieldUpdate,
+  removeProfileField,
+} from "@/lib/profile-fields";
 import { cancelTenantSubscription } from "@/lib/tenant-billing";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { createCustomer, createSubscription } from "@/lib/asaas";
@@ -137,6 +142,7 @@ export async function createTenant(formData: FormData) {
         field_type: f.field_type,
         options: f.options ?? null,
         required: f.required ?? false,
+        max_length: f.max_length ?? null,
         display_order: i + 1,
       })),
     );
@@ -391,30 +397,9 @@ export async function rejectMissionCompletion(
 
 // ---------- Campos de perfil ----------
 
-function profileFieldData(formData: FormData) {
-  const optionsRaw = String(formData.get("options") ?? "")
-    .split("\n")
-    .map((o) => o.trim())
-    .filter(Boolean);
-  return {
-    label: String(formData.get("label") ?? "").trim(),
-    field_key: String(formData.get("field_key") ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_"),
-    field_type: String(formData.get("field_type") ?? "text"),
-    options: optionsRaw.length > 0 ? optionsRaw : null,
-    required: formData.get("required") === "on",
-    display_order: Number(formData.get("display_order") ?? 0),
-  };
-}
-
 export async function createProfileField(tenantId: string, formData: FormData) {
   await requirePlatformAdmin();
-  const fields = profileFieldData(formData);
-  if (!fields.label || !fields.field_key) return;
-  const db = createAdminClient();
-  await db.from("profile_fields").insert({ tenant_id: tenantId, ...fields });
+  await insertProfileField(tenantId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/profile-fields`);
 }
 
@@ -424,23 +409,13 @@ export async function updateProfileField(
   formData: FormData,
 ) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("profile_fields")
-    .update(profileFieldData(formData))
-    .eq("id", fieldId)
-    .eq("tenant_id", tenantId);
+  await applyProfileFieldUpdate(tenantId, fieldId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/profile-fields`);
 }
 
 export async function deleteProfileField(tenantId: string, fieldId: string) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("profile_fields")
-    .delete()
-    .eq("id", fieldId)
-    .eq("tenant_id", tenantId);
+  await removeProfileField(tenantId, fieldId);
   revalidatePath(`/superadmin/tenants/${tenantId}/profile-fields`);
 }
 

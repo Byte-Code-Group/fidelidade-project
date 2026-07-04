@@ -6,6 +6,11 @@ import { requireTenantOwner } from "@/lib/owner";
 import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-settings";
 import { insertMission, applyMissionUpdate, removeMission } from "@/lib/missions";
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
+import {
+  insertProfileField,
+  applyProfileFieldUpdate,
+  removeProfileField,
+} from "@/lib/profile-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { changeTenantPlan, cancelTenantSubscription } from "@/lib/tenant-billing";
 import type { BillingType } from "@/lib/asaas";
@@ -30,6 +35,26 @@ export async function ownerUploadLogo(formData: FormData) {
   const { tenantId } = await requireTenantOwner();
   const { error } = await applyTenantLogoUpload(tenantId, formData);
   redirectBack("/painel/customizacao", error);
+}
+
+// ---------- Campos do cadastro (perfil do cliente) ----------
+
+export async function ownerCreateProfileField(formData: FormData) {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertProfileField(tenantId, formData);
+  redirectBack("/painel/customizacao", error);
+}
+
+export async function ownerUpdateProfileField(fieldId: string, formData: FormData) {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await applyProfileFieldUpdate(tenantId, fieldId, formData);
+  redirectBack("/painel/customizacao", error);
+}
+
+export async function ownerDeleteProfileField(fieldId: string) {
+  const { tenantId } = await requireTenantOwner();
+  await removeProfileField(tenantId, fieldId);
+  redirectBack("/painel/customizacao");
 }
 
 // ---------- Missões ----------

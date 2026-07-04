@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/icons";
 import { LogoUploadForm } from "@/components/logo-upload-form";
-import type { TenantSettings } from "@/lib/types";
+import { ProfileFieldForm } from "@/components/profile-field-form";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ProfileField, TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
   tenantName: string;
@@ -16,6 +18,10 @@ interface CustomizationFormProps {
   allowedModules: { key: string; label: string }[];
   saveAction: (formData: FormData) => void;
   uploadAction: (formData: FormData) => void;
+  profileFields?: ProfileField[];
+  createProfileFieldAction?: (formData: FormData) => void;
+  updateProfileFieldAction?: (fieldId: string, formData: FormData) => void;
+  deleteProfileFieldAction?: (fieldId: string) => void;
 }
 
 // Editor de customização — form 100% nativo (sem JS obrigatório). Para ver o
@@ -30,6 +36,10 @@ export function CustomizationForm({
   allowedModules,
   saveAction,
   uploadAction,
+  profileFields,
+  createProfileFieldAction,
+  updateProfileFieldAction,
+  deleteProfileFieldAction,
 }: CustomizationFormProps) {
   const modules = (settings.modules_enabled ?? {}) as Record<string, boolean>;
 
@@ -220,6 +230,46 @@ export function CustomizationForm({
           <Button type="submit">Salvar customização</Button>
         </div>
       </form>
+
+      {/* Campos do cadastro — formulários independentes (não aninham no form acima) */}
+      {createProfileFieldAction && updateProfileFieldAction && deleteProfileFieldAction && (
+        <Section
+          title="Campos do cadastro"
+          desc="Dados que o cliente preenche no perfil. Nome e e-mail já vêm prontos; adicione outros como CPF, endereço, data de nascimento ou campos personalizados."
+        >
+          <div className="space-y-3">
+            {(profileFields ?? []).map((f) => (
+              <Card key={f.id}>
+                <CardContent className="space-y-3">
+                  <form action={updateProfileFieldAction.bind(null, f.id)} className="space-y-3">
+                    <ProfileFieldForm field={f} />
+                    <div className="flex justify-end">
+                      <Button type="submit" className="px-3 py-1.5">Salvar campo</Button>
+                    </div>
+                  </form>
+                  <form action={deleteProfileFieldAction.bind(null, f.id)}>
+                    <button type="submit" className="text-xs text-red-600 hover:underline">
+                      Excluir campo
+                    </button>
+                  </form>
+                </CardContent>
+              </Card>
+            ))}
+
+            <Card>
+              <CardContent>
+                <h3 className="mb-3 font-semibold">Novo campo</h3>
+                <form action={createProfileFieldAction} className="space-y-3">
+                  <ProfileFieldForm />
+                  <div className="flex justify-end">
+                    <Button type="submit">Adicionar campo</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </Section>
+      )}
     </div>
   );
 }

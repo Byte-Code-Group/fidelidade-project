@@ -2,9 +2,15 @@ import { notFound } from "next/navigation";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MODULES, getTemplate } from "@/lib/segment-templates";
-import type { Tenant, TenantSettings } from "@/lib/types";
+import type { ProfileField, Tenant, TenantSettings } from "@/lib/types";
 import { CustomizationForm } from "@/components/customization-form";
-import { ownerUpdateTenantSettings, ownerUploadLogo } from "../actions";
+import {
+  ownerUpdateTenantSettings,
+  ownerUploadLogo,
+  ownerCreateProfileField,
+  ownerUpdateProfileField,
+  ownerDeleteProfileField,
+} from "../actions";
 
 export default async function OwnerCustomizacaoPage({
   searchParams,
@@ -35,6 +41,13 @@ export default async function OwnerCustomizacaoPage({
     (m) => ({ key: m.key as string, label: m.label }),
   );
 
+  const { data: profileFields } = await db
+    .from("profile_fields")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("display_order", { ascending: true })
+    .returns<ProfileField[]>();
+
   return (
     <div className="space-y-4">
       <div>
@@ -64,6 +77,10 @@ export default async function OwnerCustomizacaoPage({
         allowedModules={allowedModules}
         saveAction={ownerUpdateTenantSettings}
         uploadAction={ownerUploadLogo}
+        profileFields={profileFields ?? []}
+        createProfileFieldAction={ownerCreateProfileField}
+        updateProfileFieldAction={ownerUpdateProfileField}
+        deleteProfileFieldAction={ownerDeleteProfileField}
       />
     </div>
   );

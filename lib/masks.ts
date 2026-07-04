@@ -33,7 +33,15 @@ export function formatPhone(value: string): string {
     .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
 }
 
-function isValidCpf(digits: string): boolean {
+export function formatCpf(value: string): string {
+  const digits = onlyDigits(value).slice(0, 11);
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+}
+
+function isValidCpfDigits(digits: string): boolean {
   if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
 
   const calcCheckDigit = (base: string, factor: number) => {
@@ -49,6 +57,10 @@ function isValidCpf(digits: string): boolean {
   const digit2 = calcCheckDigit(digits.slice(0, 10), 11);
 
   return digit1 === Number(digits[9]) && digit2 === Number(digits[10]);
+}
+
+export function isValidCpf(value: string): boolean {
+  return isValidCpfDigits(onlyDigits(value));
 }
 
 function isValidCnpj(digits: string): boolean {
@@ -74,7 +86,7 @@ function isValidCnpj(digits: string): boolean {
 
 export function isValidCpfCnpj(value: string): boolean {
   const digits = onlyDigits(value);
-  if (digits.length === 11) return isValidCpf(digits);
+  if (digits.length === 11) return isValidCpfDigits(digits);
   if (digits.length === 14) return isValidCnpj(digits);
   return false;
 }

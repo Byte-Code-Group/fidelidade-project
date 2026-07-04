@@ -4,21 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
-import type { Membership } from "@/lib/types";
+import type { Membership, ProfileField } from "@/lib/types";
 import { saveProfile } from "../actions";
-
-interface ProfileField {
-  id: string;
-  label: string;
-  field_key: string;
-  field_type: "text" | "date" | "select" | "textarea";
-  options: string[] | null;
-  required: boolean;
-  display_order: number;
-}
 
 function initials(name: string): string {
   return name
@@ -29,7 +20,12 @@ function initials(name: string): string {
     .join("");
 }
 
-export default async function PerfilPage() {
+export default async function PerfilPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; saved?: string }>;
+}) {
+  const { error, saved } = await searchParams;
   const ctx = await getCurrentTenant();
   if (!ctx) notFound();
   const { settings } = ctx;
@@ -79,6 +75,17 @@ export default async function PerfilPage() {
   return (
     <div>
       <PageHeader title="Perfil" subtitle="Gerencie seus dados e preferências." />
+
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {decodeURIComponent(error)}
+        </p>
+      )}
+      {saved && (
+        <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+          Alterações salvas.
+        </p>
+      )}
 
       {/* Resumo */}
       <Card className="mb-5">
@@ -143,6 +150,7 @@ export default async function PerfilPage() {
                       <textarea
                         name={name}
                         defaultValue={value}
+                        maxLength={field.max_length ?? undefined}
                         rows={4}
                         style={{
                           width: "100%",
@@ -156,12 +164,33 @@ export default async function PerfilPage() {
                           color: "inherit",
                         }}
                       />
+                    ) : field.field_type === "cpf" ? (
+                      <MaskedInput
+                        mask="cpf"
+                        name={name}
+                        defaultValue={value}
+                        required={field.required}
+                        placeholder="000.000.000-00"
+                      />
+                    ) : field.field_type === "address" ? (
+                      <Input
+                        name={name}
+                        defaultValue={value}
+                        required={field.required}
+                        maxLength={field.max_length ?? undefined}
+                        placeholder="Rua, número, bairro, cidade"
+                      />
                     ) : (
                       <Input
                         name={name}
-                        type={field.field_type === "date" ? "date" : "text"}
+                        type={
+                          field.field_type === "date" || field.field_type === "birthdate"
+                            ? "date"
+                            : "text"
+                        }
                         defaultValue={value}
                         required={field.required}
+                        maxLength={field.max_length ?? undefined}
                       />
                     )}
                   </FieldWrapper>

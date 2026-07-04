@@ -1,0 +1,115 @@
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidCpf } from "@/lib/masks";
+import type { ProfileField, ProfileFieldType } from "@/lib/types";
+
+// Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
+// Super Admin (app/superadmin/actions.ts) quanto pelo painel do dono
+// (app/painel/actions.ts) — cada chamador resolve o próprio gate antes.
+
+const FIELD_TYPES: ProfileFieldType[] = [
+  "text",
+  "textarea",
+  "date",
+  "select",
+  "cpf",
+  "birthdate",
+  "address",
+];
+
+function profileFieldData(formData: FormData) {
+  const optionsRaw = String(formData.get("options") ?? "")
+    .split("\n")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const fieldType = String(formData.get("field_type") ?? "text");
+  const maxLengthRaw = String(formData.get("max_length") ?? "").trim();
+
+  return {
+    label: String(formData.get("label") ?? "").trim(),
+    field_key: String(formData.get("field_key") ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_"),
+    field_type: FIELD_TYPES.includes(fieldType as ProfileFieldType)
+      ? (fieldType as ProfileFieldType)
+      : "text",
+    options: optionsRaw.length > 0 ? optionsRaw : null,
+    required: formData.get("required") === "on",
+    display_order: Number(formData.get("display_order") ?? 0),
+    max_length:
+      (fieldType === "text" || fieldType === "textarea") && maxLengthRaw !== ""
+        ? Math.max(1, Number(maxLengthRaw))
+        : null,
+  };
+}
+
+export async function insertProfileField(
+  tenantId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const fields = profileFieldData(formData);
+  if (!fields.label || !fields.field_key) {
+    return { error: "Rótulo e chave interna são obrigatórios." };
+  }
+  const db = createAdminClient();
+  const { error } = await db
+    .from("profile_fields")
+    .insert({ tenant_id: tenantId, ...fields });
+  return { error: error?.message };
+}
+
+export async function applyProfileFieldUpdate(
+  tenantId: string,
+  fieldId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const db = createAdminClient();
+  const { error } = await db
+    .from("profile_fields")
+    .update(profileFieldData(formData))
+    .eq("id", fieldId)
+    .eq("tenant_id", tenantId);
+  return { error: error?.message };
+}
+
+export async function removeProfileField(
+  tenantId: string,
+  fieldId: string,
+): Promise<{ error?: string }> {
+  const db = createAdminClient();
+  const { error } = await db
+    .from("profile_fields")
+    .delete()
+    .eq("id", fieldId)
+    .eq("tenant_id", tenantId);
+  return { error: error?.message };
+}
+
+// Valida os valores enviados no form de perfil do cliente contra a
+// definição de cada campo (obrigatoriedade, CPF, limite de caracteres).
+export function validateProfileFieldValues(
+  fields: ProfileField[],
+  values: Map<string, string>,
+): string | null {
+  for (const field of fields) {
+    const value = (values.get(field.id) ?? "").trim();
+
+    if (field.required && !value) {
+      return `Preencha o campo "${field.label}".`;
+    }
+    if (!value) continue;
+
+    if (field.field_type === "cpf" && !isValidCpf(value)) {
+      return `CPF inválido em "${field.label}".`;
+    }
+    if (
+      (field.field_type === "text" || field.field_type === "textarea") &&
+      field.max_length != null &&
+      value.length > field.max_length
+    ) {
+      return `"${field.label}" excede o limite de ${field.max_length} caracteres.`;
+    }
+  }
+  return null;
+}

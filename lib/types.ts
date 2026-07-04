@@ -207,13 +207,23 @@ export interface Partnership {
   created_at: string;
 }
 
+export type ProfileFieldType =
+  | "text"
+  | "textarea"
+  | "date"
+  | "select"
+  | "cpf"
+  | "birthdate"
+  | "address";
+
 export interface ProfileField {
   id: string;
   tenant_id: string;
   label: string;
   field_key: string;
-  field_type: "text" | "date" | "select" | "textarea";
+  field_type: ProfileFieldType;
   options: string[] | null;
   required: boolean;
   display_order: number;
+  max_length: number | null;
 }

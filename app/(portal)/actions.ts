@@ -9,8 +9,9 @@ import { currentPeriodRef, type LoyaltyFrequency } from "@/lib/loyalty";
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/emails/welcome";
 import { redemptionEmail } from "@/lib/emails/redemption";
-import type { Membership, Mission, MissionCompletion, Reward } from "@/lib/types";
+import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
 import { confirmEmailTemplate } from "@/lib/emails/confirm-email";
+import { validateProfileFieldValues } from "@/lib/profile-fields";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -196,14 +197,29 @@ export async function saveProfile(formData: FormData) {
     field_id: string;
     value: string;
   }[] = [];
+  const valuesByField = new Map<string, string>();
   for (const [key, raw] of formData.entries()) {
     if (!key.startsWith("field_")) continue;
+    const fieldId = key.slice("field_".length);
+    const value = String(raw);
+    valuesByField.set(fieldId, value);
     rows.push({
       tenant_id: ctx.tenant.id,
       user_id: user.id,
-      field_id: key.slice("field_".length),
-      value: String(raw),
+      field_id: fieldId,
+      value,
     });
+  }
+
+  const { data: fieldDefs } = await db
+    .from("profile_fields")
+    .select("*")
+    .eq("tenant_id", ctx.tenant.id)
+    .returns<ProfileField[]>();
+
+  const validationError = validateProfileFieldValues(fieldDefs ?? [], valuesByField);
+  if (validationError) {
+    redirect(`/perfil?error=${encodeURIComponent(validationError)}`);
   }
 
   if (rows.length > 0) {
@@ -213,6 +229,7 @@ export async function saveProfile(formData: FormData) {
   }
 
   revalidatePath("/perfil");
+  redirect("/perfil?saved=1");
 }
 
 // Resgate de recompensa na Loja: debita pontos da carteirinha e registra a

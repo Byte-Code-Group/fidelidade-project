@@ -4,7 +4,7 @@
 // template; depois é possível REMOVER módulos e personalizar marca/textos/logo,
 // mas NUNCA adicionar um módulo que o template não tem.
 
-import type { ThemeMode } from "@/lib/types";
+import type { ProfileFieldType, ThemeMode } from "@/lib/types";
 
 // Módulos verticais disponíveis na plataforma (páginas opcionais do portal).
 export const MODULES = [
@@ -31,9 +31,10 @@ export interface SegmentDefaults {
 export interface ProfileFieldDef {
   label: string;
   field_key: string;
-  field_type: "text" | "date" | "select" | "textarea";
+  field_type: ProfileFieldType;
   options?: string[]; // para field_type 'select'
   required?: boolean;
+  max_length?: number;
 }
 
 export interface SegmentTemplate {
@@ -48,9 +49,9 @@ export interface SegmentTemplate {
 
 // Campos de cadastro padrão de uma clínica odontológica (herdados pelo Perfil).
 const ODONTO_PROFILE_FIELDS: ProfileFieldDef[] = [
-  { label: "CPF", field_key: "cpf", field_type: "text", required: true },
+  { label: "CPF", field_key: "cpf", field_type: "cpf", required: true },
   { label: "RG", field_key: "rg", field_type: "text" },
-  { label: "Data de nascimento", field_key: "data_nascimento", field_type: "date" },
+  { label: "Data de nascimento", field_key: "data_nascimento", field_type: "birthdate" },
   { label: "Telefone principal", field_key: "telefone_principal", field_type: "text", required: true },
   { label: "Telefone de urgência", field_key: "telefone_urgencia", field_type: "text" },
   { label: "Instagram", field_key: "instagram", field_type: "text" },
@@ -62,7 +63,7 @@ const ODONTO_PROFILE_FIELDS: ProfileFieldDef[] = [
     field_type: "select",
     options: ["Particular", "Unimed", "Bradesco Saúde", "Amil", "SulAmérica", "Outro"],
   },
-  { label: "Endereço", field_key: "endereco", field_type: "text" },
+  { label: "Endereço", field_key: "endereco", field_type: "address" },
   { label: "Observações médicas", field_key: "observacoes_medicas", field_type: "textarea" },
 ];
 
