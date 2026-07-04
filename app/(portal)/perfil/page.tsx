@@ -67,7 +67,7 @@ export default async function PerfilPage() {
     ]);
 
   const valueByField = new Map((values ?? []).map((v) => [v.field_id, v.value]));
-  const memberName = profile?.full_name ?? profile?.email ?? "Membro";
+  const memberName = profile?.full_name ?? profile?.email ?? user.email ?? "Membro";
   const modalityLabel =
     membership?.modality === "dependente" ? "Dependente" : "Titular";
 
