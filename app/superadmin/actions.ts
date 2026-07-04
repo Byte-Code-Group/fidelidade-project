@@ -5,17 +5,12 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlatformAdmin, requirePlatformAdmin } from "@/lib/superadmin";
-import {
-  SEGMENT_TEMPLATES,
-  modulesEnabledFromTemplate,
-  clampModulesToTemplate,
-  MODULES,
-} from "@/lib/segment-templates";
-import {
-  createCustomer,
-  createSubscription,
-  cancelSubscription,
-} from "@/lib/asaas";
+import { SEGMENT_TEMPLATES, modulesEnabledFromTemplate } from "@/lib/segment-templates";
+import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-settings";
+import { insertMission, applyMissionUpdate, removeMission } from "@/lib/missions";
+import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
+import { cancelTenantSubscription } from "@/lib/tenant-billing";
+import { createCustomer, createSubscription } from "@/lib/asaas";
 import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
 
 // ---------- Auth ----------
@@ -192,109 +187,14 @@ export async function updateTenantSettings(
   formData: FormData,
 ) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-
-  // Módulos: checkboxes presentes no form viram true, mas SEMPRE limitados ao
-  // teto do template do tenant — não dá pra ativar módulo que o template não tem.
-  const { data: t } = await db
-    .from("tenants")
-    .select("segment_template")
-    .eq("id", tenantId)
-    .maybeSingle<{ segment_template: string }>();
-
-  const desired = Object.fromEntries(
-    MODULES.map((m) => [m.key, formData.get(`module_${m.key}`) === "on"]),
-  );
-  const modules_enabled = clampModulesToTemplate(
-    t?.segment_template ?? "generico",
-    desired,
-  );
-
-  const text = (k: string) => {
-    const v = String(formData.get(k) ?? "").trim();
-    return v === "" ? null : v;
-  };
-
-  const { error } = await db
-    .from("tenant_settings")
-    .update({
-      // Visual
-      logo_url: text("logo_url"),
-      primary_color: String(formData.get("primary_color") ?? "#2563eb"),
-      secondary_color: String(formData.get("secondary_color") ?? "#1e40af"),
-      theme_mode: String(formData.get("theme_mode") ?? "light"),
-      // Labels
-      label_client: String(formData.get("label_client") ?? "Cliente"),
-      label_appointment: String(
-        formData.get("label_appointment") ?? "Agendamento",
-      ),
-      // Persona IA
-      ai_name: String(formData.get("ai_name") ?? "Assistente"),
-      ai_welcome_message: text("ai_welcome_message"),
-      ai_tone: String(formData.get("ai_tone") ?? "amigavel"),
-      // Rodapé
-      footer_address: text("footer_address"),
-      footer_phone: text("footer_phone"),
-      footer_whatsapp: text("footer_whatsapp"),
-      footer_website: text("footer_website"),
-      // Módulos
-      modules_enabled,
-      // Fidelidade
-      loyalty_goal: Number(formData.get("loyalty_goal") ?? 6),
-      loyalty_frequency: String(formData.get("loyalty_frequency") ?? "monthly"),
-      loyalty_points_per_checkin: Number(
-        formData.get("loyalty_points_per_checkin") ?? 1,
-      ),
-      loyalty_streak_reset: formData.get("loyalty_streak_reset") === "on",
-      // Recompensa
-      reward_name: text("reward_name"),
-      reward_description: text("reward_description"),
-    })
-    .eq("tenant_id", tenantId);
-
-  redirectBack(tenantId, error?.message);
+  const { error } = await applyTenantSettingsUpdate(tenantId, formData);
+  redirectBack(tenantId, error);
 }
 
-// Upload do logo da empresa para o Storage (bucket público 'branding') e grava a
-// URL pública em tenant_settings.logo_url. Service role → bypassa RLS.
 export async function uploadLogo(tenantId: string, formData: FormData) {
   await requirePlatformAdmin();
-
-  const file = formData.get("logo");
-  if (!(file instanceof File) || file.size === 0) {
-    redirectBack(tenantId, "Selecione um arquivo de imagem.");
-    return;
-  }
-
-  const allowed = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
-  if (!allowed.includes(file.type)) {
-    redirectBack(tenantId, "Formato não suportado (use PNG, JPG, WEBP ou SVG).");
-    return;
-  }
-  if (file.size > 2 * 1024 * 1024) {
-    redirectBack(tenantId, "Imagem muito grande (máx. 2MB).");
-    return;
-  }
-
-  const db = createAdminClient();
-  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-  const path = `${tenantId}/logo-${Date.now()}.${ext}`;
-
-  const { error: upErr } = await db.storage
-    .from("branding")
-    .upload(path, file, { contentType: file.type, upsert: true });
-  if (upErr) {
-    redirectBack(tenantId, upErr.message);
-    return;
-  }
-
-  const { data: pub } = db.storage.from("branding").getPublicUrl(path);
-  const { error } = await db
-    .from("tenant_settings")
-    .update({ logo_url: pub.publicUrl })
-    .eq("tenant_id", tenantId);
-
-  redirectBack(tenantId, error?.message);
+  const { error } = await applyTenantLogoUpload(tenantId, formData);
+  redirectBack(tenantId, error);
 }
 
 function redirectBack(tenantId: string, error?: string) {
@@ -316,35 +216,9 @@ export async function rotateCheckinToken(tenantId: string) {
 
 // ---------- Missões (por tenant) ----------
 
-const SOCIAL_KEYS = ["instagram", "facebook", "youtube", "x"];
-
-function missionFields(formData: FormData) {
-  const text = (k: string) => {
-    const v = String(formData.get(k) ?? "").trim();
-    return v === "" ? null : v;
-  };
-  // Rede social (se escolhida) vira o ícone → renderiza o logo no portal.
-  const social = String(formData.get("social") ?? "");
-  const icon = SOCIAL_KEYS.includes(social) ? social : text("icon");
-  return {
-    title: String(formData.get("title") ?? "").trim(),
-    description: text("description"),
-    icon,
-    type: String(formData.get("type") ?? "custom"),
-    external_url: text("external_url"),
-    points: Number(formData.get("points") ?? 0),
-    requires_validation: formData.get("requires_validation") === "on",
-    is_active: formData.get("is_active") === "on",
-    display_order: Number(formData.get("display_order") ?? 0),
-  };
-}
-
 export async function createMission(tenantId: string, formData: FormData) {
   await requirePlatformAdmin();
-  const fields = missionFields(formData);
-  if (!fields.title) return;
-  const db = createAdminClient();
-  await db.from("missions").insert({ tenant_id: tenantId, ...fields });
+  await insertMission(tenantId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/missions`);
 }
 
@@ -354,23 +228,13 @@ export async function updateMission(
   formData: FormData,
 ) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("missions")
-    .update(missionFields(formData))
-    .eq("id", missionId)
-    .eq("tenant_id", tenantId);
+  await applyMissionUpdate(tenantId, missionId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/missions`);
 }
 
 export async function deleteMission(tenantId: string, missionId: string) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("missions")
-    .delete()
-    .eq("id", missionId)
-    .eq("tenant_id", tenantId);
+  await removeMission(tenantId, missionId);
   revalidatePath(`/superadmin/tenants/${tenantId}/missions`);
 }
 
@@ -428,29 +292,9 @@ export async function deletePlan(tenantId: string, planId: string) {
 
 // ---------- Loja de Resgate: recompensas (por tenant) ----------
 
-function rewardFields(formData: FormData) {
-  const text = (k: string) => {
-    const v = String(formData.get(k) ?? "").trim();
-    return v === "" ? null : v;
-  };
-  const stockRaw = String(formData.get("stock") ?? "").trim();
-  return {
-    name: String(formData.get("name") ?? "").trim(),
-    description: text("description"),
-    points_cost: Number(formData.get("points_cost") ?? 0),
-    image_url: text("image_url"),
-    stock: stockRaw === "" ? null : Number(stockRaw),
-    is_active: formData.get("is_active") === "on",
-    display_order: Number(formData.get("display_order") ?? 0),
-  };
-}
-
 export async function createReward(tenantId: string, formData: FormData) {
   await requirePlatformAdmin();
-  const fields = rewardFields(formData);
-  if (!fields.name) return;
-  const db = createAdminClient();
-  await db.from("rewards").insert({ tenant_id: tenantId, ...fields });
+  await insertReward(tenantId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/rewards`);
 }
 
@@ -460,23 +304,13 @@ export async function updateReward(
   formData: FormData,
 ) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("rewards")
-    .update(rewardFields(formData))
-    .eq("id", rewardId)
-    .eq("tenant_id", tenantId);
+  await applyRewardUpdate(tenantId, rewardId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/rewards`);
 }
 
 export async function deleteReward(tenantId: string, rewardId: string) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("rewards")
-    .delete()
-    .eq("id", rewardId)
-    .eq("tenant_id", tenantId);
+  await removeReward(tenantId, rewardId);
   revalidatePath(`/superadmin/tenants/${tenantId}/rewards`);
 }
 
@@ -1003,25 +837,7 @@ export async function activateTenantBilling(tenantId: string, formData: FormData
 
 export async function cancelTenantBilling(tenantId: string) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-
-  const { data: tenant } = await db
-    .from("tenants")
-    .select("asaas_subscription_id")
-    .eq("id", tenantId)
-    .maybeSingle<{ asaas_subscription_id: string | null }>();
-
-  if (tenant?.asaas_subscription_id) {
-    try {
-      await cancelSubscription(tenant.asaas_subscription_id);
-    } catch {
-      // ignora erro do Asaas — suspende o tenant mesmo assim
-    }
-    await db
-      .from("tenants")
-      .update({ status: "suspended", asaas_subscription_id: null })
-      .eq("id", tenantId);
-  }
+  await cancelTenantSubscription(tenantId);
 
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin");

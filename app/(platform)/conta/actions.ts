@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTenantOwner, requireTenantOwner } from "@/lib/owner";
 import { sendEmail } from "@/lib/email";
 import { isValidCpfCnpj } from "@/lib/masks";
 import {
@@ -120,16 +121,12 @@ export async function configureBusiness(formData: FormData) {
   }
 
   const db = createAdminClient();
-  const { data: platformUser } = await db
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
+  const owner = await getTenantOwner();
 
   const tpl = SEGMENT_TEMPLATES[segment] ?? SEGMENT_TEMPLATES.generico;
   const slug = await uniqueSlug(slugify(businessName));
 
-  let tenantId = platformUser?.tenant_id;
+  let tenantId = owner?.tenantId;
 
   if (tenantId) {
     // Update existing pending tenant
@@ -208,9 +205,7 @@ export async function configureBusiness(formData: FormData) {
 // ---------- Iniciar pagamento ----------
 
 export async function initiatePayment(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/conta/login");
+  const { user, tenantId } = await requireTenantOwner();
 
   const plan = String(formData.get("plan") ?? "starter");
   const billingType = (String(formData.get("billing_type") ?? "PIX").toUpperCase()) as BillingType;
@@ -220,18 +215,11 @@ export async function initiatePayment(formData: FormData) {
   }
 
   const db = createAdminClient();
-  const { data: platformUser } = await db
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
-  if (!platformUser?.tenant_id) redirect("/conta/configurar");
 
   const { data: tenant } = await db
     .from("tenants")
     .select("name, owner_email, owner_cpf_cnpj, asaas_customer_id, asaas_subscription_id")
-    .eq("id", platformUser.tenant_id)
+    .eq("id", tenantId)
     .maybeSingle<{
       name: string;
       owner_email: string | null;
@@ -246,7 +234,7 @@ export async function initiatePayment(formData: FormData) {
   await db
     .from("tenants")
     .update({ saas_plan: plan })
-    .eq("id", platformUser.tenant_id);
+    .eq("id", tenantId);
 
   let invoiceUrl: string | undefined;
 
@@ -263,7 +251,7 @@ export async function initiatePayment(formData: FormData) {
       await db
         .from("tenants")
         .update({ asaas_customer_id: customerId })
-        .eq("id", platformUser.tenant_id);
+        .eq("id", tenantId);
     }
 
     // Create subscription if not exists
@@ -279,7 +267,7 @@ export async function initiatePayment(formData: FormData) {
       await db
         .from("tenants")
         .update({ asaas_subscription_id: subscriptionId })
-        .eq("id", platformUser.tenant_id);
+        .eq("id", tenantId);
     }
 
     // Get invoice URL from first payment

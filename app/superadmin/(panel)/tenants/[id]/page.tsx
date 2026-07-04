@@ -13,7 +13,7 @@ import {
   activateTenantBilling,
   cancelTenantBilling,
 } from "../../../actions";
-import { CustomizationForm } from "./customization-form";
+import { CustomizationForm } from "@/components/customization-form";
 import { getSubscription } from "@/lib/asaas";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
@@ -193,9 +193,9 @@ export default async function EditTenantPage({
       {/* ---------- Customização com preview ao vivo ---------- */}
       <CustomizationForm
         tenantName={tenant.name}
-        segment={tenant.segment_template}
         templateLabel={tpl.label}
         templateEmoji={tpl.emoji}
+        templateHref={`/superadmin/templates/${tenant.segment_template}`}
         portalUrl={tenant.custom_domain ? `https://${tenant.custom_domain}` : `/p/${tenant.slug}`}
         settings={settings}
         allowedModules={allowedModules}

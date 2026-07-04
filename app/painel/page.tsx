@@ -2,10 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPlatformAdmin } from "@/lib/superadmin";
-import { platformSignOut } from "../conta/actions";
+import { requireTenantOwner } from "@/lib/owner";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
 
@@ -29,26 +27,9 @@ function thirtyDaysAgo() {
 }
 
 export default async function PainelPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/conta/login");
+  const { tenantId } = await requireTenantOwner();
 
   const db = createAdminClient();
-  const { data: pu } = await db
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
-  if (!pu?.tenant_id) {
-    const admin = await getPlatformAdmin();
-    if (admin) redirect("/superadmin");
-    redirect("/conta/configurar");
-  }
-
-  const tenantId = pu.tenant_id;
   const since = thirtyDaysAgo();
 
   const [
@@ -142,21 +123,14 @@ export default async function PainelPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs text-gray-400">Meu painel</p>
-          <h1 className="text-2xl font-bold">{tenant.name}</h1>
-          <span
-            className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[tenant.status] ?? "bg-gray-100 text-gray-600"}`}
-          >
-            {STATUS_LABEL[tenant.status] ?? tenant.status}
-          </span>
-        </div>
-        <form action={platformSignOut}>
-          <Button type="submit" variant="outline" className="text-sm">
-            Sair
-          </Button>
-        </form>
+      <div>
+        <p className="text-xs text-gray-400">Meu painel</p>
+        <h1 className="text-2xl font-bold">{tenant.name}</h1>
+        <span
+          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[tenant.status] ?? "bg-gray-100 text-gray-600"}`}
+        >
+          {STATUS_LABEL[tenant.status] ?? tenant.status}
+        </span>
       </div>
 
       {/* Banners */}

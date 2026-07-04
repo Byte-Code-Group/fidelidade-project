@@ -2,7 +2,7 @@ const BASE_URL = process.env.ASAAS_SANDBOX === "true"
   ? "https://sandbox.asaas.com/api/v3"
   : "https://api.asaas.com/v3";
 
-const PLAN_PRICES: Record<string, number> = {
+export const PLAN_PRICES: Record<string, number> = {
   starter: 97,
   pro: 297,
   premium: 697,

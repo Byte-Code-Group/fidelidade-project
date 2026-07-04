@@ -7,9 +7,9 @@ import type { TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
   tenantName: string;
-  segment: string;
   templateLabel: string;
   templateEmoji: string;
+  templateHref?: string;
   portalUrl: string;
   settings: TenantSettings;
   allowedModules: { key: string; label: string }[];
@@ -21,9 +21,9 @@ interface CustomizationFormProps {
 // resultado, o link "Ver como ficou" abre o portal real do tenant numa aba.
 export function CustomizationForm({
   tenantName,
-  segment,
   templateLabel,
   templateEmoji,
+  templateHref,
   portalUrl,
   settings,
   allowedModules,
@@ -120,12 +120,14 @@ export function CustomizationForm({
           title="Páginas do portal"
           desc={`Limitado ao template ${templateEmoji} ${templateLabel}. Dá pra desativar, não adicionar.`}
           action={
-            <Link
-              href={`/superadmin/templates/${segment}`}
-              className="text-sm text-[var(--primary)] hover:underline"
-            >
-              Ver template
-            </Link>
+            templateHref ? (
+              <Link
+                href={templateHref}
+                className="text-sm text-[var(--primary)] hover:underline"
+              >
+                Ver template
+              </Link>
+            ) : undefined
           }
         >
           {allowedModules.length === 0 ? (
