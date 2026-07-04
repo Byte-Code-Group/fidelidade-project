@@ -35,7 +35,8 @@ export type IconKey =
   | "gift"
   | "store"
   | "sun"
-  | "moon";
+  | "moon"
+  | "gripVertical";
 
 const paths: Record<IconKey, React.ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5" />,
@@ -94,6 +95,9 @@ const paths: Record<IconKey, React.ReactNode> = {
   ),
   moon: (
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+  ),
+  gripVertical: (
+    <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" strokeWidth={2.6} />
   ),
 };
 

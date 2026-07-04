@@ -10,6 +10,7 @@ import {
   insertProfileField,
   applyProfileFieldUpdate,
   removeProfileField,
+  reorderProfileFields,
 } from "@/lib/profile-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { changeTenantPlan, cancelTenantSubscription } from "@/lib/tenant-billing";
@@ -58,6 +59,13 @@ export async function ownerDeleteProfileField(fieldId: string) {
   await removeProfileField(tenantId, fieldId);
   revalidatePath("/perfil");
   redirectBack("/painel/customizacao");
+}
+
+export async function ownerReorderProfileFields(orderedIds: string[]) {
+  const { tenantId } = await requireTenantOwner();
+  await reorderProfileFields(tenantId, orderedIds);
+  revalidatePath("/perfil");
+  revalidatePath("/painel/customizacao");
 }
 
 // ---------- Missões ----------

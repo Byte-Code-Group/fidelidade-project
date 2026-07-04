@@ -36,7 +36,6 @@ function profileFieldData(formData: FormData) {
       : "text",
     options: optionsRaw.length > 0 ? optionsRaw : null,
     required: formData.get("required") === "on",
-    display_order: Number(formData.get("display_order") ?? 0),
     max_length:
       (fieldType === "text" || fieldType === "textarea") && maxLengthRaw !== ""
         ? Math.max(1, Number(maxLengthRaw))
@@ -53,10 +52,33 @@ export async function insertProfileField(
     return { error: "Rótulo e chave interna são obrigatórios." };
   }
   const db = createAdminClient();
+  const { count } = await db
+    .from("profile_fields")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
   const { error } = await db
     .from("profile_fields")
-    .insert({ tenant_id: tenantId, ...fields });
+    .insert({ tenant_id: tenantId, ...fields, display_order: count ?? 0 });
   return { error: error?.message };
+}
+
+// Reordena os campos conforme a posição arrastada no painel do dono.
+export async function reorderProfileFields(
+  tenantId: string,
+  orderedIds: string[],
+): Promise<{ error?: string }> {
+  const db = createAdminClient();
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      db
+        .from("profile_fields")
+        .update({ display_order: index })
+        .eq("id", id)
+        .eq("tenant_id", tenantId),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  return { error: failed?.error?.message };
 }
 
 export async function applyProfileFieldUpdate(

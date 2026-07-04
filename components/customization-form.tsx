@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/icons";
 import { LogoUploadForm } from "@/components/logo-upload-form";
-import { ProfileFieldForm, FIELD_TYPE_LABELS } from "@/components/profile-field-form";
+import { ProfileFieldsList } from "@/components/profile-fields-list";
 import type { ProfileField, TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
@@ -21,6 +21,7 @@ interface CustomizationFormProps {
   createProfileFieldAction?: (formData: FormData) => void;
   updateProfileFieldAction?: (fieldId: string, formData: FormData) => void;
   deleteProfileFieldAction?: (fieldId: string) => void;
+  reorderProfileFieldsAction?: (orderedIds: string[]) => void;
 }
 
 // Editor de customização — form 100% nativo (sem JS obrigatório). Para ver o
@@ -39,6 +40,7 @@ export function CustomizationForm({
   createProfileFieldAction,
   updateProfileFieldAction,
   deleteProfileFieldAction,
+  reorderProfileFieldsAction,
 }: CustomizationFormProps) {
   const modules = (settings.modules_enabled ?? {}) as Record<string, boolean>;
 
@@ -231,66 +233,23 @@ export function CustomizationForm({
       </form>
 
       {/* Campos do cadastro — formulários independentes (não aninham no form acima) */}
-      {createProfileFieldAction && updateProfileFieldAction && deleteProfileFieldAction && (
-        <Section
-          title="Campos do cadastro"
-          desc="Dados que o cliente preenche no perfil. Nome e e-mail já vêm prontos; adicione outros como CPF, endereço, data de nascimento ou campos personalizados."
-        >
-          <div className="space-y-2">
-            {(profileFields ?? []).map((f) => (
-              <details
-                key={f.id}
-                className="group rounded-xl border border-black/10 dark:border-white/10"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate font-medium">{f.label}</span>
-                    <span className="shrink-0 text-xs opacity-50">
-                      {FIELD_TYPE_LABELS[f.field_type]}
-                      {f.required && " · obrigatório"}
-                    </span>
-                  </div>
-                  <Icon
-                    name="chevronRight"
-                    className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
-                  />
-                </summary>
-                <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
-                  <form action={updateProfileFieldAction.bind(null, f.id)} className="space-y-3">
-                    <ProfileFieldForm field={f} />
-                    <div className="flex justify-end">
-                      <Button type="submit" className="px-3 py-1.5">Salvar campo</Button>
-                    </div>
-                  </form>
-                  <form action={deleteProfileFieldAction.bind(null, f.id)}>
-                    <button type="submit" className="text-xs text-red-600 hover:underline">
-                      Excluir campo
-                    </button>
-                  </form>
-                </div>
-              </details>
-            ))}
-
-            <details className="group rounded-xl border border-dashed border-black/20 dark:border-white/20">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-medium">
-                + Novo campo
-                <Icon
-                  name="chevronRight"
-                  className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
-                />
-              </summary>
-              <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
-                <form action={createProfileFieldAction} className="space-y-3">
-                  <ProfileFieldForm />
-                  <div className="flex justify-end">
-                    <Button type="submit">Adicionar campo</Button>
-                  </div>
-                </form>
-              </div>
-            </details>
-          </div>
-        </Section>
-      )}
+      {createProfileFieldAction &&
+        updateProfileFieldAction &&
+        deleteProfileFieldAction &&
+        reorderProfileFieldsAction && (
+          <Section
+            title="Campos do cadastro"
+            desc="Dados que o cliente preenche no perfil. Nome e e-mail já vêm prontos; adicione outros como CPF, endereço, data de nascimento ou campos personalizados. Arraste pelo ⠿ pra reordenar."
+          >
+            <ProfileFieldsList
+              fields={profileFields ?? []}
+              createAction={createProfileFieldAction}
+              updateAction={updateProfileFieldAction}
+              deleteAction={deleteProfileFieldAction}
+              reorderAction={reorderProfileFieldsAction}
+            />
+          </Section>
+        )}
     </div>
   );
 }

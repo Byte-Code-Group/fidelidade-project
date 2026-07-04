@@ -41,7 +41,7 @@ export function ProfileFieldForm({ field }: { field?: ProfileField }) {
         </FieldWrapper>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <FieldWrapper label="Tipo">
           <Select
             name="field_type"
@@ -54,13 +54,6 @@ export function ProfileFieldForm({ field }: { field?: ProfileField }) {
               </option>
             ))}
           </Select>
-        </FieldWrapper>
-        <FieldWrapper label="Ordem">
-          <Input
-            name="display_order"
-            type="number"
-            defaultValue={field?.display_order ?? 0}
-          />
         </FieldWrapper>
         <div className="flex items-end pb-1">
           <label className="flex items-center gap-2 text-sm">

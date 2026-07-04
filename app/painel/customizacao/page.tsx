@@ -10,6 +10,7 @@ import {
   ownerCreateProfileField,
   ownerUpdateProfileField,
   ownerDeleteProfileField,
+  ownerReorderProfileFields,
 } from "../actions";
 
 export default async function OwnerCustomizacaoPage({
@@ -81,6 +82,7 @@ export default async function OwnerCustomizacaoPage({
         createProfileFieldAction={ownerCreateProfileField}
         updateProfileFieldAction={ownerUpdateProfileField}
         deleteProfileFieldAction={ownerDeleteProfileField}
+        reorderProfileFieldsAction={ownerReorderProfileFields}
       />
     </div>
   );
