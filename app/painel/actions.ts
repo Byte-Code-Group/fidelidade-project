@@ -9,6 +9,7 @@ import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { changeTenantPlan, cancelTenantSubscription } from "@/lib/tenant-billing";
 import type { BillingType } from "@/lib/asaas";
+import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 
 function redirectBack(path: string, error?: string) {
   revalidatePath(path);
@@ -133,4 +134,18 @@ export async function ownerCancelSubscription() {
   const { tenantId } = await requireTenantOwner();
   await cancelTenantSubscription(tenantId);
   redirectBack("/painel/assinatura");
+}
+
+// ---------- Validações de missão ----------
+
+export async function ownerApproveMissionCompletion(completionId: string) {
+  const { tenantId } = await requireTenantOwner();
+  await approveCompletion(tenantId, completionId);
+  revalidatePath("/painel/validacoes");
+}
+
+export async function ownerRejectMissionCompletion(completionId: string) {
+  const { tenantId } = await requireTenantOwner();
+  await rejectCompletion(tenantId, completionId);
+  revalidatePath("/painel/validacoes");
 }

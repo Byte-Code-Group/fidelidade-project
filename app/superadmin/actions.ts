@@ -10,6 +10,7 @@ import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-s
 import { insertMission, applyMissionUpdate, removeMission } from "@/lib/missions";
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
 import { cancelTenantSubscription } from "@/lib/tenant-billing";
+import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { createCustomer, createSubscription } from "@/lib/asaas";
 import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
 
@@ -375,47 +376,7 @@ export async function approveMissionCompletion(
   completionId: string,
 ) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-
-  const { data: completion } = await db
-    .from("mission_completions")
-    .select("user_id, mission_id")
-    .eq("id", completionId)
-    .eq("tenant_id", tenantId)
-    .maybeSingle<{ user_id: string; mission_id: string }>();
-
-  if (!completion) return;
-
-  await db
-    .from("mission_completions")
-    .update({ status: "completed", completed_at: new Date().toISOString() })
-    .eq("id", completionId);
-
-  // Credita os pontos da missão na carteirinha.
-  const { data: mission } = await db
-    .from("missions")
-    .select("points")
-    .eq("id", completion.mission_id)
-    .maybeSingle<{ points: number }>();
-
-  if (mission && mission.points > 0) {
-    const { data: membership } = await db
-      .from("memberships")
-      .select("id, points_total")
-      .eq("tenant_id", tenantId)
-      .eq("user_id", completion.user_id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle<{ id: string; points_total: number }>();
-
-    if (membership) {
-      await db
-        .from("memberships")
-        .update({ points_total: membership.points_total + mission.points })
-        .eq("id", membership.id);
-    }
-  }
-
+  await approveCompletion(tenantId, completionId);
   revalidatePath(`/superadmin/tenants/${tenantId}/validations`);
 }
 
@@ -424,12 +385,7 @@ export async function rejectMissionCompletion(
   completionId: string,
 ) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("mission_completions")
-    .delete()
-    .eq("id", completionId)
-    .eq("tenant_id", tenantId);
+  await rejectCompletion(tenantId, completionId);
   revalidatePath(`/superadmin/tenants/${tenantId}/validations`);
 }
 

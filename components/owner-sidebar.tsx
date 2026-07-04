@@ -17,6 +17,7 @@ const ITEMS: NavItem[] = [
   { href: "/painel", label: "Dashboard", icon: "chart", exact: true },
   { href: "/painel/customizacao", label: "Customização", icon: "template" },
   { href: "/painel/missoes", label: "Missões", icon: "award" },
+  { href: "/painel/validacoes", label: "Validações", icon: "check" },
   { href: "/painel/loja", label: "Loja", icon: "store" },
   { href: "/painel/clientes", label: "Clientes", icon: "users" },
   { href: "/painel/conexoes", label: "Conexões", icon: "send" },

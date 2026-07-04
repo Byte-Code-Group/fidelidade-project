@@ -232,7 +232,9 @@ export default async function PainelPage() {
             <h2 className="mb-3 text-sm font-semibold">Pendências</h2>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center justify-between">
-                <span className="text-gray-500">Validações de missão</span>
+                <Link href="/painel/validacoes" className="text-gray-500 hover:underline">
+                  Validações de missão
+                </Link>
                 <span className={`font-semibold ${(pendingValidations?.length ?? 0) > 0 ? "text-rose-500" : "text-gray-400"}`}>
                   {pendingValidations?.length ?? 0}
                 </span>
@@ -245,7 +247,7 @@ export default async function PainelPage() {
               </li>
             </ul>
             <p className="mt-4 text-xs text-gray-400">
-              Gerencie pelo superadmin ou solicite ao administrador da plataforma.
+              Resgates ainda são processados pelo administrador da plataforma.
             </p>
           </CardContent>
         </Card>
