@@ -12,6 +12,11 @@ const FIELD_TYPES = [
   ["address", "Endereço"],
 ] as const;
 
+export const FIELD_TYPE_LABELS = Object.fromEntries(FIELD_TYPES) as Record<
+  (typeof FIELD_TYPES)[number][0],
+  string
+>;
+
 export function ProfileFieldForm({ field }: { field?: ProfileField }) {
   return (
     <>

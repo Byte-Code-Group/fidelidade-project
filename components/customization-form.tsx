@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/icons";
 import { LogoUploadForm } from "@/components/logo-upload-form";
-import { ProfileFieldForm } from "@/components/profile-field-form";
-import { Card, CardContent } from "@/components/ui/card";
+import { ProfileFieldForm, FIELD_TYPE_LABELS } from "@/components/profile-field-form";
 import type { ProfileField, TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
@@ -237,10 +236,26 @@ export function CustomizationForm({
           title="Campos do cadastro"
           desc="Dados que o cliente preenche no perfil. Nome e e-mail já vêm prontos; adicione outros como CPF, endereço, data de nascimento ou campos personalizados."
         >
-          <div className="space-y-3">
+          <div className="space-y-2">
             {(profileFields ?? []).map((f) => (
-              <Card key={f.id}>
-                <CardContent className="space-y-3">
+              <details
+                key={f.id}
+                className="group rounded-xl border border-black/10 dark:border-white/10"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-medium">{f.label}</span>
+                    <span className="shrink-0 text-xs opacity-50">
+                      {FIELD_TYPE_LABELS[f.field_type]}
+                      {f.required && " · obrigatório"}
+                    </span>
+                  </div>
+                  <Icon
+                    name="chevronRight"
+                    className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
+                  />
+                </summary>
+                <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
                   <form action={updateProfileFieldAction.bind(null, f.id)} className="space-y-3">
                     <ProfileFieldForm field={f} />
                     <div className="flex justify-end">
@@ -252,21 +267,27 @@ export function CustomizationForm({
                       Excluir campo
                     </button>
                   </form>
-                </CardContent>
-              </Card>
+                </div>
+              </details>
             ))}
 
-            <Card>
-              <CardContent>
-                <h3 className="mb-3 font-semibold">Novo campo</h3>
+            <details className="group rounded-xl border border-dashed border-black/20 dark:border-white/20">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-medium">
+                + Novo campo
+                <Icon
+                  name="chevronRight"
+                  className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
+                />
+              </summary>
+              <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
                 <form action={createProfileFieldAction} className="space-y-3">
                   <ProfileFieldForm />
                   <div className="flex justify-end">
                     <Button type="submit">Adicionar campo</Button>
                   </div>
                 </form>
-              </CardContent>
-            </Card>
+              </div>
+            </details>
           </div>
         </Section>
       )}
