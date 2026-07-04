@@ -8,6 +8,7 @@ import { MaskedInput } from "@/components/ui/masked-input";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Membership, ProfileField } from "@/lib/types";
 import { saveProfile } from "../actions";
 
@@ -36,6 +37,12 @@ export default async function PerfilPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // profile_fields/profile_field_values via admin client (filtro explícito por
+  // tenant_id/user_id): a RLS dessas tabelas depende de auth_tenant_id(), que só
+  // resolve se o usuário logado tiver linha própria em public.users — não dá
+  // pra confiar nisso pra exibir a definição dos campos do tenant.
+  const db = createAdminClient();
+
   const [{ data: profile }, { data: membership }, { data: fields }, { data: values }] =
     await Promise.all([
       supabase
@@ -50,14 +57,16 @@ export default async function PerfilPage({
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle<Pick<Membership, "modality">>(),
-      supabase
+      db
         .from("profile_fields")
         .select("*")
+        .eq("tenant_id", ctx.tenant.id)
         .order("display_order", { ascending: true })
         .returns<ProfileField[]>(),
-      supabase
+      db
         .from("profile_field_values")
         .select("field_id, value")
+        .eq("tenant_id", ctx.tenant.id)
         .eq("user_id", user.id)
         .returns<{ field_id: string; value: string | null }[]>(),
     ]);
