@@ -28,7 +28,7 @@ export function RewardFields({ reward }: { reward?: Reward }) {
         />
       </Field>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <Field label="Imagem (URL)" hint="opcional">
           <Input name="image_url" defaultValue={reward?.image_url ?? ""} placeholder="https://..." />
         </Field>
@@ -38,13 +38,6 @@ export function RewardFields({ reward }: { reward?: Reward }) {
             type="number"
             min={0}
             defaultValue={reward?.stock ?? ""}
-          />
-        </Field>
-        <Field label="Ordem">
-          <Input
-            name="display_order"
-            type="number"
-            defaultValue={reward?.display_order ?? 0}
           />
         </Field>
       </div>

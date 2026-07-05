@@ -11,7 +11,7 @@ import {
   removeMission,
   reorderMissions,
 } from "@/lib/missions";
-import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
+import { insertReward, applyRewardUpdate, removeReward, reorderRewards } from "@/lib/rewards";
 import { insertPlan, applyPlanUpdate, removePlan, reorderPlans } from "@/lib/plans";
 import {
   insertProfileField,
@@ -135,22 +135,39 @@ export async function ownerReorderMissions(orderedIds: string[]): Promise<{ erro
 
 // ---------- Loja (rewards) ----------
 
-export async function ownerCreateReward(formData: FormData) {
+export async function ownerCreateReward(formData: FormData): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await insertReward(tenantId, formData);
+  const { error } = await insertReward(tenantId, formData);
   revalidatePath("/painel/loja");
+  revalidatePath("/loja");
+  return { error };
 }
 
-export async function ownerUpdateReward(rewardId: string, formData: FormData) {
+export async function ownerUpdateReward(
+  rewardId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await applyRewardUpdate(tenantId, rewardId, formData);
+  const { error } = await applyRewardUpdate(tenantId, rewardId, formData);
   revalidatePath("/painel/loja");
+  revalidatePath("/loja");
+  return { error };
 }
 
-export async function ownerDeleteReward(rewardId: string) {
+export async function ownerDeleteReward(rewardId: string): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await removeReward(tenantId, rewardId);
+  const { error } = await removeReward(tenantId, rewardId);
   revalidatePath("/painel/loja");
+  revalidatePath("/loja");
+  return { error };
+}
+
+export async function ownerReorderRewards(orderedIds: string[]): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await reorderRewards(tenantId, orderedIds);
+  revalidatePath("/painel/loja");
+  revalidatePath("/loja");
+  return { error };
 }
 
 // ---------- Planos (business_plans) ----------
