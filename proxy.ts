@@ -7,24 +7,28 @@ const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000")
   .split(":")[0]
   .toLowerCase();
 
-// Extrai o slug do tenant a partir do header Host.
+// Extrai o slug do tenant a partir do subdomínio do header Host.
 //   oraldents.lvh.me        -> "oraldents"
 //   lvh.me / www.lvh.me     -> null (apex)
-//   clinica.com.br (custom) -> "@clinica.com.br" (resolvido por custom_domain)
-function resolveTenantSlug(host: string | null): string | null {
+//   qualquer outro host     -> null (não é subdomínio do ROOT_DOMAIN)
+function resolveSubdomainSlug(host: string | null): string | null {
   if (!host) return null;
   const hostname = host.split(":")[0].toLowerCase();
+  if (!hostname.endsWith(ROOT_DOMAIN)) return null;
 
-  if (hostname.endsWith(ROOT_DOMAIN)) {
-    const sub = hostname.slice(0, -ROOT_DOMAIN.length).replace(/\.$/, "");
-    if (!sub || sub === "www") return null; // apex
-    // pega o primeiro label (ignora subdomínios aninhados)
-    return sub.split(".")[0];
-  }
+  const sub = hostname.slice(0, -ROOT_DOMAIN.length).replace(/\.$/, "");
+  if (!sub || sub === "www") return null; // apex
+  // pega o primeiro label (ignora subdomínios aninhados)
+  return sub.split(".")[0];
+}
 
-  // Domínio próprio (white-label total): sinaliza p/ lookup por custom_domain.
-  if (hostname === "localhost" || hostname === "127.0.0.1") return null;
-  return `@${hostname}`;
+// Host que não é subdomínio do ROOT_DOMAIN nem localhost: candidato a
+// domínio customizado (white-label), resolvido por custom_domain no DB.
+function isCustomDomainCandidate(host: string | null): boolean {
+  if (!host) return false;
+  const hostname = host.split(":")[0].toLowerCase();
+  if (hostname === "localhost" || hostname === "127.0.0.1") return false;
+  return !hostname.endsWith(ROOT_DOMAIN);
 }
 
 const TENANT_COOKIE = "x-tenant-slug";
@@ -56,8 +60,8 @@ export async function proxy(request: NextRequest) {
     return updateSession(request, response);
   }
 
-  // Subdomínio (produção com domínio customizado) tem prioridade sobre cookie
-  let slug = resolveTenantSlug(request.headers.get("host"));
+  const host = request.headers.get("host");
+  let slug = resolveSubdomainSlug(host);
 
   if (!slug) {
     const cookieSlug = request.cookies.get(TENANT_COOKIE)?.value ?? null;
@@ -73,6 +77,12 @@ export async function proxy(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = `/p/${cookieSlug}${pathname === "/" ? "" : pathname}`;
       return NextResponse.redirect(redirectUrl);
+    }
+
+    // Sem cookie: se o host não bate com o ROOT_DOMAIN, pode ser domínio
+    // customizado (white-label) — sinaliza p/ lookup por custom_domain.
+    if (isCustomDomainCandidate(host)) {
+      slug = `@${host!.split(":")[0].toLowerCase()}`;
     }
   }
 
