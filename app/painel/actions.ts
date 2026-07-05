@@ -23,6 +23,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { changeTenantPlan, cancelTenantSubscription } from "@/lib/tenant-billing";
 import type { BillingType } from "@/lib/asaas";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
+import { approveRedemption, rejectRedemption } from "@/lib/reward-redemptions";
 
 function redirectBack(path: string, error?: string) {
   revalidatePath(path);
@@ -269,6 +270,22 @@ export async function ownerCancelSubscription() {
   const { tenantId } = await requireTenantOwner();
   await cancelTenantSubscription(tenantId);
   redirectBack("/painel/assinatura");
+}
+
+// ---------- Resgates (loja) ----------
+
+export async function ownerApproveRedemption(redemptionId: string) {
+  const { tenantId } = await requireTenantOwner();
+  await approveRedemption(tenantId, redemptionId);
+  revalidatePath("/painel/resgates");
+  revalidatePath("/historico");
+}
+
+export async function ownerRejectRedemption(redemptionId: string) {
+  const { tenantId } = await requireTenantOwner();
+  await rejectRedemption(tenantId, redemptionId);
+  revalidatePath("/painel/resgates");
+  revalidatePath("/historico");
 }
 
 // ---------- Validações de missão ----------

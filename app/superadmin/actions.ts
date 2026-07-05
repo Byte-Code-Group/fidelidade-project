@@ -11,6 +11,10 @@ import { insertMission, applyMissionUpdate, removeMission } from "@/lib/missions
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
 import { insertPlan, applyPlanUpdate, removePlan } from "@/lib/plans";
 import {
+  approveRedemption as approveRedemptionCore,
+  rejectRedemption as rejectRedemptionCore,
+} from "@/lib/reward-redemptions";
+import {
   insertProfileField,
   applyProfileFieldUpdate,
   removeProfileField,
@@ -307,52 +311,14 @@ export async function deleteReward(tenantId: string, rewardId: string) {
 
 export async function approveRedemption(tenantId: string, redemptionId: string) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-  await db
-    .from("reward_redemptions")
-    .update({ status: "redeemed", redeemed_at: new Date().toISOString() })
-    .eq("id", redemptionId)
-    .eq("tenant_id", tenantId);
+  await approveRedemptionCore(tenantId, redemptionId);
   revalidatePath(`/superadmin/tenants/${tenantId}/redemptions`);
   revalidatePath("/superadmin");
 }
 
 export async function rejectRedemption(tenantId: string, redemptionId: string) {
   await requirePlatformAdmin();
-  const db = createAdminClient();
-
-  // Devolve os pontos gastos ao cliente.
-  const { data: r } = await db
-    .from("reward_redemptions")
-    .select("user_id, points_spent")
-    .eq("id", redemptionId)
-    .eq("tenant_id", tenantId)
-    .maybeSingle<{ user_id: string; points_spent: number }>();
-
-  if (r) {
-    const { data: membership } = await db
-      .from("memberships")
-      .select("id, points_total")
-      .eq("tenant_id", tenantId)
-      .eq("user_id", r.user_id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle<{ id: string; points_total: number }>();
-
-    if (membership) {
-      await db
-        .from("memberships")
-        .update({ points_total: membership.points_total + r.points_spent })
-        .eq("id", membership.id);
-    }
-  }
-
-  await db
-    .from("reward_redemptions")
-    .delete()
-    .eq("id", redemptionId)
-    .eq("tenant_id", tenantId);
-
+  await rejectRedemptionCore(tenantId, redemptionId);
   revalidatePath(`/superadmin/tenants/${tenantId}/redemptions`);
   revalidatePath("/superadmin");
 }

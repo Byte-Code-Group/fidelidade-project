@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/icons";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ownerAdjustMemberPoints, ownerToggleMemberStatus } from "../actions";
 
 interface MemberRow {
   id: string;
@@ -62,7 +62,11 @@ export default async function OwnerClientsPage() {
             {members.map((m) => {
               const ms = m.memberships[0];
               return (
-                <div key={m.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+                <Link
+                  key={m.id}
+                  href={`/painel/clientes/${m.id}`}
+                  className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
+                >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{m.full_name ?? "—"}</p>
                     <p className="truncate text-xs opacity-60">
@@ -79,35 +83,13 @@ export default async function OwnerClientsPage() {
                       <Badge className={statusStyle[ms.status] ?? "bg-black/5 opacity-70"}>
                         {ms.status}
                       </Badge>
-
-                      <form action={ownerAdjustMemberPoints.bind(null, ms.id)} className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          name="delta"
-                          placeholder="±pts"
-                          className="w-20 rounded-lg border border-black/10 bg-transparent px-2 py-1 text-sm"
-                        />
-                        <Button type="submit" variant="outline" className="px-2 py-1 text-xs">
-                          Ajustar
-                        </Button>
-                      </form>
-
-                      <form
-                        action={ownerToggleMemberStatus.bind(
-                          null,
-                          ms.id,
-                          ms.status === "suspended" ? "active" : "suspended",
-                        )}
-                      >
-                        <Button type="submit" variant="outline" className="px-2 py-1 text-xs">
-                          {ms.status === "suspended" ? "Reativar" : "Suspender"}
-                        </Button>
-                      </form>
                     </>
                   ) : (
                     <Badge className="bg-black/5 opacity-70">sem carteirinha</Badge>
                   )}
-                </div>
+
+                  <Icon name="chevronRight" className="h-4 w-4 shrink-0 opacity-40" />
+                </Link>
               );
             })}
           </div>
