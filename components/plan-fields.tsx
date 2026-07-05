@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Field } from "@/components/form-field";
 import type { BusinessPlan } from "@/lib/types";
 
@@ -9,12 +10,9 @@ export function PlanFields({ plan }: { plan?: BusinessPlan }) {
         <Field label="Nome">
           <Input name="name" defaultValue={plan?.name ?? ""} required />
         </Field>
-        <Field label="Preço/mês (R$)">
-          <Input
+        <Field label="Preço/mês">
+          <CurrencyInput
             name="price_month"
-            type="number"
-            step="0.01"
-            min={0}
             defaultValue={plan?.price_month ?? 0}
             className="w-32"
           />
