@@ -1,6 +1,9 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+
 function rewardFields(formData: FormData) {
   const text = (k: string) => {
     const v = String(formData.get(k) ?? "").trim();
@@ -11,10 +14,38 @@ function rewardFields(formData: FormData) {
     name: String(formData.get("name") ?? "").trim(),
     description: text("description"),
     points_cost: Number(formData.get("points_cost") ?? 0),
-    image_url: text("image_url"),
     stock: stockRaw === "" ? null : Number(stockRaw),
     is_active: formData.get("is_active") === "on",
   };
+}
+
+// Faz upload da imagem (se enviada) para o bucket 'rewards' e retorna a URL
+// pública. Sem arquivo novo → retorna undefined (mantém a imagem atual).
+async function uploadRewardImage(
+  tenantId: string,
+  formData: FormData,
+): Promise<{ url?: string; error?: string }> {
+  const file = formData.get("image");
+  if (!(file instanceof File) || file.size === 0) return {};
+
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return { error: "Formato não suportado (use PNG, JPG, WEBP ou GIF)." };
+  }
+  if (file.size > MAX_IMAGE_SIZE) {
+    return { error: "Imagem muito grande (máx. 2MB)." };
+  }
+
+  const db = createAdminClient();
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `${tenantId}/${Date.now()}.${ext}`;
+
+  const { error: upErr } = await db.storage
+    .from("rewards")
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (upErr) return { error: upErr.message };
+
+  const { data: pub } = db.storage.from("rewards").getPublicUrl(path);
+  return { url: pub.publicUrl };
 }
 
 export async function insertReward(
@@ -23,6 +54,10 @@ export async function insertReward(
 ): Promise<{ error?: string }> {
   const fields = rewardFields(formData);
   if (!fields.name) return { error: "Nome é obrigatório." };
+
+  const { url: image_url, error: imageError } = await uploadRewardImage(tenantId, formData);
+  if (imageError) return { error: imageError };
+
   const db = createAdminClient();
   const { count } = await db
     .from("rewards")
@@ -30,7 +65,7 @@ export async function insertReward(
     .eq("tenant_id", tenantId);
   const { error } = await db
     .from("rewards")
-    .insert({ tenant_id: tenantId, ...fields, display_order: count ?? 0 });
+    .insert({ tenant_id: tenantId, ...fields, image_url: image_url ?? null, display_order: count ?? 0 });
   return { error: error?.message };
 }
 
@@ -39,10 +74,13 @@ export async function applyRewardUpdate(
   rewardId: string,
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const { url: image_url, error: imageError } = await uploadRewardImage(tenantId, formData);
+  if (imageError) return { error: imageError };
+
   const db = createAdminClient();
   const { error } = await db
     .from("rewards")
-    .update(rewardFields(formData))
+    .update({ ...rewardFields(formData), ...(image_url ? { image_url } : {}) })
     .eq("id", rewardId)
     .eq("tenant_id", tenantId);
   return { error: error?.message };

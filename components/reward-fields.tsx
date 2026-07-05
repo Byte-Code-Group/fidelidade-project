@@ -29,8 +29,23 @@ export function RewardFields({ reward }: { reward?: Reward }) {
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Imagem (URL)" hint="opcional">
-          <Input name="image_url" defaultValue={reward?.image_url ?? ""} placeholder="https://..." />
+        <Field label="Imagem" hint="opcional">
+          <div className="flex items-center gap-3">
+            {reward?.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={reward.image_url}
+                alt=""
+                className="h-10 w-10 shrink-0 rounded-lg object-cover"
+              />
+            )}
+            <input
+              name="image"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-black/5 file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:bg-white/10"
+            />
+          </div>
         </Field>
         <Field label="Estoque" hint="vazio = ilimitado">
           <Input
