@@ -5,7 +5,7 @@ import type { BusinessPlan } from "@/lib/types";
 export function PlanFields({ plan }: { plan?: BusinessPlan }) {
   return (
     <>
-      <div className="grid grid-cols-[1fr_auto_auto] gap-3">
+      <div className="grid grid-cols-[1fr_auto] gap-3">
         <Field label="Nome">
           <Input name="name" defaultValue={plan?.name ?? ""} required />
         </Field>
@@ -17,14 +17,6 @@ export function PlanFields({ plan }: { plan?: BusinessPlan }) {
             min={0}
             defaultValue={plan?.price_month ?? 0}
             className="w-32"
-          />
-        </Field>
-        <Field label="Ordem">
-          <Input
-            name="display_order"
-            type="number"
-            defaultValue={plan?.display_order ?? 0}
-            className="w-20"
           />
         </Field>
       </div>

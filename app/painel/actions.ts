@@ -12,7 +12,7 @@ import {
   reorderMissions,
 } from "@/lib/missions";
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
-import { insertPlan, applyPlanUpdate, removePlan } from "@/lib/plans";
+import { insertPlan, applyPlanUpdate, removePlan, reorderPlans } from "@/lib/plans";
 import {
   insertProfileField,
   applyProfileFieldUpdate,
@@ -155,25 +155,39 @@ export async function ownerDeleteReward(rewardId: string) {
 
 // ---------- Planos (business_plans) ----------
 
-export async function ownerCreatePlan(formData: FormData) {
+export async function ownerCreatePlan(formData: FormData): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await insertPlan(tenantId, formData);
+  const { error } = await insertPlan(tenantId, formData);
   revalidatePath("/painel/planos");
   revalidatePath("/planos");
+  return { error };
 }
 
-export async function ownerUpdatePlan(planId: string, formData: FormData) {
+export async function ownerUpdatePlan(
+  planId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await applyPlanUpdate(tenantId, planId, formData);
+  const { error } = await applyPlanUpdate(tenantId, planId, formData);
   revalidatePath("/painel/planos");
   revalidatePath("/planos");
+  return { error };
 }
 
-export async function ownerDeletePlan(planId: string) {
+export async function ownerDeletePlan(planId: string): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await removePlan(tenantId, planId);
+  const { error } = await removePlan(tenantId, planId);
   revalidatePath("/painel/planos");
   revalidatePath("/planos");
+  return { error };
+}
+
+export async function ownerReorderPlans(orderedIds: string[]): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await reorderPlans(tenantId, orderedIds);
+  revalidatePath("/painel/planos");
+  revalidatePath("/planos");
+  return { error };
 }
 
 // ---------- Clientes (membros) ----------

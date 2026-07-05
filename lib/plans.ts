@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export function planFields(formData: FormData) {
+function planFields(formData: FormData) {
   const benefits = String(formData.get("benefits") ?? "")
     .split("\n")
     .map((b) => b.trim())
@@ -12,35 +12,68 @@ export function planFields(formData: FormData) {
     benefits,
     is_popular: formData.get("is_popular") === "on",
     upgrade_discount_pct: Number(formData.get("upgrade_discount_pct") ?? 0),
-    display_order: Number(formData.get("display_order") ?? 0),
   };
 }
 
-export async function insertPlan(tenantId: string, formData: FormData) {
+export async function insertPlan(
+  tenantId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const fields = planFields(formData);
-  if (!fields.name) return;
+  if (!fields.name) return { error: "Nome é obrigatório." };
   const db = createAdminClient();
-  await db.from("business_plans").insert({ tenant_id: tenantId, ...fields });
+  const { count } = await db
+    .from("business_plans")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+  const { error } = await db
+    .from("business_plans")
+    .insert({ tenant_id: tenantId, ...fields, display_order: count ?? 0 });
+  return { error: error?.message };
 }
 
 export async function applyPlanUpdate(
   tenantId: string,
   planId: string,
   formData: FormData,
-) {
+): Promise<{ error?: string }> {
   const db = createAdminClient();
-  await db
+  const { error } = await db
     .from("business_plans")
     .update(planFields(formData))
     .eq("id", planId)
     .eq("tenant_id", tenantId);
+  return { error: error?.message };
 }
 
-export async function removePlan(tenantId: string, planId: string) {
+export async function removePlan(
+  tenantId: string,
+  planId: string,
+): Promise<{ error?: string }> {
   const db = createAdminClient();
-  await db
+  const { error } = await db
     .from("business_plans")
     .delete()
     .eq("id", planId)
     .eq("tenant_id", tenantId);
+  return { error: error?.message };
+}
+
+// Reordena conforme a posição arrastada no painel do dono.
+export async function reorderPlans(
+  tenantId: string,
+  orderedIds: string[],
+): Promise<{ error?: string }> {
+  const db = createAdminClient();
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      db
+        .from("business_plans")
+        .update({ display_order: index })
+        .eq("id", id)
+        .eq("tenant_id", tenantId),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  return { error: failed?.error?.message };
 }
