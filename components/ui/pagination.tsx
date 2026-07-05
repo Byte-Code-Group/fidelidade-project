@@ -36,8 +36,11 @@ export function Pagination({
     pages.push(totalPages);
   }
 
-  const getUrl = (page: number) =>
-    page === 1 ? baseUrl : `${baseUrl}?page=${page}`;
+  const getUrl = (page: number) => {
+    if (page === 1) return baseUrl;
+    const sep = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${sep}page=${page}`;
+  };
 
   return (
     <div className={cn("flex items-center justify-center gap-1", className)}>
