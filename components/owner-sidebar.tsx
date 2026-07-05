@@ -19,6 +19,7 @@ const ITEMS: NavItem[] = [
   { href: "/painel/missoes", label: "Missões", icon: "award" },
   { href: "/painel/validacoes", label: "Validações", icon: "check" },
   { href: "/painel/loja", label: "Loja", icon: "store" },
+  { href: "/painel/planos", label: "Planos", icon: "receipt" },
   { href: "/painel/clientes", label: "Clientes", icon: "users" },
   { href: "/painel/conexoes", label: "Conexões", icon: "send" },
   { href: "/painel/assinatura", label: "Assinatura", icon: "card" },

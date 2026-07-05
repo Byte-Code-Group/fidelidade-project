@@ -12,6 +12,7 @@ import {
   reorderMissions,
 } from "@/lib/missions";
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
+import { insertPlan, applyPlanUpdate, removePlan } from "@/lib/plans";
 import {
   insertProfileField,
   applyProfileFieldUpdate,
@@ -150,6 +151,29 @@ export async function ownerDeleteReward(rewardId: string) {
   const { tenantId } = await requireTenantOwner();
   await removeReward(tenantId, rewardId);
   revalidatePath("/painel/loja");
+}
+
+// ---------- Planos (business_plans) ----------
+
+export async function ownerCreatePlan(formData: FormData) {
+  const { tenantId } = await requireTenantOwner();
+  await insertPlan(tenantId, formData);
+  revalidatePath("/painel/planos");
+  revalidatePath("/planos");
+}
+
+export async function ownerUpdatePlan(planId: string, formData: FormData) {
+  const { tenantId } = await requireTenantOwner();
+  await applyPlanUpdate(tenantId, planId, formData);
+  revalidatePath("/painel/planos");
+  revalidatePath("/planos");
+}
+
+export async function ownerDeletePlan(planId: string) {
+  const { tenantId } = await requireTenantOwner();
+  await removePlan(tenantId, planId);
+  revalidatePath("/painel/planos");
+  revalidatePath("/planos");
 }
 
 // ---------- Clientes (membros) ----------
