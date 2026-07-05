@@ -36,8 +36,7 @@ export async function applyTenantSettingsUpdate(
   const { error } = await db
     .from("tenant_settings")
     .update({
-      // Visual
-      logo_url: text("logo_url"),
+      // Visual (logo_url não entra aqui — tem action própria de upload)
       primary_color: String(formData.get("primary_color") ?? "#2563eb"),
       secondary_color: String(formData.get("secondary_color") ?? "#1e40af"),
       theme_mode: String(formData.get("theme_mode") ?? "light"),

@@ -34,7 +34,10 @@ export default async function ProfileFieldsPage({
         <Card key={f.id}>
           <CardContent className="space-y-3">
             <form
-              action={updateProfileField.bind(null, id, f.id)}
+              action={async (formData: FormData) => {
+                "use server";
+                await updateProfileField(id, f.id, formData);
+              }}
               className="space-y-3"
             >
               <ProfileFieldForm field={f} />
@@ -44,7 +47,12 @@ export default async function ProfileFieldsPage({
                 </Button>
               </div>
             </form>
-            <form action={deleteProfileField.bind(null, id, f.id)}>
+            <form
+              action={async () => {
+                "use server";
+                await deleteProfileField(id, f.id);
+              }}
+            >
               <button
                 type="submit"
                 className="text-xs text-red-600 hover:underline"
@@ -59,7 +67,13 @@ export default async function ProfileFieldsPage({
       <Card>
         <CardContent>
           <h2 className="mb-3 font-semibold">Novo campo</h2>
-          <form action={createProfileField.bind(null, id)} className="space-y-3">
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              await createProfileField(id, formData);
+            }}
+            className="space-y-3"
+          >
             <ProfileFieldForm />
             <div className="flex justify-end">
               <Button type="submit">Adicionar</Button>

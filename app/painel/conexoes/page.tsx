@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SocialLogo, isSocialKey } from "@/components/social-logos";
+import { MissionTypeIcon } from "@/components/mission-fields";
 import { getSubscription } from "@/lib/asaas";
 import type { Mission } from "@/lib/types";
 
@@ -15,7 +15,7 @@ export default async function OwnerConexoesPage() {
       .from("missions")
       .select("*")
       .eq("tenant_id", tenantId)
-      .eq("type", "social_follow")
+      .neq("type", "custom")
       .returns<Mission[]>(),
     db
       .from("tenants")
@@ -48,7 +48,7 @@ export default async function OwnerConexoesPage() {
           <div>
             <h2 className="font-semibold">Redes sociais</h2>
             <p className="text-xs text-gray-500">
-              Gerenciadas como missões do tipo &quot;Seguir rede social&quot; — edite em Missões.
+              Gerenciadas como missões de rede social — edite em Missões.
             </p>
           </div>
           {!socialMissions || socialMissions.length === 0 ? (
@@ -62,11 +62,7 @@ export default async function OwnerConexoesPage() {
                   key={m.id}
                   className="flex items-center gap-3 rounded-xl border border-black/10 px-3 py-2.5 text-sm"
                 >
-                  {isSocialKey(m.icon) ? (
-                    <SocialLogo name={m.icon} className="h-6 w-6 shrink-0" />
-                  ) : (
-                    <span className="text-lg">🔗</span>
-                  )}
+                  <MissionTypeIcon type={m.type} className="h-6 w-6 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{m.title}</p>
                     {m.external_url && (

@@ -13,6 +13,7 @@ const FIELD_TYPES = [
   ["cpf", "CPF"],
   ["birthdate", "Data de nascimento"],
   ["address", "Endereço"],
+  ["phone", "Telefone"],
 ] as const;
 
 export const FIELD_TYPE_LABELS = Object.fromEntries(FIELD_TYPES) as Record<
@@ -27,19 +28,9 @@ export function ProfileFieldForm({ field }: { field?: ProfileField }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3">
-        <FieldWrapper label="Rótulo (visível ao cliente)">
-          <Input name="label" defaultValue={field?.label ?? ""} required />
-        </FieldWrapper>
-        <FieldWrapper label="Chave interna" hint="sem espaços, sem acentos">
-          <Input
-            name="field_key"
-            defaultValue={field?.field_key ?? ""}
-            required
-            placeholder="data_nascimento"
-          />
-        </FieldWrapper>
-      </div>
+      <FieldWrapper label="Rótulo (visível ao cliente)">
+        <Input name="label" defaultValue={field?.label ?? ""} required />
+      </FieldWrapper>
 
       <div className="grid grid-cols-2 gap-3">
         <FieldWrapper label="Tipo">

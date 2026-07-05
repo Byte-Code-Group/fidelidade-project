@@ -14,7 +14,7 @@ export default async function ValidationsPage({
   const db = createAdminClient();
   const { data: completions } = await db
     .from("mission_completions")
-    .select("*, users(full_name, email), missions(title, points)")
+    .select("*, users!mission_completions_user_id_fkey(full_name, email), missions(title, points)")
     .eq("tenant_id", id)
     .order("completed_at", { ascending: false })
     .returns<CompletionRow[]>();

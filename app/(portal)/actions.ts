@@ -23,7 +23,7 @@ export async function signIn(formData: FormData) {
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
-  redirect("/");
+  redirect("/perfil");
 }
 
 export async function signOut() {
@@ -128,7 +128,7 @@ export async function signUp(formData: FormData) {
   await sendEmail({ to: email, subject, html });
 // Enviar email de confirmacao com link magic const confirmLink = `${origin}/auth/confirm`; const { subject: confirmSubject, html: confirmHtml } = confirmEmailTemplate({ tenantName: tenant.name, primaryColor: settings.primary_color, confirmLink, userName: fullName, }); await sendEmail({ to: email, subject: confirmSubject, html: confirmHtml });
 
-  redirect("/");
+  redirect("/perfil");
 }
 
 // Cliente conclui uma missão. Server Action é endpoint público (POST direto),

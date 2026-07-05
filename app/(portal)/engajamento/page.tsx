@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
-import { SocialLogo, isSocialKey } from "@/components/social-logos";
+import { MissionTypeIcon } from "@/components/mission-fields";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Membership, Mission, MissionCompletion } from "@/lib/types";
 import { completeMission } from "../actions";
 
@@ -22,22 +23,29 @@ export default async function EngajamentoPage() {
   if (!user) redirect("/login");
 
   // Catálogo de missões ativas + conclusões do usuário + saldo de pontos.
+  // Via admin client com filtro explícito de tenant_id: a RLS dessas tabelas
+  // depende de auth_tenant_id(), que só resolve se o usuário tiver linha
+  // própria em public.users — não dá pra confiar nisso pra exibir o catálogo.
+  const db = createAdminClient();
   const [{ data: missions }, { data: completions }, { data: membership }] =
     await Promise.all([
-      supabase
+      db
         .from("missions")
         .select("*")
+        .eq("tenant_id", ctx.tenant.id)
         .eq("is_active", true)
         .order("display_order", { ascending: true })
         .returns<Mission[]>(),
-      supabase
+      db
         .from("mission_completions")
         .select("mission_id, status")
+        .eq("tenant_id", ctx.tenant.id)
         .eq("user_id", user.id)
         .returns<Pick<MissionCompletion, "mission_id" | "status">[]>(),
-      supabase
+      db
         .from("memberships")
         .select("points_total")
+        .eq("tenant_id", ctx.tenant.id)
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
         .limit(1)
@@ -99,56 +107,57 @@ export default async function EngajamentoPage() {
               return (
                 <Card key={mission.id}>
                   <CardContent className="flex items-start gap-3">
-                    {isSocialKey(mission.icon) ? (
-                      <SocialLogo name={mission.icon} className="h-8 w-8" />
-                    ) : (
-                      <div className="text-2xl">{mission.icon ?? "🎯"}</div>
-                    )}
+                    <MissionTypeIcon type={mission.type} className="h-8 w-8" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-medium">{mission.title}</h3>
-                        <Badge className="shrink-0 bg-[var(--secondary)]/10 text-[var(--secondary)]">
-                          +{mission.points}
-                        </Badge>
-                      </div>
+                      <h3 className="font-medium">{mission.title}</h3>
                       {mission.description && (
                         <p className="mt-0.5 text-sm opacity-70">
                           {mission.description}
                         </p>
                       )}
+                    </div>
 
-                      <div className="mt-3 flex items-center gap-2">
-                        {status === "completed" ? (
-                          <span className="text-sm font-medium text-green-600">
-                            ✓ Concluída
-                          </span>
-                        ) : status === "pending_validation" ? (
-                          <span className="text-sm font-medium opacity-60">
-                            ⏳ Em análise
-                          </span>
-                        ) : (
-                          <>
-                            {mission.external_url && (
-                              <a
-                                href={mission.external_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <Badge className="bg-[var(--secondary)]/10 text-[var(--secondary)]">
+                        +{mission.points}
+                      </Badge>
+
+                      {status === "completed" ? (
+                        <span className="text-sm font-medium text-green-600">
+                          ✓ Concluída
+                        </span>
+                      ) : status === "pending_validation" ? (
+                        <span className="text-sm font-medium opacity-60">
+                          ⏳ Em análise
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {mission.external_url && (
+                            <a
+                              href={mission.external_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button
+                                variant="outline"
+                                type="button"
+                                className="gap-1.5 px-3.5 py-2 text-sm"
                               >
-                                <Button variant="outline" type="button">
-                                  Abrir
-                                </Button>
-                              </a>
-                            )}
-                            <form action={completeMission.bind(null, mission.id)}>
-                              <Button type="submit">
-                                {mission.requires_validation
-                                  ? "Enviar p/ validação"
-                                  : "Concluir"}
+                                Abrir
+                                <Icon name="arrowRight" className="h-3.5 w-3.5" />
                               </Button>
-                            </form>
-                          </>
-                        )}
-                      </div>
+                            </a>
+                          )}
+                          <form action={completeMission.bind(null, mission.id)}>
+                            <Button type="submit" className="gap-1.5 px-3.5 py-2 text-sm">
+                              <Icon name="check" className="h-3.5 w-3.5" />
+                              {mission.requires_validation
+                                ? "Enviar p/ validação"
+                                : "Concluir"}
+                            </Button>
+                          </form>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

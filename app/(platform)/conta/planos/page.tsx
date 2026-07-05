@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getTenantOwner } from "@/lib/owner";
 import { initiatePayment } from "../actions";
 
 const PLANS = [
@@ -37,14 +37,8 @@ export default async function PlanosPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/conta/login");
 
-  const db = createAdminClient();
-  const { data: pu } = await db
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
-  if (!pu?.tenant_id) redirect("/conta/configurar");
+  const owner = await getTenantOwner();
+  if (!owner) redirect("/conta/configurar");
 
   const { error } = await searchParams;
 

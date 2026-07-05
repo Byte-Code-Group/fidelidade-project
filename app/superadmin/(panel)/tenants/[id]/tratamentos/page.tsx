@@ -48,7 +48,7 @@ export default async function TratamentosAdminPage({
   const [{ data: plans }, { data: clients }] = await Promise.all([
     db
       .from("care_plans")
-      .select("*, users(full_name, email), care_plan_steps(*)")
+      .select("*, users!care_plans_user_id_fkey(full_name, email), care_plan_steps(*)")
       .eq("tenant_id", id)
       .order("created_at", { ascending: false })
       .returns<PlanRow[]>(),

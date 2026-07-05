@@ -1,15 +1,50 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export const ACTIVE_TENANT_COOKIE = "owner_active_tenant";
+
+export interface OwnedTenant {
+  id: string;
+  name: string;
+  saas_plan: string;
+}
+
 export interface TenantOwnerContext {
   user: User;
   tenantId: string;
+  tenants: OwnedTenant[];
 }
 
-// Usuário autenticado + tenant_id vinculado (se houver). Não redireciona.
+// Todos os negócios (tenants) que esse usuário possui (exclui a linha
+// "placeholder" com tenant_id null, criada no signup antes do 1º negócio).
+export async function getOwnerTenants(userId: string): Promise<OwnedTenant[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("platform_users")
+    .select("tenant_id, created_at, tenants(id, name, saas_plan)")
+    .eq("user_id", userId)
+    .not("tenant_id", "is", null)
+    .order("created_at", { ascending: true })
+    .returns<{ tenant_id: string; tenants: OwnedTenant | null }[]>();
+
+  return (data ?? []).flatMap((row) => (row.tenants ? [row.tenants] : []));
+}
+
+// Negócio "ativo" no painel: o escolhido via cookie (switcher), com
+// fallback pro primeiro criado — nunca aceito como argumento vindo de fora.
+async function resolveActiveTenantId(tenants: OwnedTenant[]): Promise<string | null> {
+  if (tenants.length === 0) return null;
+  const cookieStore = await cookies();
+  const picked = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value;
+  if (picked && tenants.some((t) => t.id === picked)) return picked;
+  return tenants[0].id;
+}
+
+// Usuário autenticado + tenant ativo (se houver). Não redireciona.
 export async function getTenantOwner(): Promise<TenantOwnerContext | null> {
   const supabase = await createClient();
   const {
@@ -17,15 +52,10 @@ export async function getTenantOwner(): Promise<TenantOwnerContext | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
-  if (!data?.tenant_id) return null;
-  return { user, tenantId: data.tenant_id };
+  const tenants = await getOwnerTenants(user.id);
+  const tenantId = await resolveActiveTenantId(tenants);
+  if (!tenantId) return null;
+  return { user, tenantId, tenants };
 }
 
 // Gate para páginas/actions do painel do dono. Redireciona se não autorizado.
@@ -39,13 +69,8 @@ export async function requireTenantOwner(opts?: {
   } = await supabase.auth.getUser();
   if (!user) redirect("/conta/login");
 
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
-  if (!data?.tenant_id) redirect(opts?.noTenantRedirect ?? "/conta/configurar");
-  return { user, tenantId: data.tenant_id };
+  const tenants = await getOwnerTenants(user.id);
+  const tenantId = await resolveActiveTenantId(tenants);
+  if (!tenantId) redirect(opts?.noTenantRedirect ?? "/conta/configurar");
+  return { user, tenantId, tenants };
 }

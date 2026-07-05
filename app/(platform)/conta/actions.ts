@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTenantOwner, requireTenantOwner } from "@/lib/owner";
+import { getTenantOwner, requireTenantOwner, ACTIVE_TENANT_COOKIE } from "@/lib/owner";
+import { canCreateAnotherTenant } from "@/lib/tenant-limits";
 import { sendEmail } from "@/lib/email";
 import { isValidCpfCnpj } from "@/lib/masks";
 import {
@@ -68,11 +70,18 @@ export async function platformSignUp(formData: FormData) {
     redirect(`/conta/cadastro?error=${encodeURIComponent(error.message)}`);
   }
 
-  // Create platform_users record
+  // Cria a linha "placeholder" (tenant_id null) — só se ainda não existir
+  // nenhuma, já que platform_users não tem mais user_id como PK única.
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
     const db = createAdminClient();
-    await db.from("platform_users").upsert({ user_id: user.id });
+    const { count } = await db
+      .from("platform_users")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+    if (!count) {
+      await db.from("platform_users").insert({ user_id: user.id, tenant_id: null });
+    }
   }
 
   redirect("/conta/configurar");
@@ -122,11 +131,25 @@ export async function configureBusiness(formData: FormData) {
 
   const db = createAdminClient();
   const owner = await getTenantOwner();
+  const mode = String(formData.get("mode") ?? "");
+
+  if (mode === "new") {
+    const ownedPlans = (owner?.tenants ?? []).map((t) => t.saas_plan);
+    const { allowed, limit } = canCreateAnotherTenant(ownedPlans);
+    if (!allowed) {
+      redirect(
+        `/conta/configurar?mode=new&error=${encodeURIComponent(
+          `Seu plano permite no máximo ${limit} negócio(s). Faça upgrade pra criar mais.`,
+        )}`,
+      );
+    }
+  }
 
   const tpl = SEGMENT_TEMPLATES[segment] ?? SEGMENT_TEMPLATES.generico;
   const slug = await uniqueSlug(slugify(businessName));
 
-  let tenantId = owner?.tenantId;
+  // "new" sempre cria um negócio do zero, mesmo que o owner já tenha outros.
+  let tenantId = mode === "new" ? undefined : owner?.tenantId;
 
   if (tenantId) {
     // Update existing pending tenant
@@ -192,11 +215,25 @@ export async function configureBusiness(formData: FormData) {
       );
     }
 
-    // Link platform_user → tenant
-    await db
-      .from("platform_users")
-      .update({ tenant_id: tenantId })
-      .eq("user_id", user.id);
+    // Link platform_user → tenant: reaproveita a linha placeholder (1º
+    // negócio) ou insere uma nova (negócio adicional).
+    if (mode === "new") {
+      await db.from("platform_users").insert({ user_id: user.id, tenant_id: tenantId });
+    } else {
+      await db
+        .from("platform_users")
+        .update({ tenant_id: tenantId })
+        .eq("user_id", user.id)
+        .is("tenant_id", null);
+    }
+
+    // Novo negócio vira o ativo no painel.
+    const cookieStore = await cookies();
+    cookieStore.set(ACTIVE_TENANT_COOKIE, tenantId, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+    });
   }
 
   redirect("/conta/planos");

@@ -2,9 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTenantOwner } from "@/lib/owner";
 import { getPlatformAdmin } from "@/lib/superadmin";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { canCreateAnotherTenant } from "@/lib/tenant-limits";
 import { OwnerSidebar } from "@/components/owner-sidebar";
 import { platformSignOut } from "@/app/(platform)/conta/actions";
+import { switchActiveTenant } from "./actions";
 
 // Shell do painel do dono do tenant. O guard roda aqui → todas as páginas
 // do grupo exigem um dono de tenant autenticado (mesmo fallback de
@@ -27,16 +28,21 @@ export default async function PainelLayout({
     redirect("/conta/configurar");
   }
 
-  const db = createAdminClient();
-  const { data: tenant } = await db
-    .from("tenants")
-    .select("name")
-    .eq("id", owner.tenantId)
-    .maybeSingle<{ name: string }>();
+  const activeTenant = owner.tenants.find((t) => t.id === owner.tenantId);
+  const { allowed: canCreateAnother } = canCreateAnotherTenant(
+    owner.tenants.map((t) => t.saas_plan),
+  );
 
   return (
     <div className="min-h-dvh md:pl-64">
-      <OwnerSidebar signOutAction={platformSignOut} businessName={tenant?.name} />
+      <OwnerSidebar
+        signOutAction={platformSignOut}
+        businessName={activeTenant?.name}
+        tenants={owner.tenants}
+        activeTenantId={owner.tenantId}
+        canCreateAnother={canCreateAnother}
+        switchTenantAction={switchActiveTenant}
+      />
       <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-10">
         {children}
       </main>

@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidCpf } from "@/lib/masks";
+import { isValidCpf, isValidPhone } from "@/lib/masks";
 import type { ProfileField, ProfileFieldType } from "@/lib/types";
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
@@ -15,6 +15,7 @@ const FIELD_TYPES: ProfileFieldType[] = [
   "cpf",
   "birthdate",
   "address",
+  "phone",
 ];
 
 function profileFieldData(formData: FormData) {
@@ -27,10 +28,6 @@ function profileFieldData(formData: FormData) {
 
   return {
     label: String(formData.get("label") ?? "").trim(),
-    field_key: String(formData.get("field_key") ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_"),
     field_type: FIELD_TYPES.includes(fieldType as ProfileFieldType)
       ? (fieldType as ProfileFieldType)
       : "text",
@@ -43,22 +40,51 @@ function profileFieldData(formData: FormData) {
   };
 }
 
+// Slugifica o rótulo pra virar a chave interna (usuário não edita mais isso).
+function slugify(label: string): string {
+  const slug = label
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug || "campo";
+}
+
+// nome, nome_1, nome_2... incrementa até achar uma chave livre no tenant.
+async function uniqueFieldKey(tenantId: string, label: string): Promise<string> {
+  const db = createAdminClient();
+  const base = slugify(label);
+  const { data } = await db
+    .from("profile_fields")
+    .select("field_key")
+    .eq("tenant_id", tenantId);
+  const taken = new Set((data ?? []).map((r) => r.field_key));
+
+  if (!taken.has(base)) return base;
+  let i = 1;
+  while (taken.has(`${base}_${i}`)) i++;
+  return `${base}_${i}`;
+}
+
 export async function insertProfileField(
   tenantId: string,
   formData: FormData,
 ): Promise<{ error?: string }> {
   const fields = profileFieldData(formData);
-  if (!fields.label || !fields.field_key) {
-    return { error: "Rótulo e chave interna são obrigatórios." };
+  if (!fields.label) {
+    return { error: "Rótulo é obrigatório." };
   }
   const db = createAdminClient();
+  const field_key = await uniqueFieldKey(tenantId, fields.label);
   const { count } = await db
     .from("profile_fields")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId);
   const { error } = await db
     .from("profile_fields")
-    .insert({ tenant_id: tenantId, ...fields, display_order: count ?? 0 });
+    .insert({ tenant_id: tenantId, ...fields, field_key, display_order: count ?? 0 });
   return { error: error?.message };
 }
 
@@ -124,6 +150,9 @@ export function validateProfileFieldValues(
 
     if (field.field_type === "cpf" && !isValidCpf(value)) {
       return `CPF inválido em "${field.label}".`;
+    }
+    if (field.field_type === "phone" && !isValidPhone(value)) {
+      return `Telefone inválido em "${field.label}".`;
     }
     if (
       (field.field_type === "text" || field.field_type === "textarea") &&

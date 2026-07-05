@@ -1,5 +1,7 @@
 // Tipos do domínio (subset do schema — expandir conforme as telas crescem)
 
+import type { SocialKey } from "@/components/social-logos";
+
 export type ThemeMode = "light" | "dark";
 
 export interface Tenant {
@@ -62,12 +64,9 @@ export interface Membership {
   created_at: string;
 }
 
-export type MissionType =
-  | "social_follow"
-  | "review"
-  | "referral"
-  | "checkin"
-  | "custom";
+// O ícone é sempre travado pelo tipo — redes sociais usam a logo da marca,
+// "custom" usa um ícone genérico. Nunca é escolhido à parte pelo usuário.
+export type MissionType = SocialKey | "custom";
 
 export interface Mission {
   id: string;
@@ -214,7 +213,8 @@ export type ProfileFieldType =
   | "select"
   | "cpf"
   | "birthdate"
-  | "address";
+  | "address"
+  | "phone";
 
 export interface ProfileField {
   id: string;

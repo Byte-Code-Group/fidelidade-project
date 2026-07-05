@@ -223,26 +223,35 @@ export async function rotateCheckinToken(tenantId: string) {
 
 // ---------- Missões (por tenant) ----------
 
-export async function createMission(tenantId: string, formData: FormData) {
+export async function createMission(
+  tenantId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   await requirePlatformAdmin();
-  await insertMission(tenantId, formData);
+  const { error } = await insertMission(tenantId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/missions`);
+  return { error };
 }
 
 export async function updateMission(
   tenantId: string,
   missionId: string,
   formData: FormData,
-) {
+): Promise<{ error?: string }> {
   await requirePlatformAdmin();
-  await applyMissionUpdate(tenantId, missionId, formData);
+  const { error } = await applyMissionUpdate(tenantId, missionId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/missions`);
+  return { error };
 }
 
-export async function deleteMission(tenantId: string, missionId: string) {
+export async function deleteMission(
+  tenantId: string,
+  missionId: string,
+): Promise<{ error?: string }> {
   await requirePlatformAdmin();
-  await removeMission(tenantId, missionId);
+  const { error } = await removeMission(tenantId, missionId);
   revalidatePath(`/superadmin/tenants/${tenantId}/missions`);
+  return { error };
 }
 
 // ---------- Planos do negócio (por tenant) ----------
@@ -397,26 +406,35 @@ export async function rejectMissionCompletion(
 
 // ---------- Campos de perfil ----------
 
-export async function createProfileField(tenantId: string, formData: FormData) {
+export async function createProfileField(
+  tenantId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   await requirePlatformAdmin();
-  await insertProfileField(tenantId, formData);
+  const { error } = await insertProfileField(tenantId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/profile-fields`);
+  return { error };
 }
 
 export async function updateProfileField(
   tenantId: string,
   fieldId: string,
   formData: FormData,
-) {
+): Promise<{ error?: string }> {
   await requirePlatformAdmin();
-  await applyProfileFieldUpdate(tenantId, fieldId, formData);
+  const { error } = await applyProfileFieldUpdate(tenantId, fieldId, formData);
   revalidatePath(`/superadmin/tenants/${tenantId}/profile-fields`);
+  return { error };
 }
 
-export async function deleteProfileField(tenantId: string, fieldId: string) {
+export async function deleteProfileField(
+  tenantId: string,
+  fieldId: string,
+): Promise<{ error?: string }> {
   await requirePlatformAdmin();
-  await removeProfileField(tenantId, fieldId);
+  const { error } = await removeProfileField(tenantId, fieldId);
   revalidatePath(`/superadmin/tenants/${tenantId}/profile-fields`);
+  return { error };
 }
 
 // ---------- Planos de acompanhamento (Tratamentos) ----------

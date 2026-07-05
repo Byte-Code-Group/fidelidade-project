@@ -54,7 +54,7 @@ export default async function AgendaPage({
   const [{ data: appointments }, { data: clients }] = await Promise.all([
     db
       .from("appointments")
-      .select("*, users(full_name, email)")
+      .select("*, users!appointments_user_id_fkey(full_name, email)")
       .eq("tenant_id", id)
       .order("scheduled_at", { ascending: false })
       .returns<AppointmentRow[]>(),

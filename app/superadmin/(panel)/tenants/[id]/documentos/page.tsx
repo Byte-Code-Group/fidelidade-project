@@ -42,7 +42,7 @@ export default async function DocumentosAdminPage({
   const [{ data: documents }, { data: clients }] = await Promise.all([
     db
       .from("documents")
-      .select("*, users(full_name, email)")
+      .select("*, users!documents_user_id_fkey(full_name, email)")
       .eq("tenant_id", id)
       .order("created_at", { ascending: false })
       .returns<DocumentRow[]>(),

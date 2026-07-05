@@ -2,9 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireTenantOwner } from "@/lib/owner";
+import { cookies } from "next/headers";
+import { requireTenantOwner, ACTIVE_TENANT_COOKIE } from "@/lib/owner";
 import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-settings";
-import { insertMission, applyMissionUpdate, removeMission } from "@/lib/missions";
+import {
+  insertMission,
+  applyMissionUpdate,
+  removeMission,
+  reorderMissions,
+} from "@/lib/missions";
 import { insertReward, applyRewardUpdate, removeReward } from "@/lib/rewards";
 import {
   insertProfileField,
@@ -21,6 +27,21 @@ function redirectBack(path: string, error?: string) {
   revalidatePath(path);
   const qs = error ? `?error=${encodeURIComponent(error)}` : "?saved=1";
   redirect(`${path}${qs}`);
+}
+
+// Troca o negócio ativo no painel (switcher no menu). Só aceita um tenant
+// que o próprio usuário realmente possui — nunca um id vindo de fora sem checagem.
+export async function switchActiveTenant(tenantId: string) {
+  const { tenants } = await requireTenantOwner();
+  if (!tenants.some((t) => t.id === tenantId)) return;
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_TENANT_COOKIE, tenantId, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
+  redirect("/painel");
 }
 
 // Nenhuma dessas actions aceita tenantId vindo de fora — é sempre resolvido
@@ -40,25 +61,31 @@ export async function ownerUploadLogo(formData: FormData) {
 
 // ---------- Campos do cadastro (perfil do cliente) ----------
 
-export async function ownerCreateProfileField(formData: FormData) {
+export async function ownerCreateProfileField(formData: FormData): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
   const { error } = await insertProfileField(tenantId, formData);
   revalidatePath("/perfil");
-  redirectBack("/painel/customizacao", error);
+  revalidatePath("/painel/customizacao");
+  return { error };
 }
 
-export async function ownerUpdateProfileField(fieldId: string, formData: FormData) {
+export async function ownerUpdateProfileField(
+  fieldId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
   const { error } = await applyProfileFieldUpdate(tenantId, fieldId, formData);
   revalidatePath("/perfil");
-  redirectBack("/painel/customizacao", error);
+  revalidatePath("/painel/customizacao");
+  return { error };
 }
 
-export async function ownerDeleteProfileField(fieldId: string) {
+export async function ownerDeleteProfileField(fieldId: string): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await removeProfileField(tenantId, fieldId);
+  const { error } = await removeProfileField(tenantId, fieldId);
   revalidatePath("/perfil");
-  redirectBack("/painel/customizacao");
+  revalidatePath("/painel/customizacao");
+  return { error };
 }
 
 export async function ownerReorderProfileFields(orderedIds: string[]) {
@@ -71,22 +98,38 @@ export async function ownerReorderProfileFields(orderedIds: string[]) {
 
 // ---------- Missões ----------
 
-export async function ownerCreateMission(formData: FormData) {
+export async function ownerCreateMission(formData: FormData): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await insertMission(tenantId, formData);
+  const { error } = await insertMission(tenantId, formData);
   revalidatePath("/painel/missoes");
+  revalidatePath("/painel/conexoes");
+  return { error };
 }
 
-export async function ownerUpdateMission(missionId: string, formData: FormData) {
+export async function ownerUpdateMission(
+  missionId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await applyMissionUpdate(tenantId, missionId, formData);
+  const { error } = await applyMissionUpdate(tenantId, missionId, formData);
   revalidatePath("/painel/missoes");
+  revalidatePath("/painel/conexoes");
+  return { error };
 }
 
-export async function ownerDeleteMission(missionId: string) {
+export async function ownerDeleteMission(missionId: string): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
-  await removeMission(tenantId, missionId);
+  const { error } = await removeMission(tenantId, missionId);
   revalidatePath("/painel/missoes");
+  revalidatePath("/painel/conexoes");
+  return { error };
+}
+
+export async function ownerReorderMissions(orderedIds: string[]): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await reorderMissions(tenantId, orderedIds);
+  revalidatePath("/painel/missoes");
+  return { error };
 }
 
 // ---------- Loja (rewards) ----------

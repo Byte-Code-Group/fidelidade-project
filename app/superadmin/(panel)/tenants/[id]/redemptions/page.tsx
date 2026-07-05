@@ -38,7 +38,7 @@ export default async function RedemptionsPage({
   const db = createAdminClient();
   const { data: redemptions } = await db
     .from("reward_redemptions")
-    .select("*, users(full_name, email)")
+    .select("*, users!reward_redemptions_user_id_fkey(full_name, email)")
     .eq("tenant_id", id)
     .order("created_at", { ascending: false })
     .returns<RedemptionRow[]>();

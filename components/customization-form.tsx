@@ -18,9 +18,9 @@ interface CustomizationFormProps {
   saveAction: (formData: FormData) => void;
   uploadAction: (formData: FormData) => void;
   profileFields?: ProfileField[];
-  createProfileFieldAction?: (formData: FormData) => void;
-  updateProfileFieldAction?: (fieldId: string, formData: FormData) => void;
-  deleteProfileFieldAction?: (fieldId: string) => void;
+  createProfileFieldAction?: (formData: FormData) => Promise<{ error?: string }>;
+  updateProfileFieldAction?: (fieldId: string, formData: FormData) => Promise<{ error?: string }>;
+  deleteProfileFieldAction?: (fieldId: string) => Promise<{ error?: string }>;
   reorderProfileFieldsAction?: (orderedIds: string[]) => Promise<{ error?: string }>;
 }
 

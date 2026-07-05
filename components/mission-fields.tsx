@@ -1,18 +1,29 @@
+"use client";
+
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/form-field";
-import { SOCIAL_NETWORKS, isSocialKey } from "@/components/social-logos";
-import type { Mission } from "@/lib/types";
+import { Icon } from "@/components/icons";
+import { SOCIAL_NETWORKS, SocialLogo, isSocialKey } from "@/components/social-logos";
+import type { Mission, MissionType } from "@/lib/types";
 
-const TYPES = [
-  ["custom", "Custom"],
-  ["social_follow", "Seguir rede social"],
-  ["review", "Avaliação"],
-  ["referral", "Indicação"],
-  ["checkin", "Check-in"],
-] as const;
+const TYPES: { value: MissionType; label: string }[] = [
+  ...SOCIAL_NETWORKS.map((s) => ({ value: s.key as MissionType, label: s.label })),
+  { value: "custom", label: "Personalizada" },
+];
+
+export function MissionTypeIcon({ type, className }: { type: MissionType; className?: string }) {
+  return isSocialKey(type) ? (
+    <SocialLogo name={type} className={className} />
+  ) : (
+    <Icon name="award" className={className} />
+  );
+}
 
 export function MissionFields({ mission }: { mission?: Mission }) {
+  const [type, setType] = useState<MissionType>(mission?.type ?? "custom");
+
   return (
     <>
       <div className="grid grid-cols-[1fr_auto] gap-3">
@@ -38,44 +49,22 @@ export function MissionFields({ mission }: { mission?: Mission }) {
         />
       </Field>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Tipo">
-          <Select name="type" defaultValue={mission?.type ?? "custom"}>
-            {TYPES.map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Rede social">
+      <Field label="Tipo" hint="define o ícone, sempre travado">
+        <div className="flex items-center gap-2">
+          <MissionTypeIcon type={type} className="h-8 w-8 shrink-0" />
           <Select
-            name="social"
-            defaultValue={isSocialKey(mission?.icon) ? mission!.icon! : ""}
+            name="type"
+            value={type}
+            onChange={(e) => setType(e.target.value as MissionType)}
+            className="flex-1"
           >
-            <option value="">Nenhuma</option>
-            {SOCIAL_NETWORKS.map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.label}
+            {TYPES.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </Select>
-        </Field>
-        <Field label="Ordem">
-          <Input
-            name="display_order"
-            type="number"
-            defaultValue={mission?.display_order ?? 0}
-          />
-        </Field>
-      </div>
-
-      <Field label="Ícone (emoji)" hint="usado se não for rede social">
-        <Input
-          name="icon"
-          defaultValue={isSocialKey(mission?.icon) ? "" : (mission?.icon ?? "")}
-          placeholder="🎯"
-        />
+        </div>
       </Field>
 
       <Field label="URL externa" hint="opcional">

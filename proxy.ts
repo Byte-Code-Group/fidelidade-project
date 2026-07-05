@@ -64,7 +64,6 @@ export async function proxy(request: NextRequest) {
 
     if (
       cookieSlug &&
-      pathname !== "/" &&
       !pathname.startsWith("/superadmin") &&
       !pathname.startsWith("/conta") &&
       !pathname.startsWith("/painel") &&

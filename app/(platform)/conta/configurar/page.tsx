@@ -6,40 +6,39 @@ import { MaskedInput } from "@/components/ui/masked-input";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTenantOwner } from "@/lib/owner";
 import { configureBusiness } from "../actions";
 
 export default async function ConfigurarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; mode?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/conta/login");
 
-  const { error } = await searchParams;
+  const { error, mode } = await searchParams;
+  const isNew = mode === "new";
 
-  // Pre-fill if tenant already exists
-  const db = createAdminClient();
-  const { data: pu } = await db
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
+  // Pre-fill com o negócio ativo, exceto ao criar um adicional (form em branco).
   let defaults = { name: "", segment: "", cpfCnpj: "" };
-  if (pu?.tenant_id) {
-    const { data: t } = await db
-      .from("tenants")
-      .select("name, segment_template, owner_cpf_cnpj")
-      .eq("id", pu.tenant_id)
-      .maybeSingle<{ name: string; segment_template: string; owner_cpf_cnpj: string | null }>();
-    if (t) {
-      defaults = {
-        name: t.name,
-        segment: t.segment_template,
-        cpfCnpj: t.owner_cpf_cnpj ?? "",
-      };
+  if (!isNew) {
+    const db = createAdminClient();
+    const owner = await getTenantOwner();
+    if (owner) {
+      const { data: t } = await db
+        .from("tenants")
+        .select("name, segment_template, owner_cpf_cnpj")
+        .eq("id", owner.tenantId)
+        .maybeSingle<{ name: string; segment_template: string; owner_cpf_cnpj: string | null }>();
+      if (t) {
+        defaults = {
+          name: t.name,
+          segment: t.segment_template,
+          cpfCnpj: t.owner_cpf_cnpj ?? "",
+        };
+      }
     }
   }
 
@@ -49,9 +48,13 @@ export default async function ConfigurarPage({
         <div className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-600">
           Passo 1 de 2
         </div>
-        <h1 className="text-xl font-bold">Sobre o seu negócio</h1>
+        <h1 className="text-xl font-bold">
+          {isNew ? "Novo negócio" : "Sobre o seu negócio"}
+        </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Estas informações personalizam o seu portal de fidelidade.
+          {isNew
+            ? "Cada negócio tem seu próprio portal e assinatura."
+            : "Estas informações personalizam o seu portal de fidelidade."}
         </p>
 
         {error && (
@@ -61,6 +64,7 @@ export default async function ConfigurarPage({
         )}
 
         <form action={configureBusiness} className="mt-6 space-y-4">
+          {isNew && <input type="hidden" name="mode" value="new" />}
           <div>
             <label className="mb-1 block text-sm font-medium">Nome do negócio</label>
             <Input

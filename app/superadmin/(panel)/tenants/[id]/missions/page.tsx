@@ -29,7 +29,10 @@ export default async function MissionsPage({
         <Card key={m.id}>
           <CardContent className="space-y-3">
             <form
-              action={updateMission.bind(null, id, m.id)}
+              action={async (formData: FormData) => {
+                "use server";
+                await updateMission(id, m.id, formData);
+              }}
               className="space-y-3"
             >
               <MissionFields mission={m} />
@@ -39,7 +42,12 @@ export default async function MissionsPage({
                 </Button>
               </div>
             </form>
-            <form action={deleteMission.bind(null, id, m.id)}>
+            <form
+              action={async () => {
+                "use server";
+                await deleteMission(id, m.id);
+              }}
+            >
               <button
                 type="submit"
                 className="text-xs text-red-600 hover:underline"
@@ -54,7 +62,13 @@ export default async function MissionsPage({
       <Card>
         <CardContent>
           <h2 className="mb-3 font-semibold">Nova missão</h2>
-          <form action={createMission.bind(null, id)} className="space-y-3">
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              await createMission(id, formData);
+            }}
+            className="space-y-3"
+          >
             <MissionFields />
             <div className="flex justify-end">
               <Button type="submit">Adicionar</Button>

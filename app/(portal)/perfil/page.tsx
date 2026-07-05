@@ -13,6 +13,29 @@ import { FlashToast } from "@/components/flash-toast";
 import type { Membership, ProfileField } from "@/lib/types";
 import { saveProfile } from "../actions";
 
+// Grade de 2 colunas: campo "texto longo" sempre ocupa a linha inteira, e
+// isso empurra o campo anterior/seguinte pra uma linha sozinho — nesse caso
+// ele também estica pra linha inteira em vez de deixar buraco ao lado.
+function layoutFields(fields: ProfileField[]): { field: ProfileField; full: boolean }[] {
+  const result: { field: ProfileField; full: boolean }[] = [];
+  let alone = false;
+
+  for (const field of fields) {
+    const forced = field.field_type === "textarea";
+    if (forced) {
+      if (alone) result[result.length - 1].full = true;
+      result.push({ field, full: true });
+      alone = false;
+    } else {
+      result.push({ field, full: false });
+      alone = !alone;
+    }
+  }
+  if (alone) result[result.length - 1].full = true;
+
+  return result;
+}
+
 function initials(name: string): string {
   return name
     .trim()
@@ -128,7 +151,7 @@ export default async function PerfilPage({
                 <Input defaultValue={profile?.email ?? ""} disabled />
               </FieldWrapper>
 
-              {(fields ?? []).map((field) => {
+              {layoutFields(fields ?? []).map(({ field, full }) => {
                 const value = valueByField.get(field.id) ?? "";
                 const name = `field_${field.id}`;
                 return (
@@ -136,7 +159,7 @@ export default async function PerfilPage({
                     key={field.id}
                     label={field.label}
                     required={field.required}
-                    full={field.field_type === "textarea"}
+                    full={full}
                   >
                     {field.field_type === "select" ? (
                       <Select name={name} defaultValue={value}>
@@ -172,6 +195,14 @@ export default async function PerfilPage({
                         defaultValue={value}
                         required={field.required}
                         placeholder="000.000.000-00"
+                      />
+                    ) : field.field_type === "phone" ? (
+                      <MaskedInput
+                        mask="phone"
+                        name={name}
+                        defaultValue={value}
+                        required={field.required}
+                        placeholder="(00) 00000-0000"
                       />
                     ) : field.field_type === "address" ? (
                       <Input

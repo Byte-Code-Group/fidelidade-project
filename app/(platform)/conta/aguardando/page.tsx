@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTenantOwner } from "@/lib/owner";
 
 export default async function AguardandoPage({
   searchParams,
@@ -16,19 +17,14 @@ export default async function AguardandoPage({
 
   const { modo } = await searchParams;
 
-  // Check if tenant is already active — redirect to painel
-  const db = createAdminClient();
-  const { data: pu } = await db
-    .from("platform_users")
-    .select("tenant_id")
-    .eq("user_id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
-
-  if (pu?.tenant_id) {
+  // Check if the active tenant is already confirmed — redirect to painel
+  const owner = await getTenantOwner();
+  if (owner) {
+    const db = createAdminClient();
     const { data: tenant } = await db
       .from("tenants")
       .select("status")
-      .eq("id", pu.tenant_id)
+      .eq("id", owner.tenantId)
       .maybeSingle<{ status: string }>();
 
     if (tenant?.status === "active") redirect("/painel");
