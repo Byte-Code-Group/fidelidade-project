@@ -12,7 +12,9 @@ import {
   ownerUpdateProfileField,
   ownerDeleteProfileField,
   ownerReorderProfileFields,
+  ownerUpdateBusinessInfo,
 } from "../actions";
+import { BusinessInfoForm } from "@/components/business-info-form";
 
 export default async function OwnerCustomizacaoPage({
   searchParams,
@@ -60,6 +62,13 @@ export default async function OwnerCustomizacaoPage({
       </div>
 
       <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
+
+      <BusinessInfoForm
+        name={tenant.name}
+        segment={tenant.segment_template}
+        cpfCnpj={tenant.owner_cpf_cnpj ?? ""}
+        saveAction={ownerUpdateBusinessInfo}
+      />
 
       <CustomizationForm
         tenantName={tenant.name}

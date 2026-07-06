@@ -24,6 +24,8 @@ import { changeTenantPlan, cancelTenantSubscription } from "@/lib/tenant-billing
 import type { BillingType } from "@/lib/asaas";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { approveRedemption, rejectRedemption } from "@/lib/reward-redemptions";
+import { isValidCpfCnpj } from "@/lib/masks";
+import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
 
 function redirectBack(path: string, error?: string) {
   revalidatePath(path);
@@ -48,6 +50,35 @@ export async function switchActiveTenant(tenantId: string) {
 
 // Nenhuma dessas actions aceita tenantId vindo de fora — é sempre resolvido
 // aqui via requireTenantOwner(), nunca por bind/argumento de form.
+
+// Dados de identidade do negócio (nome, segmento, CPF/CNPJ) — edição
+// dentro do painel, sem passar pelo wizard de onboarding. Não mexe no
+// slug (URL do portal já em uso não pode trocar silenciosamente).
+export async function ownerUpdateBusinessInfo(formData: FormData) {
+  const { tenantId } = await requireTenantOwner();
+
+  const name = String(formData.get("business_name") ?? "").trim();
+  const segment = String(formData.get("segment") ?? "").trim();
+  const cpfCnpj = String(formData.get("owner_cpf_cnpj") ?? "").trim();
+
+  if (!name || !segment || !cpfCnpj) {
+    redirectBack("/painel/customizacao", "Preencha todos os campos.");
+  }
+  if (!SEGMENT_TEMPLATES[segment]) {
+    redirectBack("/painel/customizacao", "Segmento inválido.");
+  }
+  if (!isValidCpfCnpj(cpfCnpj)) {
+    redirectBack("/painel/customizacao", "CPF/CNPJ inválido.");
+  }
+
+  const db = createAdminClient();
+  await db
+    .from("tenants")
+    .update({ name, segment_template: segment, owner_cpf_cnpj: cpfCnpj })
+    .eq("id", tenantId);
+
+  redirectBack("/painel/customizacao");
+}
 
 export async function ownerUpdateTenantSettings(formData: FormData) {
   const { tenantId } = await requireTenantOwner();

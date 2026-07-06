@@ -269,7 +269,7 @@ export default async function PainelPage() {
       </Card>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/conta/configurar">
+        <Link href="/painel/customizacao">
           <Button variant="outline" className="w-full text-sm">Editar negócio</Button>
         </Link>
         {!tenant.asaas_subscription_id && !isPending ? (
