@@ -42,70 +42,72 @@ export default async function ConfigurarPage({
   }
 
   return (
-    <Card>
-      <CardContent>
-        <div className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-600">
-          Passo 1 de 2
-        </div>
-        <h1 className="text-xl font-bold">
-          {isNew ? "Novo negócio" : "Sobre o seu negócio"}
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {isNew
-            ? "Cada negócio tem seu próprio portal e assinatura."
-            : "Estas informações personalizam o seu portal de fidelidade."}
-        </p>
-
-        {error && (
-          <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-            {error === "campos" ? "Preencha todos os campos obrigatórios." : decodeURIComponent(error)}
+    <div className="mx-auto max-w-lg">
+      <Card>
+        <CardContent>
+          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-600">
+            Passo 1 de 2
+          </div>
+          <h1 className="text-xl font-bold">
+            {isNew ? "Novo negócio" : "Sobre o seu negócio"}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {isNew
+              ? "Cada negócio tem seu próprio portal e assinatura."
+              : "Estas informações personalizam o seu portal de fidelidade."}
           </p>
-        )}
 
-        <form action={configureBusiness} className="mt-6 space-y-4">
-          {isNew && <input type="hidden" name="mode" value="new" />}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Nome do negócio</label>
-            <Input
-              name="business_name"
-              required
-              placeholder="Ex: Studio Silva"
-              defaultValue={defaults.name}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Segmento</label>
-            <Select name="segment" defaultValue={defaults.segment || ""}>
-              <option value="" disabled>Escolha o segmento</option>
-              <option value="odonto">Odontologia</option>
-              <option value="academia">Academia / Fitness</option>
-              <option value="barbearia">Barbearia</option>
-              <option value="salao">Salão de beleza</option>
-              <option value="restaurante">Restaurante / Food</option>
-              <option value="estetica">Estética</option>
-              <option value="generico">Outro</option>
-            </Select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">CPF / CNPJ</label>
-            <MaskedInput
-              mask="cpf-cnpj"
-              name="owner_cpf_cnpj"
-              required
-              placeholder="00.000.000/0001-00"
-              defaultValue={defaults.cpfCnpj}
-            />
-            <p className="mt-1 text-xs text-gray-400">Necessário para emissão de cobranças.</p>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">WhatsApp (opcional)</label>
-            <MaskedInput mask="phone" name="phone" type="tel" placeholder="(00) 00000-0000" />
-          </div>
-          <Button type="submit" className="w-full">
-            Continuar →
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          {error && (
+            <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+              {error === "campos" ? "Preencha todos os campos obrigatórios." : decodeURIComponent(error)}
+            </p>
+          )}
+
+          <form action={configureBusiness} className="mt-6 space-y-4">
+            {isNew && <input type="hidden" name="mode" value="new" />}
+            <div>
+              <label className="mb-1 block text-sm font-medium">Nome do negócio</label>
+              <Input
+                name="business_name"
+                required
+                placeholder="Ex: Studio Silva"
+                defaultValue={defaults.name}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Segmento</label>
+              <Select name="segment" defaultValue={defaults.segment || ""}>
+                <option value="" disabled>Escolha o segmento</option>
+                <option value="odonto">Odontologia</option>
+                <option value="academia">Academia / Fitness</option>
+                <option value="barbearia">Barbearia</option>
+                <option value="salao">Salão de beleza</option>
+                <option value="restaurante">Restaurante / Food</option>
+                <option value="estetica">Estética</option>
+                <option value="generico">Outro</option>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">CPF / CNPJ</label>
+              <MaskedInput
+                mask="cpf-cnpj"
+                name="owner_cpf_cnpj"
+                required
+                placeholder="00.000.000/0001-00"
+                defaultValue={defaults.cpfCnpj}
+              />
+              <p className="mt-1 text-xs text-gray-400">Necessário para emissão de cobranças.</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">WhatsApp (opcional)</label>
+              <MaskedInput mask="phone" name="phone" type="tel" placeholder="(00) 00000-0000" />
+            </div>
+            <Button type="submit" className="w-full">
+              Continuar →
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

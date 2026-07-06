@@ -10,7 +10,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </Link>
         </div>
       </nav>
-      <main className="mx-auto w-full max-w-lg px-5 py-12">{children}</main>
+      <main className="mx-auto w-full max-w-5xl px-5 py-12">{children}</main>
     </div>
   );
 }

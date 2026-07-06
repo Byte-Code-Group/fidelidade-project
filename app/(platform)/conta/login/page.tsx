@@ -13,36 +13,38 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <Card>
-      <CardContent>
-        <h1 className="text-xl font-bold">Entrar na sua conta</h1>
+    <div className="mx-auto max-w-lg">
+      <Card>
+        <CardContent>
+          <h1 className="text-xl font-bold">Entrar na sua conta</h1>
 
-        {error && (
-          <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-            {decodeURIComponent(error)}
+          {error && (
+            <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+              {decodeURIComponent(error)}
+            </p>
+          )}
+
+          <form action={platformSignIn} className="mt-6 space-y-4">
+            <Input name="email" type="email" required placeholder="E-mail" autoComplete="email" />
+            <PasswordInput
+              name="password"
+              required
+              placeholder="Senha"
+              autoComplete="current-password"
+            />
+            <Button type="submit" className="w-full">
+              Entrar
+            </Button>
+          </form>
+
+          <p className="mt-4 text-center text-sm text-gray-500">
+            Não tem conta?{" "}
+            <Link href="/conta/cadastro" className="text-blue-600 hover:underline">
+              Criar conta grátis
+            </Link>
           </p>
-        )}
-
-        <form action={platformSignIn} className="mt-6 space-y-4">
-          <Input name="email" type="email" required placeholder="E-mail" autoComplete="email" />
-          <PasswordInput
-            name="password"
-            required
-            placeholder="Senha"
-            autoComplete="current-password"
-          />
-          <Button type="submit" className="w-full">
-            Entrar
-          </Button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-500">
-          Não tem conta?{" "}
-          <Link href="/conta/cadastro" className="text-blue-600 hover:underline">
-            Criar conta grátis
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
