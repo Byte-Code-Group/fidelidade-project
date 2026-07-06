@@ -101,7 +101,7 @@ export async function createTenant(formData: FormData) {
 
   const { data: tenant, error: tErr } = await db
     .from("tenants")
-    .insert({ name, slug, segment_template: segment })
+    .insert({ name, slug, segment_template: segment, status: "active" })
     .select("id")
     .single<{ id: string }>();
 
@@ -182,7 +182,7 @@ export async function updateTenantCore(tenantId: string, formData: FormData) {
       owner_email: ownerEmail || null,
       owner_cpf_cnpj: ownerCpfCnpj || null,
       saas_plan: String(formData.get("saas_plan") ?? "starter"),
-      status: String(formData.get("status") ?? "trial"),
+      status: String(formData.get("status") ?? "pending"),
     })
     .eq("id", tenantId);
 

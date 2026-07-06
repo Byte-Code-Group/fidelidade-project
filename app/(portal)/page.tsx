@@ -74,7 +74,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
             </Link>
             <Link href="/conta/cadastro">
               <Button className="text-sm bg-blue-600 hover:bg-blue-700 text-white">
-                Criar conta grátis
+                Criar conta
               </Button>
             </Link>
           </div>
@@ -192,7 +192,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
           </p>
           <Link href="/conta/cadastro" className="mt-8 inline-block">
             <button className="rounded-xl bg-white px-10 py-3 text-base font-semibold text-blue-600 transition hover:bg-blue-50">
-              Criar conta grátis →
+              Criar conta →
             </button>
           </Link>
         </div>

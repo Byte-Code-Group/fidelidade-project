@@ -12,7 +12,7 @@ const ACTIVITY_PAGE_SIZE = 15;
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/15 text-green-600",
-  trial: "bg-amber-500/15 text-amber-600",
+  pending: "bg-blue-500/15 text-blue-600",
   suspended: "bg-red-500/15 text-red-600",
 };
 
@@ -66,7 +66,7 @@ export default async function DashboardPage({
 
   const all = tenants ?? [];
   const active = all.filter((t) => t.status === "active").length;
-  const trial = all.filter((t) => t.status === "trial").length;
+  const pendingTenants = all.filter((t) => t.status === "pending").length;
 
   const kpis: {
     label: string;
@@ -77,7 +77,7 @@ export default async function DashboardPage({
   }[] = [
     { label: "Empresas ativas", value: String(active), icon: "building", note: `${all.length} no total`, accent: "text-[var(--primary)]" },
     { label: "Clientes finais", value: String(clientsCount ?? 0), icon: "users", note: "em todas as empresas", accent: "text-violet-500" },
-    { label: "Em trial", value: String(trial), icon: "clock", note: "acompanhe a conversão", accent: "text-amber-500" },
+    { label: "Aguardando pagamento", value: String(pendingTenants), icon: "clock", note: "acompanhe a conversão", accent: "text-amber-500" },
     { label: "Resgates pendentes", value: String(pendingRedemptions ?? 0), icon: "gift", note: "requer atenção", accent: "text-rose-500" },
   ];
 

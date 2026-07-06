@@ -40,7 +40,7 @@ export default async function LoginPage({
           <p className="mt-4 text-center text-sm text-gray-500">
             Não tem conta?{" "}
             <Link href="/conta/cadastro" className="text-blue-600 hover:underline">
-              Criar conta grátis
+              Criar conta
             </Link>
           </p>
         </CardContent>

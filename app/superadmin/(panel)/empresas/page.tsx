@@ -15,20 +15,20 @@ const PAGE_SIZE = 10;
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/15 text-green-600",
-  trial: "bg-amber-500/15 text-amber-600",
+  pending: "bg-blue-500/15 text-blue-600",
   suspended: "bg-red-500/15 text-red-600",
 };
 
 const statusLabel: Record<string, string> = {
   active: "Ativo",
-  trial: "Trial",
+  pending: "Aguardando pagamento",
   suspended: "Suspenso",
 };
 
 const FILTERS = [
   { key: "all", label: "Todas", match: () => true },
   { key: "active", label: "Ativas", match: (t: Tenant) => t.status === "active" },
-  { key: "trial", label: "Em trial", match: (t: Tenant) => t.status === "trial" },
+  { key: "pending", label: "Pendentes", match: (t: Tenant) => t.status === "pending" },
   { key: "suspended", label: "Vencidas", match: (t: Tenant) => t.status === "suspended" },
 ] as const;
 
@@ -141,13 +141,6 @@ export default async function EmpresasPage({
                     <Badge className={statusStyle[t.status] ?? "bg-black/5"}>
                       {statusLabel[t.status] ?? t.status}
                     </Badge>
-                    {t.status === "trial" && t.trial_ends_at && (
-                      <p className="mt-0.5 text-xs opacity-50">
-                        {new Date(t.trial_ends_at) < new Date()
-                          ? "Expirado"
-                          : `até ${new Date(t.trial_ends_at).toLocaleDateString("pt-BR")}`}
-                      </p>
-                    )}
                   </td>
                   <td className="px-5 py-3.5 text-right whitespace-nowrap">
                     <a

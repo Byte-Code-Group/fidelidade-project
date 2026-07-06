@@ -8,13 +8,11 @@ import { requireTenantOwner } from "@/lib/owner";
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
 
 const STATUS_LABEL: Record<string, string> = {
-  trial: "Trial",
   pending: "Aguardando pagamento",
   active: "Ativo",
   suspended: "Suspenso",
 };
 const STATUS_COLOR: Record<string, string> = {
-  trial: "bg-yellow-100 text-yellow-700",
   pending: "bg-blue-100 text-blue-700",
   active: "bg-green-100 text-green-700",
   suspended: "bg-red-100 text-red-600",
@@ -42,14 +40,13 @@ export default async function PainelPage() {
   ] = await Promise.all([
     db
       .from("tenants")
-      .select("name, slug, status, saas_plan, trial_ends_at, asaas_subscription_id")
+      .select("name, slug, status, saas_plan, asaas_subscription_id")
       .eq("id", tenantId)
       .maybeSingle<{
         name: string;
         slug: string;
         status: string;
         saas_plan: string;
-        trial_ends_at: string | null;
         asaas_subscription_id: string | null;
       }>(),
     db
@@ -86,11 +83,6 @@ export default async function PainelPage() {
 
   const portalUrl = `https://${ROOT_DOMAIN}/p/${tenant.slug}`;
   const isPending = tenant.status === "pending";
-  const isTrial = tenant.status === "trial";
-  const trialExpired =
-    isTrial &&
-    tenant.trial_ends_at != null &&
-    new Date(tenant.trial_ends_at) < new Date();
 
   // Check-in chart: bucket by day (last 30 days)
   const dayBuckets: Record<string, number> = {};
@@ -145,17 +137,6 @@ export default async function PainelPage() {
           </p>
         </div>
       )}
-      {isTrial && !trialExpired && tenant.trial_ends_at && (
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-          <p className="text-sm font-medium text-yellow-800">
-            Trial expira em {new Date(tenant.trial_ends_at).toLocaleDateString("pt-BR")}
-          </p>
-          <Link href="/conta/planos" className="text-sm text-yellow-600 underline">
-            Assinar para continuar
-          </Link>
-        </div>
-      )}
-
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

@@ -9,13 +9,13 @@ const PLAN_PRICES: Record<string, number> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  trial: "Trial",
+  pending: "Aguardando pagamento",
   active: "Ativo",
   suspended: "Suspenso",
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  trial: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/25 dark:text-yellow-400",
+  pending: "bg-blue-100 text-blue-700 dark:bg-blue-900/25 dark:text-blue-400",
   active: "bg-green-100 text-green-700 dark:bg-green-900/25 dark:text-green-400",
   suspended: "bg-red-100 text-red-600 dark:bg-red-900/25 dark:text-red-400",
 };
@@ -66,7 +66,7 @@ export default async function FaturamentoPage() {
             <p className="text-xs opacity-50 uppercase tracking-wider">Total de empresas</p>
             <p className="mt-1 text-2xl font-semibold">{rows.length}</p>
             <p className="text-xs opacity-50">
-              {rows.filter((t) => t.status === "trial").length} em trial
+              {rows.filter((t) => t.status === "pending").length} aguardando pagamento
             </p>
           </CardContent>
         </Card>

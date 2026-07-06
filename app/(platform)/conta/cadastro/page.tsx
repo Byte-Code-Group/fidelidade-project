@@ -18,7 +18,7 @@ export default async function CadastroPage({
         <CardContent>
           <h1 className="text-xl font-bold">Crie sua conta</h1>
           <p className="mt-1 text-sm text-gray-500">
-            14 dias grátis, sem cartão de crédito.
+            Configure seu portal e ative com o plano que preferir.
           </p>
 
           {error && (

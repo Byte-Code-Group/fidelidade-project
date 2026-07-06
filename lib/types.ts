@@ -11,13 +11,12 @@ export interface Tenant {
   custom_domain: string | null;
   segment_template: string;
   saas_plan: string;
-  status: "trial" | "pending" | "active" | "suspended" | string;
+  status: "pending" | "active" | "suspended" | string;
   checkin_token: string;
   owner_email?: string | null;
   owner_cpf_cnpj?: string | null;
   asaas_customer_id?: string | null;
   asaas_subscription_id?: string | null;
-  trial_ends_at?: string | null;
   created_at: string;
 }
 

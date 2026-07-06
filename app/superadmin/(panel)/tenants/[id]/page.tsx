@@ -116,7 +116,7 @@ export default async function EditTenantPage({
           </Field>
           <Field label="Status">
             <Select name="status" defaultValue={tenant.status}>
-              <option value="trial">Trial</option>
+              <option value="pending">Aguardando pagamento</option>
               <option value="active">Ativo</option>
               <option value="suspended">Suspenso</option>
             </Select>
