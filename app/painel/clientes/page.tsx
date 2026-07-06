@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
 import { Icon } from "@/components/icons";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+const PAGE_SIZE = 15;
 
 interface MemberRow {
   id: string;
@@ -25,34 +28,67 @@ const statusStyle: Record<string, string> = {
   suspended: "bg-red-500/10 text-red-600",
 };
 
-export default async function OwnerClientsPage() {
+export default async function OwnerClientsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const { q = "", page = "1" } = await searchParams;
+  const currentPage = parseInt(page, 10) || 1;
   const { tenantId } = await requireTenantOwner();
   const db = createAdminClient();
-  const { data: members } = await db
+
+  let query = db
     .from("users")
     .select(
       "id, full_name, email, created_at, memberships(id, member_code, points_total, status, valid_until)",
+      { count: "exact" },
     )
     .eq("tenant_id", tenantId)
-    .eq("role", "client")
+    .eq("role", "client");
+
+  if (q.trim()) {
+    const term = q.trim();
+    query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`);
+  }
+
+  const from = (currentPage - 1) * PAGE_SIZE;
+  const { data: members, count } = await query
     .order("created_at", { ascending: false })
+    .range(from, from + PAGE_SIZE - 1)
     .returns<MemberRow[]>();
+
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
+  const baseUrl = q.trim()
+    ? `/painel/clientes?q=${encodeURIComponent(q.trim())}`
+    : "/painel/clientes";
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Clientes</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {members?.length ?? 0} cliente(s) final(is) cadastrado(s).
+          {count ?? 0} cliente(s) final(is) cadastrado(s).
         </p>
       </div>
+
+      <form method="get" className="flex">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q}
+          placeholder="Buscar por nome ou e-mail…"
+          className="w-full max-w-sm rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-[var(--primary)] dark:border-white/10"
+        />
+      </form>
 
       {!members || members.length === 0 ? (
         <Card>
           <CardContent>
             <p className="text-sm opacity-70">
-              Nenhum cliente final ainda. Eles entram via cadastro/login no
-              portal do seu negócio.
+              {q.trim()
+                ? "Nenhum cliente encontrado."
+                : "Nenhum cliente final ainda. Eles entram via cadastro/login no portal do seu negócio."}
             </p>
           </CardContent>
         </Card>
@@ -94,6 +130,10 @@ export default async function OwnerClientsPage() {
             })}
           </div>
         </Card>
+      )}
+
+      {totalPages > 1 && (
+        <Pagination currentPage={currentPage} totalPages={totalPages} baseUrl={baseUrl} />
       )}
     </div>
   );
