@@ -11,20 +11,30 @@ const PLANS = [
     key: "starter",
     name: "Starter",
     price: 97,
-    features: ["Até 200 clientes", "IA com 50k tokens/mês", "Módulos básicos"],
+    features: ["1 negócio", "Até 200 clientes", "IA com 50k tokens/mês", "Módulos básicos"],
   },
   {
     key: "pro",
     name: "Pro",
     price: 297,
-    features: ["Até 1.000 clientes", "IA com 500k tokens/mês", "Todos os módulos"],
+    features: [
+      "Até 3 negócios",
+      "Até 1.000 clientes",
+      "IA com 500k tokens/mês",
+      "Todos os módulos",
+    ],
     highlight: true,
   },
   {
     key: "premium",
     name: "Premium",
     price: 697,
-    features: ["Clientes ilimitados", "IA ilimitada", "Todos os módulos + suporte prioritário"],
+    features: [
+      "Negócios ilimitados",
+      "Clientes ilimitados",
+      "IA ilimitada",
+      "Todos os módulos + suporte prioritário",
+    ],
   },
 ];
 
