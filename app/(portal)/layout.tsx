@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentTenant } from "@/lib/tenant";
 import { getAuthUser } from "@/lib/supabase/server";
 import { PortalSidebar } from "@/components/portal-sidebar";
@@ -66,6 +67,22 @@ export default async function PortalLayout({
     return (
       <div data-theme={settings.theme_mode} className="flex min-h-dvh flex-col">
         <style dangerouslySetInnerHTML={{ __html: themeVars }} />
+        <header className="px-5 py-4">
+          <Link href="/" className="inline-flex items-center gap-2.5">
+            {settings.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.logo_url} alt="" className="h-8 w-8 rounded-lg object-cover" />
+            ) : (
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-[var(--primary-foreground)]"
+                style={{ background: "var(--primary)" }}
+              >
+                {tenant.name.charAt(0)}
+              </div>
+            )}
+            <span className="font-semibold">{tenant.name}</span>
+          </Link>
+        </header>
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-10">
           {children}
         </main>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { superSignIn } from "../actions";
 
 // Login do Super Admin (apex: lvh.me:3000/superadmin/login).
@@ -25,9 +26,8 @@ export default async function SuperLoginPage({
 
           <form action={superSignIn} className="mt-5 space-y-3">
             <Input name="email" type="email" required placeholder="E-mail" />
-            <Input
+            <PasswordInput
               name="password"
-              type="password"
               required
               placeholder="Senha"
             />

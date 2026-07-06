@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SuperadminRedefinirSenhaPage() {
@@ -63,16 +63,14 @@ export default function SuperadminRedefinirSenhaPage() {
           <h1 className="text-xl font-semibold">Redefinir senha</h1>
           <p className="mt-1 text-sm opacity-70">Escolha uma nova senha para o painel.</p>
           <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-            <Input
-              type="password"
+            <PasswordInput
               required
               placeholder="Nova senha"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Input
-              type="password"
+            <PasswordInput
               required
               placeholder="Confirmar nova senha"
               autoComplete="new-password"

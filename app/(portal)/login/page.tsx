@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { getCurrentTenant } from "@/lib/tenant";
 import { signIn } from "../actions";
 
@@ -25,9 +26,8 @@ export default async function LoginPage({
 
         <form action={signIn} className="mt-5 space-y-3">
           <Input name="email" type="email" required placeholder="E-mail" />
-          <Input
+          <PasswordInput
             name="password"
-            type="password"
             required
             placeholder="Senha"
           />

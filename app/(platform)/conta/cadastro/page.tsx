@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { platformSignUp } from "../actions";
 
 export default async function CadastroPage({
@@ -28,9 +29,8 @@ export default async function CadastroPage({
         <form action={platformSignUp} className="mt-6 space-y-4">
           <Input name="name" required placeholder="Seu nome completo" autoComplete="name" />
           <Input name="email" type="email" required placeholder="E-mail" autoComplete="email" />
-          <Input
+          <PasswordInput
             name="password"
-            type="password"
             required
             placeholder="Senha (mín. 6 caracteres)"
             autoComplete="new-password"

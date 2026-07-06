@@ -36,7 +36,9 @@ export type IconKey =
   | "store"
   | "sun"
   | "moon"
-  | "gripVertical";
+  | "gripVertical"
+  | "eye"
+  | "eyeOff";
 
 const paths: Record<IconKey, React.ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5" />,
@@ -98,6 +100,12 @@ const paths: Record<IconKey, React.ReactNode> = {
   ),
   gripVertical: (
     <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" strokeWidth={2.6} />
+  ),
+  eye: (
+    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+  ),
+  eyeOff: (
+    <path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24M9.36 5.6A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a13.2 13.2 0 0 1-3.22 3.9M6.6 6.6C3.9 8.3 2 11 2 11a13.2 13.2 0 0 0 5.3 5.3" />
   ),
 };
 
