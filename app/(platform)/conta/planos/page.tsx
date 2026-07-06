@@ -67,24 +67,29 @@ export default async function PlanosPage({
         </p>
       )}
 
-      <div className="grid max-w-4xl gap-6 sm:grid-cols-3">
+      <div className="space-y-4">
         {PLANS.map((plan) => (
           <Card
             key={plan.key}
-            className={plan.highlight ? "flex flex-col border-2 border-blue-600" : "flex flex-col"}
+            className={plan.highlight ? "border-2 border-blue-600" : undefined}
           >
-            <CardContent className="flex flex-1 flex-col">
-              {plan.highlight && (
-                <span className="mb-2 inline-block w-fit rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
-                  Mais popular
-                </span>
-              )}
-              <h2 className="font-bold">{plan.name}</h2>
-              <p className="mt-1">
-                <span className="text-2xl font-bold">R$ {plan.price}</span>
-                <span className="text-xs text-gray-400">/mês</span>
-              </p>
-              <ul className="mt-2 flex-1 space-y-0.5">
+            <CardContent>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  {plan.highlight && (
+                    <span className="mb-1.5 inline-block w-fit rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                      Mais popular
+                    </span>
+                  )}
+                  <h2 className="font-bold">{plan.name}</h2>
+                </div>
+                <p className="shrink-0 whitespace-nowrap text-right">
+                  <span className="text-2xl font-bold">R$ {plan.price}</span>
+                  <span className="text-xs text-gray-400">/mês</span>
+                </p>
+              </div>
+
+              <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1">
                 {plan.features.map((f) => (
                   <li key={f} className="text-sm text-gray-500">
                     ✓ {f}
@@ -92,13 +97,13 @@ export default async function PlanosPage({
                 ))}
               </ul>
 
-              <form action={initiatePayment} className="mt-4 space-y-2">
+              <form action={initiatePayment} className="mt-4 flex gap-2">
                 <input type="hidden" name="plan" value={plan.key} />
-                <Select name="billing_type" defaultValue="CREDIT_CARD" className="w-full text-sm">
-                  <option value="CREDIT_CARD">Cartão de crédito</option>
+                <Select name="billing_type" defaultValue="CREDIT_CARD" className="w-36 shrink-0 text-sm">
+                  <option value="CREDIT_CARD">Cartão</option>
                   <option value="PIX">PIX</option>
                 </Select>
-                <Button type="submit" className="w-full" variant={plan.highlight ? "primary" : "outline"}>
+                <Button type="submit" className="flex-1" variant={plan.highlight ? "primary" : "outline"}>
                   Assinar {plan.name}
                 </Button>
               </form>
