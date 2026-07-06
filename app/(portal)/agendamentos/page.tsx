@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { Appointment } from "@/lib/types";
 
 const statusStyle: Record<string, string> = {
@@ -38,9 +38,7 @@ export default async function AgendamentosPage() {
   if (!ctx) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const { data: appointments } = await supabase

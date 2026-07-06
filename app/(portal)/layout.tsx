@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { PortalSidebar } from "@/components/portal-sidebar";
 import { buildPortalNav } from "@/lib/portal-nav";
 import { signOut } from "./actions";
@@ -52,10 +52,7 @@ export default async function PortalLayout({
     );
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   const themeVars = `
     :root {

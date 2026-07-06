@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { getTenantOwner } from "@/lib/owner";
 import { getPlatformAdmin } from "@/lib/superadmin";
 import { canCreateAnotherTenant } from "@/lib/tenant-limits";
@@ -15,10 +15,7 @@ export default async function PainelLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/conta/login");
 
   const owner = await getTenantOwner();

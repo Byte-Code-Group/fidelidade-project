@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { FlashToast } from "@/components/flash-toast";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { Membership, Reward } from "@/lib/types";
 import { redeemReward } from "../actions";
 
@@ -27,9 +27,7 @@ export default async function LojaPage({
   const { done, error } = await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const [{ data: rewards }, { data: membership }] = await Promise.all([

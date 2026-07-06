@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { MissionTypeIcon } from "@/components/mission-fields";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Membership, Mission, MissionCompletion } from "@/lib/types";
 import { completeMission } from "../actions";
@@ -16,10 +16,7 @@ export default async function EngajamentoPage() {
   const ctx = await getCurrentTenant();
   if (!ctx) notFound();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   // Catálogo de missões ativas + conclusões do usuário + saldo de pontos.

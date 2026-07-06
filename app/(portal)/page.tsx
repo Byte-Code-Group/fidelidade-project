@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/icons";
 import { MembershipCard } from "@/components/membership-card";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import {
   currentPeriodRef,
   streakFromPeriods,
@@ -255,9 +255,7 @@ export default async function HomePage({
   const { settings } = ctx;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   // Estado deslogado → CTA de login.
   if (!user) {

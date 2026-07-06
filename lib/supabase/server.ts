@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
+import type { User } from "@supabase/supabase-js";
 
 // Client de servidor (Server Components / Server Actions / Route Handlers).
 // Usa os cookies da request → RLS ativo com a session do usuário.
@@ -28,3 +30,14 @@ export async function createClient() {
     },
   );
 }
+
+// auth.getUser() sempre revalida contra o servidor da Supabase (network,
+// não é local como getClaims). Camadas diferentes (layout + page) chamam
+// isso independente — cache() por request evita repetir o round-trip.
+export const getAuthUser = cache(async (): Promise<User | null> => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+});

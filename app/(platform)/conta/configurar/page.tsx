@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Select } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantOwner } from "@/lib/owner";
 import { configureBusiness } from "../actions";
@@ -14,8 +14,7 @@ export default async function ConfigurarPage({
 }: {
   searchParams: Promise<{ error?: string; mode?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/conta/login");
 
   const { error, mode } = await searchParams;

@@ -7,7 +7,7 @@ import { Select } from "@/components/ui/select";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashToast } from "@/components/flash-toast";
 import type { Membership, ProfileField } from "@/lib/types";
@@ -56,9 +56,7 @@ export default async function PerfilPage({
   const { settings } = ctx;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   // profile_fields/profile_field_values via admin client (filtro explícito por

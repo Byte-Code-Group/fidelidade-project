@@ -1,8 +1,9 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const ACTIVE_TENANT_COOKIE = "owner_active_tenant";
@@ -21,7 +22,7 @@ export interface TenantOwnerContext {
 
 // Todos os negócios (tenants) que esse usuário possui (exclui a linha
 // "placeholder" com tenant_id null, criada no signup antes do 1º negócio).
-export async function getOwnerTenants(userId: string): Promise<OwnedTenant[]> {
+export const getOwnerTenants = cache(async (userId: string): Promise<OwnedTenant[]> => {
   const admin = createAdminClient();
   const { data } = await admin
     .from("platform_users")
@@ -32,7 +33,7 @@ export async function getOwnerTenants(userId: string): Promise<OwnedTenant[]> {
     .returns<{ tenant_id: string; tenants: OwnedTenant | null }[]>();
 
   return (data ?? []).flatMap((row) => (row.tenants ? [row.tenants] : []));
-}
+});
 
 // Negócio "ativo" no painel: o escolhido via cookie (switcher), com
 // fallback pro primeiro criado — nunca aceito como argumento vindo de fora.
@@ -46,10 +47,7 @@ async function resolveActiveTenantId(tenants: OwnedTenant[]): Promise<string | n
 
 // Usuário autenticado + tenant ativo (se houver). Não redireciona.
 export async function getTenantOwner(): Promise<TenantOwnerContext | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const tenants = await getOwnerTenants(user.id);
@@ -63,10 +61,7 @@ export async function getTenantOwner(): Promise<TenantOwnerContext | null> {
 export async function requireTenantOwner(opts?: {
   noTenantRedirect?: string;
 }): Promise<TenantOwnerContext> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/conta/login");
 
   const tenants = await getOwnerTenants(user.id);

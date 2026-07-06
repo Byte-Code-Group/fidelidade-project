@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { IconKey } from "@/components/icons";
 import type { Checkin, MissionCompletion, RewardRedemption } from "@/lib/types";
 
@@ -37,9 +37,7 @@ export default async function HistoricoPage() {
   if (!ctx) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const [

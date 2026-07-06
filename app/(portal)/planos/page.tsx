@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { BusinessPlan, Membership } from "@/lib/types";
 
 function formatPrice(value: number) {
@@ -21,9 +21,7 @@ export default async function PlanosPage() {
   const { tenant } = ctx;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const [{ data: plans }, { data: membership }] = await Promise.all([

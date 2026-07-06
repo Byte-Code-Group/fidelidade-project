@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { CarePlan, CarePlanStep } from "@/lib/types";
 
 interface PlanWithSteps extends CarePlan {
@@ -31,9 +31,7 @@ export default async function TratamentosPage() {
   if (!ctx) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const { data: plans } = await supabase

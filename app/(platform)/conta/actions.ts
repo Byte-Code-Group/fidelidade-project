@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantOwner, requireTenantOwner, ACTIVE_TENANT_COOKIE } from "@/lib/owner";
 import { canCreateAnotherTenant } from "@/lib/tenant-limits";
@@ -72,7 +72,7 @@ export async function platformSignUp(formData: FormData) {
 
   // Cria a linha "placeholder" (tenant_id null) — só se ainda não existir
   // nenhuma, já que platform_users não tem mais user_id como PK única.
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (user) {
     const db = createAdminClient();
     const { count } = await db
@@ -112,8 +112,7 @@ export async function platformSignOut() {
 // ---------- Configurar negócio ----------
 
 export async function configureBusiness(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/conta/login");
 
   const businessName = String(formData.get("business_name") ?? "").trim();

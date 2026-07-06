@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { SofiaChat } from "./sofia-chat";
 
 export default async function AtendentePage() {
@@ -8,10 +8,7 @@ export default async function AtendentePage() {
   if (!ctx) notFound();
   const { settings } = ctx;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const welcome =

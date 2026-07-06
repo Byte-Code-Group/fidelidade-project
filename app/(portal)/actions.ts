@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentTenant } from "@/lib/tenant";
 import { currentPeriodRef, type LoyaltyFrequency } from "@/lib/loyalty";
@@ -136,9 +136,7 @@ export async function signUp(formData: FormData) {
 export async function completeMission(missionId: string) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   // Missão precisa existir, estar ativa e ser do tenant do usuário (RLS).
@@ -178,9 +176,7 @@ export async function saveProfile(formData: FormData) {
   if (!ctx) redirect("/");
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const db = createAdminClient();
@@ -239,9 +235,7 @@ export async function redeemReward(rewardId: string) {
   if (!ctx) redirect("/");
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const db = createAdminClient();
@@ -321,9 +315,7 @@ export async function doCheckin(token: string) {
   const { tenant, settings } = ctx;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   // Token errado → não está presencialmente no local. Não vaza motivo.

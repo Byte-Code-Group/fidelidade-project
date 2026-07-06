@@ -3,7 +3,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Icon } from "@/components/icons";
 import { getCurrentTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { Partnership } from "@/lib/types";
 
 export default async function ParceriasPage() {
@@ -11,9 +11,7 @@ export default async function ParceriasPage() {
   if (!ctx) notFound();
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
   const { data: partnerships } = await supabase
