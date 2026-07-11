@@ -65,6 +65,8 @@ export async function createSubscription(opts: {
   const nextDueDate = new Date();
   nextDueDate.setDate(nextDueDate.getDate() + 1);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
   return request<AsaasSubscription>("/subscriptions", {
     method: "POST",
     body: JSON.stringify({
@@ -75,6 +77,12 @@ export async function createSubscription(opts: {
       cycle: "MONTHLY",
       description: `Fideliza.OS — Plano ${opts.plan}`,
       externalReference: opts.customer,
+      ...(siteUrl && {
+        callback: {
+          successUrl: `${siteUrl}/conta/aguardando`,
+          autoRedirect: true,
+        },
+      }),
     }),
   });
 }
