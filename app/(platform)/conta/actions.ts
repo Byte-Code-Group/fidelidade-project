@@ -60,7 +60,7 @@ export async function platformSignUp(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { full_name: name } },
@@ -72,15 +72,16 @@ export async function platformSignUp(formData: FormData) {
 
   // Cria a linha "placeholder" (tenant_id null) — só se ainda não existir
   // nenhuma, já que platform_users não tem mais user_id como PK única.
-  const user = await getAuthUser();
-  if (user) {
+  // Usa o user retornado pelo signUp direto (não getAuthUser/sessão), pois
+  // com confirmação de e-mail ativa a sessão ainda não existe nesta request.
+  if (data.user) {
     const db = createAdminClient();
     const { count } = await db
       .from("platform_users")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
+      .eq("user_id", data.user.id);
     if (!count) {
-      await db.from("platform_users").insert({ user_id: user.id, tenant_id: null });
+      await db.from("platform_users").insert({ user_id: data.user.id, tenant_id: null });
     }
   }
 
