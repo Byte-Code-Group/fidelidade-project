@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { getAuthUser } from "@/lib/supabase/server";
 import { platformSignIn } from "../actions";
 
 export default async function LoginPage({
@@ -10,6 +12,9 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  const user = await getAuthUser();
+  if (user) redirect("/painel");
+
   const { error } = await searchParams;
 
   return (

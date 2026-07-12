@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { getPlatformAdmin } from "@/lib/superadmin";
 import { superSignIn } from "../actions";
 
 // Login do Super Admin (apex: lvh.me:3000/superadmin/login).
@@ -12,6 +14,9 @@ export default async function SuperLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  const admin = await getPlatformAdmin();
+  if (admin) redirect("/superadmin");
+
   const { error } = await searchParams;
 
   return (
