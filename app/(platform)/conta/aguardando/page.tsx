@@ -1,33 +1,44 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getAuthUser } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getTenantOwner } from "@/lib/owner";
 
-export default async function AguardandoPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ modo?: string }>;
-}) {
-  const user = await getAuthUser();
-  if (!user) redirect("/conta/login");
+// Rota alcançada pelo redirect de volta do checkout Asaas (navegação
+// cross-site). O cookie de sessão pode não chegar na 1ª renderização —
+// por isso a checagem de auth/status é feita via fetch client-side
+// (same-site) em vez de gate no server component.
+export default function AguardandoPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const modo = searchParams.get("modo");
+  const [checking, setChecking] = useState(true);
 
-  const { modo } = await searchParams;
+  const checkStatus = useCallback(async () => {
+    setChecking(true);
+    try {
+      const res = await fetch("/api/conta/status", { cache: "no-store" });
+      const data: { authenticated: boolean; tenantStatus: string | null } =
+        await res.json();
 
-  // Check if the active tenant is already confirmed — redirect to painel
-  const owner = await getTenantOwner();
-  if (owner) {
-    const db = createAdminClient();
-    const { data: tenant } = await db
-      .from("tenants")
-      .select("status")
-      .eq("id", owner.tenantId)
-      .maybeSingle<{ status: string }>();
+      if (!data.authenticated) {
+        router.replace("/conta/login");
+        return;
+      }
+      if (data.tenantStatus === "active") {
+        router.replace("/painel");
+        return;
+      }
+    } finally {
+      setChecking(false);
+    }
+  }, [router]);
 
-    if (tenant?.status === "active") redirect("/painel");
-  }
+  useEffect(() => {
+    checkStatus();
+  }, [checkStatus]);
 
   return (
     <div className="mx-auto max-w-lg">
@@ -43,11 +54,14 @@ export default async function AguardandoPage({
               : "Assim que o pagamento for confirmado, seu portal será ativado automaticamente. Verifique seu e-mail."}
           </p>
           <div className="mt-6 space-y-3">
-            <Link href="/conta/aguardando" className="block">
-              <Button className="w-full" variant="outline">
-                Verificar status
-              </Button>
-            </Link>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={checkStatus}
+              disabled={checking}
+            >
+              {checking ? "Verificando..." : "Verificar status"}
+            </Button>
             <Link href="/conta/planos" className="block text-sm text-gray-400 hover:underline">
               Voltar aos planos
             </Link>
