@@ -4,39 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { getAuthUser } from "@/lib/supabase/server";
 import { getTenantOwner } from "@/lib/owner";
+import { PLAN_CATALOG } from "@/lib/plan-catalog";
+import { PLAN_PRICES } from "@/lib/asaas";
 import { initiatePayment } from "../actions";
 
-const PLANS = [
-  {
-    key: "starter",
-    name: "Starter",
-    price: 97,
-    features: ["1 negócio", "Até 200 clientes", "IA com 50k tokens/mês", "Módulos básicos"],
-  },
-  {
-    key: "pro",
-    name: "Pro",
-    price: 297,
-    features: [
-      "Até 3 negócios",
-      "Até 1.000 clientes",
-      "IA com 500k tokens/mês",
-      "Todos os módulos",
-    ],
-    highlight: true,
-  },
-  {
-    key: "premium",
-    name: "Premium",
-    price: 697,
-    features: [
-      "Negócios ilimitados",
-      "Clientes ilimitados",
-      "IA ilimitada",
-      "Todos os módulos + suporte prioritário",
-    ],
-  },
-];
+const PLANS = PLAN_CATALOG.map((p) => ({ ...p, price: PLAN_PRICES[p.key] }));
 
 export default async function PlanosPage({
   searchParams,

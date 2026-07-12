@@ -725,7 +725,9 @@ export async function activateTenantBilling(tenantId: string, formData: FormData
 
 export async function cancelTenantBilling(tenantId: string) {
   await requirePlatformAdmin();
-  await cancelTenantSubscription(tenantId);
+  // Super Admin pode cancelar a qualquer momento, sem esperar o fim do
+  // período pago — diferente do dono, que precisa esperar (ver painel).
+  await cancelTenantSubscription(tenantId, { force: true });
 
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin");

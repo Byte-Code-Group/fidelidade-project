@@ -27,7 +27,7 @@ export default async function PainelLayout({
 
   const activeTenant = owner.tenants.find((t) => t.id === owner.tenantId);
   const { allowed: canCreateAnother } = canCreateAnotherTenant(
-    owner.tenants.map((t) => t.saas_plan),
+    owner.tenants.filter((t) => t.status !== "suspended").map((t) => t.saas_plan),
   );
 
   return (

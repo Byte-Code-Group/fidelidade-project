@@ -136,7 +136,9 @@ export async function configureBusiness(formData: FormData) {
   const mode = String(formData.get("mode") ?? "");
 
   if (mode === "new") {
-    const ownedPlans = (owner?.tenants ?? []).map((t) => t.saas_plan);
+    const ownedPlans = (owner?.tenants ?? [])
+      .filter((t) => t.status !== "suspended")
+      .map((t) => t.saas_plan);
     const { allowed, limit } = canCreateAnotherTenant(ownedPlans);
     if (!allowed) {
       redirect(

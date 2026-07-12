@@ -8,7 +8,7 @@ export const TENANT_LIMITS: Record<string, number> = {
   premium: -1,
 };
 
-const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, premium: 2 };
+export const PLAN_RANK: Record<string, number> = { starter: 0, pro: 1, premium: 2 };
 
 function bestPlan(plans: string[]): string {
   return plans.reduce(

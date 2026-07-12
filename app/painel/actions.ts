@@ -20,7 +20,12 @@ import {
   reorderProfileFields,
 } from "@/lib/profile-fields";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { changeTenantPlan, cancelTenantSubscription } from "@/lib/tenant-billing";
+import {
+  changeTenantPlan,
+  cancelTenantSubscription,
+  checkTenantLimitImpact,
+  PlanChangeLockedError,
+} from "@/lib/tenant-billing";
 import type { BillingType } from "@/lib/asaas";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { approveRedemption, rejectRedemption } from "@/lib/reward-redemptions";
@@ -278,20 +283,60 @@ export async function ownerToggleMemberStatus(membershipId: string, nextStatus: 
 
 // ---------- Assinatura ----------
 
+function formatLockDate(iso: string) {
+  return new Date(iso).toLocaleDateString("pt-BR");
+}
+
+function redirectToPlanSelection(plan: string, billing: string, error?: string) {
+  const params = new URLSearchParams({ select_plan: plan, billing });
+  if (error) params.set("error", error);
+  redirect(`/painel/assinatura?${params.toString()}`);
+}
+
 export async function ownerChangePlan(formData: FormData) {
   const { tenantId } = await requireTenantOwner();
   const plan = String(formData.get("plan") ?? "");
   const billingType = String(formData.get("billing_type") ?? "PIX").toUpperCase() as BillingType;
+  const isConfirmStep = formData.get("confirm") === "1";
+  const keepTenantIds = formData
+    .getAll("keep_tenant_id")
+    .map(String)
+    .filter((id) => id !== tenantId);
 
   if (!["starter", "pro", "premium"].includes(plan)) {
     redirectBack("/painel/assinatura", "Plano inválido.");
   }
 
+  // Downgrade pode deixar o dono com mais negócios ativos do que o plano
+  // novo permite — antes de mexer em qualquer cobrança, checa se precisa
+  // escolher quais negócios ficam ativos.
+  const impact = await checkTenantLimitImpact(tenantId, plan);
+  if (impact.requiresSelection) {
+    const requiredExtra = impact.limit === -1 ? 0 : impact.limit - 1;
+    if (keepTenantIds.length !== requiredExtra) {
+      redirectToPlanSelection(
+        plan,
+        billingType,
+        isConfirmStep
+          ? `Selecione exatamente ${requiredExtra} negócio(s) pra manter ativo(s) além deste.`
+          : undefined,
+      );
+    }
+  }
+
   let invoiceUrl: string | undefined;
   try {
-    const result = await changeTenantPlan(tenantId, plan, billingType);
+    const result = await changeTenantPlan(tenantId, plan, billingType, {
+      keepActiveTenantIds: impact.requiresSelection ? keepTenantIds : undefined,
+    });
     invoiceUrl = result.invoiceUrl;
   } catch (err) {
+    if (err instanceof PlanChangeLockedError) {
+      redirectBack(
+        "/painel/assinatura",
+        `Só é possível trocar de plano a partir de ${formatLockDate(err.availableAt)} (fim do período atual já pago).`,
+      );
+    }
     const msg = err instanceof Error ? err.message : "Erro ao trocar plano.";
     redirectBack("/painel/assinatura", msg);
   }
@@ -302,7 +347,17 @@ export async function ownerChangePlan(formData: FormData) {
 
 export async function ownerCancelSubscription() {
   const { tenantId } = await requireTenantOwner();
-  await cancelTenantSubscription(tenantId);
+  try {
+    await cancelTenantSubscription(tenantId);
+  } catch (err) {
+    if (err instanceof PlanChangeLockedError) {
+      redirectBack(
+        "/painel/assinatura",
+        `Só é possível cancelar a partir de ${formatLockDate(err.availableAt)} (fim do período atual já pago).`,
+      );
+    }
+    throw err;
+  }
   redirectBack("/painel/assinatura");
 }
 

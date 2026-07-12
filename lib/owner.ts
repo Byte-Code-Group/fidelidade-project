@@ -12,6 +12,7 @@ export interface OwnedTenant {
   id: string;
   name: string;
   saas_plan: string;
+  status: string;
 }
 
 export interface TenantOwnerContext {
@@ -26,7 +27,7 @@ export const getOwnerTenants = cache(async (userId: string): Promise<OwnedTenant
   const admin = createAdminClient();
   const { data } = await admin
     .from("platform_users")
-    .select("tenant_id, created_at, tenants(id, name, saas_plan)")
+    .select("tenant_id, created_at, tenants(id, name, saas_plan, status)")
     .eq("user_id", userId)
     .not("tenant_id", "is", null)
     .order("created_at", { ascending: true })
