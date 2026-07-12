@@ -93,6 +93,22 @@ export async function getSubscription(
   return request<AsaasSubscription>(`/subscriptions/${subscriptionId}`);
 }
 
+export async function updateSubscriptionCallback(
+  subscriptionId: string,
+): Promise<void> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!siteUrl) return;
+  await request(`/subscriptions/${subscriptionId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      callback: {
+        successUrl: `${siteUrl}/conta/aguardando`,
+        autoRedirect: true,
+      },
+    }),
+  });
+}
+
 export async function cancelSubscription(
   subscriptionId: string,
 ): Promise<void> {

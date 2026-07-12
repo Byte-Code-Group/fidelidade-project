@@ -16,6 +16,7 @@ import {
   createCustomer,
   createSubscription,
   getSubscriptionFirstPayment,
+  updateSubscriptionCallback,
   type BillingType,
 } from "@/lib/asaas";
 
@@ -305,6 +306,9 @@ export async function initiatePayment(formData: FormData) {
         .from("tenants")
         .update({ asaas_subscription_id: subscriptionId })
         .eq("id", tenantId);
+    } else {
+      // Assinatura já existia (pode ter sido criada antes do callback ser configurado)
+      await updateSubscriptionCallback(subscriptionId);
     }
 
     // Get invoice URL from first payment
