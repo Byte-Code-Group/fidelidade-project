@@ -14,7 +14,11 @@ import {
 } from "@/lib/tenant-billing";
 import { FlashToast } from "@/components/flash-toast";
 import { cn } from "@/lib/utils";
-import { ownerCancelSubscription, ownerChangePlan } from "../actions";
+import {
+  ownerCancelSubscription,
+  ownerChangePlan,
+  ownerCancelPendingPlanChange,
+} from "../actions";
 
 const PLAN_LABEL: Record<string, string> = Object.fromEntries(
   PLAN_CATALOG.map((p) => [p.key, p.name]),
@@ -50,27 +54,37 @@ export default async function OwnerAssinaturaPage({
   const { error, saved, select_plan, billing } = await searchParams;
 
   // Reconcilia com o Asaas antes de ler o status — cobre o caso do webhook
-  // não ter confirmado o pagamento (falha de config, evento não entregue etc.).
+  // não ter confirmado o pagamento, e aplica downgrade agendado se o prazo
+  // já passou (fallback caso o webhook da renovação não tenha disparado).
   await syncTenantStatusWithAsaas(tenantId);
 
   const db = createAdminClient();
   const { data: tenant } = await db
     .from("tenants")
-    .select("saas_plan, status, asaas_subscription_id")
+    .select("saas_plan, status, asaas_subscription_id, pending_plan, pending_plan_effective_at")
     .eq("id", tenantId)
     .maybeSingle<{
       saas_plan: string;
       status: string;
       asaas_subscription_id: string | null;
+      pending_plan: string | null;
+      pending_plan_effective_at: string | null;
     }>();
 
   const status = tenant?.status ?? "";
   const isActive = status === "active";
   const currentPlan = tenant?.saas_plan ?? "starter";
+  const pendingPlan = tenant?.pending_plan ?? null;
+  const pendingAt = tenant?.pending_plan_effective_at ?? null;
+
+  const successMessage =
+    saved === "scheduled"
+      ? "Downgrade agendado — seu plano atual continua ativo até o fim do período."
+      : "Alterações salvas.";
 
   // Etapa intermediária: downgrade reduziria o limite de negócios abaixo do
   // que o dono já tem ativo — precisa escolher quais ficam ativos antes de
-  // qualquer cobrança ser feita.
+  // qualquer coisa ser agendada.
   if (select_plan && Object.keys(PLAN_LABEL).includes(select_plan)) {
     const impact = await checkTenantLimitImpact(tenantId, select_plan);
     if (impact.requiresSelection) {
@@ -86,7 +100,7 @@ export default async function OwnerAssinaturaPage({
             </p>
           </div>
 
-          <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
+          <FlashToast error={error} saved={saved} successMessage={successMessage} />
 
           <Card>
             <CardContent className="space-y-4">
@@ -97,8 +111,8 @@ export default async function OwnerAssinaturaPage({
                 {impact.activeTenants.length} negócios ativos hoje. Este negócio continua ativo
                 automaticamente
                 {requiredExtra > 0
-                  ? ` — escolha mais ${requiredExtra} pra manter ativo${requiredExtra === 1 ? "" : "s"}:`
-                  : "; os demais serão suspensos (sem perder dados — dá pra reativar depois trocando de plano de novo)."}
+                  ? ` — escolha mais ${requiredExtra} pra manter ativo${requiredExtra === 1 ? "" : "s"} quando o downgrade valer:`
+                  : "; os demais serão suspensos quando o downgrade valer (sem perder dados — dá pra reativar depois trocando de plano de novo)."}
               </p>
 
               <form action={ownerChangePlan} className="space-y-4">
@@ -129,7 +143,7 @@ export default async function OwnerAssinaturaPage({
                 )}
 
                 <div className="flex gap-2">
-                  <Button type="submit">Confirmar troca de plano</Button>
+                  <Button type="submit">Confirmar downgrade</Button>
                   <Link href="/painel/assinatura">
                     <Button type="button" variant="outline">
                       Cancelar
@@ -153,11 +167,9 @@ export default async function OwnerAssinaturaPage({
     }
   }
 
-  const lockDate = await getPlanChangeLockDate(
-    currentPlan,
-    status,
-    tenant?.asaas_subscription_id ?? null,
-  );
+  // Cancelamento continua esperando o fim do período já pago. Downgrade não
+  // — fica agendado (ver banner abaixo) em vez de bloqueado.
+  const cancelLockDate = await getPlanChangeLockDate(status, tenant?.asaas_subscription_id ?? null);
 
   return (
     <div className="space-y-4">
@@ -168,13 +180,28 @@ export default async function OwnerAssinaturaPage({
         </p>
       </div>
 
-      <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
+      <FlashToast error={error} saved={saved} successMessage={successMessage} />
 
       {!isActive && (
         <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-400">
           {status === "suspended"
             ? "Sua assinatura está suspensa e o portal fica indisponível para os clientes. Escolha um plano abaixo e finalize o pagamento para reativar."
             : "Assinatura aguardando confirmação de pagamento. Escolha um plano abaixo para gerar (ou refazer) a cobrança."}
+        </div>
+      )}
+
+      {pendingPlan && pendingAt && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-300 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300">
+          <span>
+            Downgrade agendado: seu plano vai mudar de <strong>{PLAN_LABEL[currentPlan]}</strong> pra{" "}
+            <strong>{PLAN_LABEL[pendingPlan] ?? pendingPlan}</strong> em {fmtDate(pendingAt)} (fim do
+            período atual). Até lá, {PLAN_LABEL[currentPlan]} continua valendo normalmente.
+          </span>
+          <form action={ownerCancelPendingPlanChange}>
+            <Button type="submit" variant="outline" className="shrink-0 text-xs">
+              Cancelar troca agendada
+            </Button>
+          </form>
         </div>
       )}
 
@@ -204,7 +231,7 @@ export default async function OwnerAssinaturaPage({
         </h2>
         <p className="mb-3 text-xs text-gray-500">
           {isActive
-            ? "Upgrade é liberado na hora. Downgrade ou cancelamento só depois que o período atual (já pago) terminar."
+            ? "Upgrade vale na hora e cobra só a diferença proporcional do período. Downgrade fica agendado pro fim do período já pago — seu plano atual continua até lá."
             : "Escolha o plano e a forma de pagamento — você será redirecionado para o checkout do Asaas para concluir o pagamento."}
         </p>
 
@@ -213,8 +240,7 @@ export default async function OwnerAssinaturaPage({
             const price = PLAN_PRICES[plan.key];
             const isCurrent = isActive && plan.key === currentPlan;
             const isUpgrade = PLAN_RANK[plan.key] > PLAN_RANK[currentPlan];
-            const isDowngrade = PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
-            const locked = isActive && isDowngrade && lockDate;
+            const isThisPending = isActive && pendingPlan === plan.key;
 
             return (
               <Card
@@ -256,9 +282,9 @@ export default async function OwnerAssinaturaPage({
 
                   {isCurrent ? (
                     <p className="text-xs text-gray-500">Este é o seu plano atual.</p>
-                  ) : locked ? (
-                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                      Disponível a partir de {fmtDate(lockDate)} (fim do período já pago)
+                  ) : isThisPending ? (
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      Agendado pra {pendingAt ? fmtDate(pendingAt) : ""}
                     </p>
                   ) : (
                     <form action={ownerChangePlan} className="space-y-2">
@@ -279,8 +305,8 @@ export default async function OwnerAssinaturaPage({
                         {!isActive
                           ? `Assinar ${plan.name}`
                           : isUpgrade
-                            ? "Fazer upgrade"
-                            : `Rebaixar para ${plan.name}`}
+                            ? "Fazer upgrade (só a diferença)"
+                            : `Agendar downgrade pra ${plan.name}`}
                       </Button>
                     </form>
                   )}
@@ -298,9 +324,9 @@ export default async function OwnerAssinaturaPage({
             <p className="text-sm text-gray-500">
               Seu portal será suspenso ao cancelar. Você pode assinar novamente quando quiser.
             </p>
-            {lockDate ? (
+            {cancelLockDate ? (
               <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                Só é possível cancelar a partir de {fmtDate(lockDate)} (fim do período já pago).
+                Só é possível cancelar a partir de {fmtDate(cancelLockDate)} (fim do período já pago).
               </p>
             ) : (
               <form action={ownerCancelSubscription}>

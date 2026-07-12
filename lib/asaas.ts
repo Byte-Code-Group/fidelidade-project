@@ -121,6 +121,40 @@ export async function cancelSubscription(
   await request(`/subscriptions/${subscriptionId}`, { method: "DELETE" });
 }
 
+// Muda o valor cobrado nos próximos ciclos, sem mexer numa cobrança já
+// gerada e pendente (updatePendingPayments: false) — é assim que dá pra
+// agendar um downgrade pra só valer a partir do próximo vencimento.
+export async function updateSubscriptionValue(
+  subscriptionId: string,
+  value: number,
+): Promise<void> {
+  await request(`/subscriptions/${subscriptionId}`, {
+    method: "PUT",
+    body: JSON.stringify({ value, updatePendingPayments: false }),
+  });
+}
+
+// Cobrança avulsa (fora da assinatura recorrente) — usada pra cobrar só a
+// diferença proporcional quando o dono faz upgrade no meio do ciclo.
+export async function createOneOffPayment(opts: {
+  customer: string;
+  billingType?: BillingType;
+  value: number;
+  dueDate: string;
+  description: string;
+}): Promise<AsaasPayment> {
+  return request<AsaasPayment>("/payments", {
+    method: "POST",
+    body: JSON.stringify({
+      customer: opts.customer,
+      billingType: opts.billingType ?? "PIX",
+      value: opts.value,
+      dueDate: opts.dueDate,
+      description: opts.description,
+    }),
+  });
+}
+
 export interface AsaasPayment {
   id: string;
   status: string;

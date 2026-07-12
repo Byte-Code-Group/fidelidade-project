@@ -24,6 +24,7 @@ import {
   changeTenantPlan,
   cancelTenantSubscription,
   checkTenantLimitImpact,
+  cancelPendingPlanChange,
   PlanChangeLockedError,
 } from "@/lib/tenant-billing";
 import type { BillingType } from "@/lib/asaas";
@@ -325,24 +326,28 @@ export async function ownerChangePlan(formData: FormData) {
   }
 
   let invoiceUrl: string | undefined;
+  let scheduledFor: string | undefined;
   try {
     const result = await changeTenantPlan(tenantId, plan, billingType, {
       keepActiveTenantIds: impact.requiresSelection ? keepTenantIds : undefined,
     });
     invoiceUrl = result.invoiceUrl;
+    scheduledFor = "scheduledFor" in result ? result.scheduledFor : undefined;
   } catch (err) {
-    if (err instanceof PlanChangeLockedError) {
-      redirectBack(
-        "/painel/assinatura",
-        `Só é possível trocar de plano a partir de ${formatLockDate(err.availableAt)} (fim do período atual já pago).`,
-      );
-    }
     const msg = err instanceof Error ? err.message : "Erro ao trocar plano.";
     redirectBack("/painel/assinatura", msg);
   }
 
   revalidatePath("/painel/assinatura");
-  redirect(invoiceUrl || "/painel/assinatura?saved=1");
+  if (invoiceUrl) redirect(invoiceUrl);
+  redirect(`/painel/assinatura?saved=${scheduledFor ? "scheduled" : "1"}`);
+}
+
+export async function ownerCancelPendingPlanChange() {
+  const { tenantId } = await requireTenantOwner();
+  await cancelPendingPlanChange(tenantId);
+  revalidatePath("/painel/assinatura");
+  redirectBack("/painel/assinatura");
 }
 
 export async function ownerCancelSubscription() {
