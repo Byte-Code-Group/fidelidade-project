@@ -1,15 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
-import type {
-  MessageParam,
-  ToolResultBlockParam,
-} from "@anthropic-ai/sdk/resources/messages";
+import { google } from "@ai-sdk/google";
+import { streamText, stepCountIs } from "ai";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant";
-import { AI_TOOLS, executeTool } from "@/lib/ai/tools";
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { getAiTools } from "@/lib/ai/tools";
 
 const MAX_MSG_LENGTH = 2000;
 const MAX_HISTORY = 20;
@@ -81,7 +76,7 @@ ${GUARDRAILS}`;
   const db = createAdminClient();
 
   // Check monthly token quota
-  if (process.env.ANTHROPIC_API_KEY) {
+  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     const yearMonth = new Date().toISOString().slice(0, 7);
     const { data: usage } = await db
       .from("tenant_ai_usage")
@@ -123,7 +118,6 @@ ${GUARDRAILS}`;
   }
 
   const encoder = new TextEncoder();
-  let assistantContent = "";
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -133,108 +127,22 @@ ${GUARDRAILS}`;
 
         send(`\x00${conversationId}\x00`);
 
-        // Agentic loop: Claude pode chamar tools antes de responder ao usuário
-        const apiMessages: MessageParam[] = messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+        const result = streamText({
+          model: google("gemini-2.5-flash"),
+          system: systemPrompt,
+          messages,
+          tools: getAiTools({ tenantId: tenant.id, userId: user.id }),
+          stopWhen: stepCountIs(5),
+        });
 
-        let continueLoop = true;
-        let totalTokensUsed = 0;
-        while (continueLoop) {
-          const claude = anthropic.messages.stream({
-            model: "claude-opus-4-8",
-            max_tokens: 1024,
-            thinking: { type: "adaptive" },
-            system: systemPrompt,
-            tools: AI_TOOLS,
-            messages: apiMessages,
-          });
-
-          const toolUseBlocks: {
-            id: string;
-            name: string;
-            input: Record<string, string | number | boolean | undefined>;
-          }[] = [];
-          let currentToolId = "";
-          let currentToolName = "";
-          let currentToolInputRaw = "";
-          let hasToolUse = false;
-          const assistantBlocks: Anthropic.Messages.ContentBlock[] = [];
-
-          for await (const event of claude) {
-            if (event.type === "content_block_start") {
-              if (event.content_block.type === "tool_use") {
-                hasToolUse = true;
-                currentToolId = event.content_block.id;
-                currentToolName = event.content_block.name;
-                currentToolInputRaw = "";
-              }
-            } else if (event.type === "content_block_delta") {
-              if (event.delta.type === "text_delta") {
-                assistantContent += event.delta.text;
-                send(event.delta.text);
-              } else if (event.delta.type === "input_json_delta") {
-                currentToolInputRaw += event.delta.partial_json;
-              }
-            } else if (event.type === "content_block_stop") {
-              if (hasToolUse && currentToolId) {
-                let parsedInput: Record<
-                  string,
-                  string | number | boolean | undefined
-                > = {};
-                try {
-                  parsedInput = currentToolInputRaw
-                    ? JSON.parse(currentToolInputRaw)
-                    : {};
-                } catch {
-                  // ignore parse error — empty input
-                }
-                toolUseBlocks.push({
-                  id: currentToolId,
-                  name: currentToolName,
-                  input: parsedInput,
-                });
-                currentToolId = "";
-                currentToolName = "";
-                currentToolInputRaw = "";
-                hasToolUse = false;
-              }
-            }
-          }
-
-          const finalMsg = await claude.finalMessage();
-          assistantBlocks.push(...finalMsg.content);
-          totalTokensUsed +=
-            (finalMsg.usage.input_tokens ?? 0) +
-            (finalMsg.usage.output_tokens ?? 0);
-
-          if (
-            finalMsg.stop_reason === "tool_use" &&
-            toolUseBlocks.length > 0
-          ) {
-            // Execute all tool calls in parallel
-            const toolResults: ToolResultBlockParam[] = await Promise.all(
-              toolUseBlocks.map(async (tb) => {
-                const result = await executeTool(tb.name, tb.input, {
-                  tenantId: tenant.id,
-                  userId: user.id,
-                });
-                return {
-                  type: "tool_result" as const,
-                  tool_use_id: tb.id,
-                  content: result,
-                };
-              }),
-            );
-
-            // Feed tool results back for next iteration
-            apiMessages.push({ role: "assistant", content: assistantBlocks });
-            apiMessages.push({ role: "user", content: toolResults });
-          } else {
-            continueLoop = false;
-          }
+        for await (const chunk of result.textStream) {
+          send(chunk);
         }
+
+        const assistantContent = await result.text;
+        const usage = await result.usage;
+        const totalTokensUsed =
+          (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
 
         if (assistantContent) {
           await db.from("chat_messages").insert({
@@ -245,7 +153,6 @@ ${GUARDRAILS}`;
           });
         }
 
-        // Increment monthly token usage
         if (totalTokensUsed > 0) {
           const yearMonth = new Date().toISOString().slice(0, 7);
           await db.rpc("increment_ai_usage", {
