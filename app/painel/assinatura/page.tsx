@@ -13,6 +13,18 @@ const PLAN_LABEL: Record<string, string> = {
   premium: "Premium",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  active: "Ativa",
+  pending: "Aguardando pagamento",
+  suspended: "Suspensa",
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  suspended: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+};
+
 export default async function OwnerAssinaturaPage({
   searchParams,
 }: {
@@ -31,6 +43,9 @@ export default async function OwnerAssinaturaPage({
       status: string;
       asaas_subscription_id: string | null;
     }>();
+
+  const status = tenant?.status ?? "";
+  const isActive = status === "active";
 
   let subscription: { status: string; nextDueDate: string; value: number } | null = null;
   if (tenant?.asaas_subscription_id && process.env.ASAAS_API_KEY) {
@@ -52,13 +67,25 @@ export default async function OwnerAssinaturaPage({
 
       <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
 
+      {!isActive && (
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-400">
+          {status === "suspended"
+            ? "Sua assinatura está suspensa e o portal fica indisponível para os clientes. Escolha um plano abaixo e finalize o pagamento para reativar."
+            : "Assinatura aguardando confirmação de pagamento. Escolha um plano abaixo para gerar (ou refazer) a cobrança."}
+        </div>
+      )}
+
       <Card>
         <CardContent className="space-y-2">
           <h2 className="font-semibold">Plano atual</h2>
           <p className="text-2xl font-bold">
             {PLAN_LABEL[tenant?.saas_plan ?? ""] ?? tenant?.saas_plan ?? "—"}
           </p>
-          <p className="text-sm text-gray-500">Status: {tenant?.status ?? "—"}</p>
+          <span
+            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}
+          >
+            {STATUS_LABEL[status] ?? status ?? "—"}
+          </span>
           {subscription && (
             <p className="text-xs text-gray-500">
               Asaas: {subscription.status} · R$ {subscription.value} · próx. vencimento{" "}
@@ -70,10 +97,11 @@ export default async function OwnerAssinaturaPage({
 
       <Card>
         <CardContent className="space-y-3">
-          <h2 className="font-semibold">Trocar de plano</h2>
+          <h2 className="font-semibold">{isActive ? "Trocar de plano" : "Assinar / Reativar"}</h2>
           <p className="text-xs text-gray-500">
-            Trocar de plano cancela a assinatura atual e cria uma nova cobrança
-            imediata (sem prorata).
+            {isActive
+              ? "Trocar de plano cancela a assinatura atual e cria uma nova cobrança imediata (sem prorata)."
+              : "Escolha o plano e a forma de pagamento — você será redirecionado para o checkout do Asaas para concluir o pagamento."}
           </p>
           <form action={ownerChangePlan} className="space-y-3">
             <Select name="plan" defaultValue={tenant?.saas_plan}>
@@ -87,17 +115,19 @@ export default async function OwnerAssinaturaPage({
               <option value="CREDIT_CARD">Cartão de crédito</option>
               <option value="PIX">PIX</option>
             </Select>
-            <Button type="submit">Trocar plano</Button>
+            <Button type="submit">
+              {isActive ? "Trocar plano" : "Assinar e pagar"}
+            </Button>
           </form>
         </CardContent>
       </Card>
 
-      {tenant?.asaas_subscription_id && (
+      {isActive && tenant?.asaas_subscription_id && (
         <Card>
           <CardContent className="space-y-3">
             <h2 className="font-semibold text-red-600">Cancelar assinatura</h2>
             <p className="text-sm text-gray-500">
-              Seu portal será suspenso ao cancelar. Esta ação não pode ser desfeita.
+              Seu portal será suspenso ao cancelar. Você pode assinar novamente quando quiser.
             </p>
             <form action={ownerCancelSubscription}>
               <Button type="submit" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">

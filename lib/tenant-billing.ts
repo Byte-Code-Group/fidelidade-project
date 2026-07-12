@@ -4,6 +4,7 @@ import {
   createCustomer,
   createSubscription,
   cancelSubscription,
+  getSubscriptionFirstPayment,
   isRemovedCustomerError,
   type BillingType,
 } from "@/lib/asaas";
@@ -82,11 +83,18 @@ export async function changeTenantPlan(
       saas_plan: newPlan,
       asaas_customer_id: customerId,
       asaas_subscription_id: subscription.id,
-      status: "active",
+      // Não marca como "active" aqui — o webhook confirma quando o
+      // pagamento realmente cair (PAYMENT_RECEIVED/PAYMENT_CONFIRMED).
+      status: "pending",
     })
     .eq("id", tenantId);
 
-  return subscription;
+  const payment = await getSubscriptionFirstPayment(subscription.id);
+  const invoiceUrl = payment?.invoiceUrl
+    ? `${payment.invoiceUrl}?autoRedirect=true`
+    : undefined;
+
+  return { subscription, invoiceUrl };
 }
 
 export async function cancelTenantSubscription(tenantId: string) {

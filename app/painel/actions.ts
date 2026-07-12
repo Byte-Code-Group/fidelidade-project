@@ -287,14 +287,17 @@ export async function ownerChangePlan(formData: FormData) {
     redirectBack("/painel/assinatura", "Plano inválido.");
   }
 
+  let invoiceUrl: string | undefined;
   try {
-    await changeTenantPlan(tenantId, plan, billingType);
+    const result = await changeTenantPlan(tenantId, plan, billingType);
+    invoiceUrl = result.invoiceUrl;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro ao trocar plano.";
     redirectBack("/painel/assinatura", msg);
   }
 
-  redirectBack("/painel/assinatura");
+  revalidatePath("/painel/assinatura");
+  redirect(invoiceUrl || "/painel/assinatura?saved=1");
 }
 
 export async function ownerCancelSubscription() {
