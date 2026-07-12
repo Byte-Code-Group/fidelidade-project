@@ -4,6 +4,7 @@ import {
   createCustomer,
   createSubscription,
   cancelSubscription,
+  isRemovedCustomerError,
   type BillingType,
 } from "@/lib/asaas";
 
@@ -49,12 +50,31 @@ export async function changeTenantPlan(
     customerId = customer.id;
   }
 
-  const subscription = await createSubscription({
-    customer: customerId,
-    plan: newPlan,
-    email: tenant.owner_email ?? "",
-    billingType,
-  });
+  let subscription;
+  try {
+    subscription = await createSubscription({
+      customer: customerId,
+      plan: newPlan,
+      email: tenant.owner_email ?? "",
+      billingType,
+    });
+  } catch (err) {
+    // Customer foi removido diretamente no painel Asaas (fora do fluxo
+    // normal de cancelamento) — recria e tenta de novo.
+    if (!isRemovedCustomerError(err)) throw err;
+    const customer = await createCustomer({
+      name: tenant.name,
+      email: tenant.owner_email ?? "",
+      cpfCnpj: tenant.owner_cpf_cnpj ?? undefined,
+    });
+    customerId = customer.id;
+    subscription = await createSubscription({
+      customer: customerId,
+      plan: newPlan,
+      email: tenant.owner_email ?? "",
+      billingType,
+    });
+  }
 
   await db
     .from("tenants")

@@ -87,6 +87,12 @@ export async function createSubscription(opts: {
   });
 }
 
+// Detecta o erro do Asaas quando o customer salvo no nosso banco foi
+// removido diretamente no painel deles (fora do fluxo normal de cancelamento).
+export function isRemovedCustomerError(err: unknown): boolean {
+  return err instanceof Error && /cliente removido|customer.*removed/i.test(err.message);
+}
+
 export async function getSubscription(
   subscriptionId: string,
 ): Promise<AsaasSubscription> {

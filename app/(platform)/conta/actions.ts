@@ -17,6 +17,7 @@ import {
   createSubscription,
   getSubscriptionFirstPayment,
   updateSubscriptionCallback,
+  isRemovedCustomerError,
   type BillingType,
 } from "@/lib/asaas";
 
@@ -295,12 +296,35 @@ export async function initiatePayment(formData: FormData) {
     // Create subscription if not exists
     let subscriptionId = tenant.asaas_subscription_id;
     if (!subscriptionId) {
-      const sub = await createSubscription({
-        customer: customerId,
-        plan,
-        email: tenant.owner_email ?? user.email ?? "",
-        billingType,
-      });
+      let sub;
+      try {
+        sub = await createSubscription({
+          customer: customerId,
+          plan,
+          email: tenant.owner_email ?? user.email ?? "",
+          billingType,
+        });
+      } catch (err) {
+        // Customer foi removido diretamente no painel Asaas (fora do fluxo
+        // normal de cancelamento) — recria e tenta de novo.
+        if (!isRemovedCustomerError(err)) throw err;
+        const customer = await createCustomer({
+          name: tenant.name,
+          email: tenant.owner_email ?? user.email ?? "",
+          cpfCnpj: tenant.owner_cpf_cnpj ?? undefined,
+        });
+        customerId = customer.id;
+        await db
+          .from("tenants")
+          .update({ asaas_customer_id: customerId })
+          .eq("id", tenantId);
+        sub = await createSubscription({
+          customer: customerId,
+          plan,
+          email: tenant.owner_email ?? user.email ?? "",
+          billingType,
+        });
+      }
       subscriptionId = sub.id;
       await db
         .from("tenants")
