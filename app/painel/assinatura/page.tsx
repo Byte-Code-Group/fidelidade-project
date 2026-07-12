@@ -7,11 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, PLAN_PRICES } from "@/lib/asaas";
 import { PLAN_CATALOG } from "@/lib/plan-catalog";
 import { PLAN_RANK } from "@/lib/tenant-limits";
-import {
-  syncTenantStatusWithAsaas,
-  getPlanChangeLockDate,
-  checkTenantLimitImpact,
-} from "@/lib/tenant-billing";
+import { syncTenantStatusWithAsaas, checkTenantLimitImpact } from "@/lib/tenant-billing";
 import { FlashToast } from "@/components/flash-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -54,14 +50,17 @@ export default async function OwnerAssinaturaPage({
   const { error, saved, select_plan, billing } = await searchParams;
 
   // Reconcilia com o Asaas antes de ler o status — cobre o caso do webhook
-  // não ter confirmado o pagamento, e aplica downgrade agendado se o prazo
-  // já passou (fallback caso o webhook da renovação não tenha disparado).
+  // não ter confirmado o pagamento, e aplica downgrade/cancelamento
+  // agendado se o prazo já passou (fallback, já que cancelamento não gera
+  // mais eventos de webhook do Asaas).
   await syncTenantStatusWithAsaas(tenantId);
 
   const db = createAdminClient();
   const { data: tenant } = await db
     .from("tenants")
-    .select("saas_plan, status, asaas_subscription_id, pending_plan, pending_plan_effective_at")
+    .select(
+      "saas_plan, status, asaas_subscription_id, pending_plan, pending_plan_effective_at, cancel_at",
+    )
     .eq("id", tenantId)
     .maybeSingle<{
       saas_plan: string;
@@ -69,6 +68,7 @@ export default async function OwnerAssinaturaPage({
       asaas_subscription_id: string | null;
       pending_plan: string | null;
       pending_plan_effective_at: string | null;
+      cancel_at: string | null;
     }>();
 
   const status = tenant?.status ?? "";
@@ -76,11 +76,17 @@ export default async function OwnerAssinaturaPage({
   const currentPlan = tenant?.saas_plan ?? "starter";
   const pendingPlan = tenant?.pending_plan ?? null;
   const pendingAt = tenant?.pending_plan_effective_at ?? null;
+  const cancelAt = tenant?.cancel_at ?? null;
+  // Assinatura foi cancelada mas o acesso ainda vale — mesmo com status
+  // "active" no banco, trata como "precisa reassinar" pra tela toda.
+  const isCancelledButActive = isActive && !!cancelAt;
 
   const successMessage =
     saved === "scheduled"
       ? "Downgrade agendado — seu plano atual continua ativo até o fim do período."
-      : "Alterações salvas.";
+      : saved === "cancelled"
+        ? "Assinatura cancelada — seu acesso continua até o fim do período já pago."
+        : "Alterações salvas.";
 
   // Etapa intermediária: downgrade reduziria o limite de negócios abaixo do
   // que o dono já tem ativo — precisa escolher quais ficam ativos antes de
@@ -167,10 +173,6 @@ export default async function OwnerAssinaturaPage({
     }
   }
 
-  // Cancelamento continua esperando o fim do período já pago. Downgrade não
-  // — fica agendado (ver banner abaixo) em vez de bloqueado.
-  const cancelLockDate = await getPlanChangeLockDate(status, tenant?.asaas_subscription_id ?? null);
-
   return (
     <div className="space-y-4">
       <div>
@@ -190,12 +192,20 @@ export default async function OwnerAssinaturaPage({
         </div>
       )}
 
-      {pendingPlan && pendingAt && (
+      {isCancelledButActive && cancelAt && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
+          Assinatura cancelada. Você ainda tem acesso ao plano {PLAN_LABEL[currentPlan]} até{" "}
+          <strong>{fmtDate(cancelAt)}</strong> — depois disso o portal fica indisponível pros
+          clientes. Escolha um plano abaixo a qualquer momento pra continuar sem interrupção.
+        </div>
+      )}
+
+      {pendingPlan && pendingAt && !isCancelledButActive && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-300 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300">
           <span>
-            Downgrade agendado: seu plano vai mudar de <strong>{PLAN_LABEL[currentPlan]}</strong> pra{" "}
-            <strong>{PLAN_LABEL[pendingPlan] ?? pendingPlan}</strong> em {fmtDate(pendingAt)} (fim do
-            período atual). Até lá, {PLAN_LABEL[currentPlan]} continua valendo normalmente.
+            Seu plano <strong>{PLAN_LABEL[currentPlan]}</strong> continua ativo até{" "}
+            <strong>{fmtDate(pendingAt)}</strong> — depois disso muda pra{" "}
+            <strong>{PLAN_LABEL[pendingPlan] ?? pendingPlan}</strong> automaticamente.
           </span>
           <form action={ownerCancelPendingPlanChange}>
             <Button type="submit" variant="outline" className="shrink-0 text-xs">
@@ -214,9 +224,9 @@ export default async function OwnerAssinaturaPage({
           <span
             className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}
           >
-            {STATUS_LABEL[status] ?? status ?? "—"}
+            {isCancelledButActive ? "Cancelada (ativa até o fim do período)" : STATUS_LABEL[status] ?? status ?? "—"}
           </span>
-          {subscription && (
+          {subscription && !cancelAt && (
             <p className="text-xs text-gray-500">
               Asaas: {subscription.status} · R$ {subscription.value} · próx. vencimento{" "}
               {fmtDate(subscription.nextDueDate)}
@@ -227,20 +237,21 @@ export default async function OwnerAssinaturaPage({
 
       <div>
         <h2 className="mb-1 font-semibold">
-          {isActive ? "Trocar de plano" : "Assinar / Reativar"}
+          {isActive && !isCancelledButActive ? "Trocar de plano" : "Assinar / Reativar"}
         </h2>
         <p className="mb-3 text-xs text-gray-500">
-          {isActive
-            ? "Upgrade vale na hora e cobra só a diferença proporcional do período. Downgrade fica agendado pro fim do período já pago — seu plano atual continua até lá."
+          {isActive && !isCancelledButActive
+            ? "Upgrade vale na hora, sem cobrar nada agora — o valor novo entra só na próxima fatura. Downgrade continua com o plano atual até o fim do período, depois muda sozinho."
             : "Escolha o plano e a forma de pagamento — você será redirecionado para o checkout do Asaas para concluir o pagamento."}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
           {PLAN_CATALOG.map((plan) => {
             const price = PLAN_PRICES[plan.key];
-            const isCurrent = isActive && plan.key === currentPlan;
+            const isCurrent = isActive && !isCancelledButActive && plan.key === currentPlan;
             const isUpgrade = PLAN_RANK[plan.key] > PLAN_RANK[currentPlan];
             const isThisPending = isActive && pendingPlan === plan.key;
+            const needsBillingType = !isActive || isCancelledButActive;
 
             return (
               <Card
@@ -289,23 +300,25 @@ export default async function OwnerAssinaturaPage({
                   ) : (
                     <form action={ownerChangePlan} className="space-y-2">
                       <input type="hidden" name="plan" value={plan.key} />
-                      <Select
-                        name="billing_type"
-                        defaultValue="CREDIT_CARD"
-                        className="w-full text-sm"
-                      >
-                        <option value="CREDIT_CARD">Cartão de crédito</option>
-                        <option value="PIX">PIX</option>
-                      </Select>
+                      {needsBillingType && (
+                        <Select
+                          name="billing_type"
+                          defaultValue="CREDIT_CARD"
+                          className="w-full text-sm"
+                        >
+                          <option value="CREDIT_CARD">Cartão de crédito</option>
+                          <option value="PIX">PIX</option>
+                        </Select>
+                      )}
                       <Button
                         type="submit"
                         className="w-full"
-                        variant={!isActive || isUpgrade ? "primary" : "outline"}
+                        variant={needsBillingType || isUpgrade ? "primary" : "outline"}
                       >
-                        {!isActive
+                        {needsBillingType
                           ? `Assinar ${plan.name}`
                           : isUpgrade
-                            ? "Fazer upgrade (só a diferença)"
+                            ? "Fazer upgrade"
                             : `Agendar downgrade pra ${plan.name}`}
                       </Button>
                     </form>
@@ -317,28 +330,23 @@ export default async function OwnerAssinaturaPage({
         </div>
       </div>
 
-      {isActive && tenant?.asaas_subscription_id && (
+      {isActive && !isCancelledButActive && tenant?.asaas_subscription_id && (
         <Card>
           <CardContent className="space-y-3">
             <h2 className="font-semibold text-red-600">Cancelar assinatura</h2>
             <p className="text-sm text-gray-500">
-              Seu portal será suspenso ao cancelar. Você pode assinar novamente quando quiser.
+              Cancela a cobrança na hora. Se ainda tiver dias pagos, seu acesso continua até o
+              fim do período — depois disso o portal é suspenso.
             </p>
-            {cancelLockDate ? (
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                Só é possível cancelar a partir de {fmtDate(cancelLockDate)} (fim do período já pago).
-              </p>
-            ) : (
-              <form action={ownerCancelSubscription}>
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50"
-                >
-                  Cancelar assinatura
-                </Button>
-              </form>
-            )}
+            <form action={ownerCancelSubscription}>
+              <Button
+                type="submit"
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50"
+              >
+                Cancelar assinatura
+              </Button>
+            </form>
           </CardContent>
         </Card>
       )}

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { applyPendingPlanChange } from "@/lib/tenant-billing";
+import { applyScheduledChanges } from "@/lib/tenant-billing";
 
 // Asaas eventos que afetam status do tenant
 const ACTIVATE_EVENTS = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Pagamento confirmado = novo ciclo começou — se tinha um downgrade
     // agendado pro fim do ciclo anterior, aplica agora.
     for (const row of data ?? []) {
-      await applyPendingPlanChange(row.id);
+      await applyScheduledChanges(row.id);
     }
   } else if (SUSPEND_EVENTS.has(event)) {
     const { error, data } = await db

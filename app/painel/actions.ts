@@ -25,7 +25,6 @@ import {
   cancelTenantSubscription,
   checkTenantLimitImpact,
   cancelPendingPlanChange,
-  PlanChangeLockedError,
 } from "@/lib/tenant-billing";
 import type { BillingType } from "@/lib/asaas";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
@@ -284,10 +283,6 @@ export async function ownerToggleMemberStatus(membershipId: string, nextStatus: 
 
 // ---------- Assinatura ----------
 
-function formatLockDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR");
-}
-
 function redirectToPlanSelection(plan: string, billing: string, error?: string) {
   const params = new URLSearchParams({ select_plan: plan, billing });
   if (error) params.set("error", error);
@@ -352,18 +347,9 @@ export async function ownerCancelPendingPlanChange() {
 
 export async function ownerCancelSubscription() {
   const { tenantId } = await requireTenantOwner();
-  try {
-    await cancelTenantSubscription(tenantId);
-  } catch (err) {
-    if (err instanceof PlanChangeLockedError) {
-      redirectBack(
-        "/painel/assinatura",
-        `Só é possível cancelar a partir de ${formatLockDate(err.availableAt)} (fim do período atual já pago).`,
-      );
-    }
-    throw err;
-  }
-  redirectBack("/painel/assinatura");
+  await cancelTenantSubscription(tenantId);
+  revalidatePath("/painel/assinatura");
+  redirect("/painel/assinatura?saved=cancelled");
 }
 
 // ---------- Resgates (loja) ----------

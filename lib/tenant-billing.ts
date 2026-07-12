@@ -9,7 +9,6 @@ import {
   getSubscription,
   getSubscriptionFirstPayment,
   updateSubscriptionValue,
-  createOneOffPayment,
   isRemovedCustomerError,
   PLAN_PRICES,
   type BillingType,
@@ -19,38 +18,21 @@ import {
 // Status de pagamento do Asaas que consideramos "pago" — libera o tenant.
 const CONFIRMED_PAYMENT_STATUSES = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
 
-// Erro lançado quando o dono tenta cancelar antes do fim do período já
-// pago — a mensagem carrega a data em que libera.
-export class PlanChangeLockedError extends Error {
-  constructor(public readonly availableAt: string) {
-    super(`Cancelamento bloqueado até ${availableAt}`);
-    this.name = "PlanChangeLockedError";
-  }
-}
-
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin quanto pelo painel do dono.
-
-// Versão read-only, pra tela mostrar "disponível a partir de X" sem tentar
-// a ação e capturar erro. Usada só pro cancelamento (downgrade não bloqueia
-// mais — ver changeTenantPlan).
-export async function getPlanChangeLockDate(
-  status: string,
-  asaasSubscriptionId: string | null,
-): Promise<string | null> {
-  if (status !== "active" || !asaasSubscriptionId) return null;
-  try {
-    const sub = await getSubscription(asaasSubscriptionId);
-    return new Date() < new Date(sub.nextDueDate) ? sub.nextDueDate : null;
-  } catch {
-    return null;
-  }
-}
+//
+// Modelo estilo Netflix/Spotify: upgrade e downgrade e cancelamento são
+// SEMPRE liberados na hora, sem esperar prazo nenhum.
+//   - Upgrade: acesso melhora já, sem cobrar nada agora — o valor novo só
+//     entra na próxima fatura.
+//   - Downgrade: acesso atual continua até o fim do período já pago; o
+//     plano novo passa a valer (e cobrar) só depois disso.
+//   - Cancelamento: para a cobrança na hora, mas o acesso continua até o
+//     fim do período já pago — depois disso o portal é suspenso.
 
 // Quando um downgrade reduz o limite de negócios do dono abaixo da
 // quantidade que ele já tem ativa, alguém precisa escolher quais ficam
-// ativos. Chamada ANTES de mexer no Asaas — não faz sentido agendar/cobrar
-// e só depois perguntar quais negócios sobrevivem.
+// ativos. Chamada ANTES de mexer no Asaas.
 export async function checkTenantLimitImpact(
   tenantId: string,
   newPlan: string,
@@ -116,8 +98,9 @@ async function suspendOverLimitTenants(
   }
 }
 
-// Assina do zero (sem assinatura ativa) ou reativa — cancela qualquer
-// assinatura velha e cria uma nova no valor do plano escolhido.
+// Assina do zero (sem assinatura ativa, ou reativando depois de um
+// cancelamento) — cancela qualquer assinatura velha e cria uma nova no
+// valor do plano escolhido.
 async function subscribeFresh(
   db: ReturnType<typeof createAdminClient>,
   tenantId: string,
@@ -181,6 +164,7 @@ async function subscribeFresh(
       pending_plan: null,
       pending_plan_effective_at: null,
       pending_keep_tenant_ids: null,
+      cancel_at: null,
     })
     .eq("id", tenantId);
 
@@ -201,8 +185,9 @@ export async function changeTenantPlan(
   const db = createAdminClient();
   const tenant = await loadTenantBillingRow(db, tenantId);
 
+  // Sem assinatura ativa de verdade (nunca assinou, suspenso, ou cancelou e
+  // o Asaas já não tem mais a subscription) — é assinatura nova.
   const isFreshSubscribe = tenant.status !== "active" || !tenant.asaas_subscription_id;
-  const isUpgrade = PLAN_RANK[newPlan] > PLAN_RANK[tenant.saas_plan];
 
   if (isFreshSubscribe) {
     const result = await subscribeFresh(db, tenantId, tenant, newPlan, billingType);
@@ -212,38 +197,16 @@ export async function changeTenantPlan(
     return result;
   }
 
+  const isUpgrade = PLAN_RANK[newPlan] > PLAN_RANK[tenant.saas_plan];
   const subscription = await getSubscription(tenant.asaas_subscription_id!);
 
+  // Reajusta o valor cobrado nos PRÓXIMOS ciclos, sem mexer numa cobrança já
+  // gerada e pendente — nem upgrade nem downgrade cobram nada agora.
+  await updateSubscriptionValue(tenant.asaas_subscription_id!, PLAN_PRICES[newPlan]);
+
   if (isUpgrade) {
-    // Upgrade vale na hora: só cobra a diferença proporcional aos dias que
-    // faltam pro fim do ciclo atual (aproximado em 30 dias) e já reajusta o
-    // valor da assinatura pros próximos ciclos.
-    const diff = PLAN_PRICES[newPlan] - PLAN_PRICES[tenant.saas_plan];
-    const daysRemaining = Math.max(
-      0,
-      Math.min(
-        30,
-        Math.ceil(
-          (new Date(subscription.nextDueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-        ),
-      ),
-    );
-    const prorated = Math.round((diff * daysRemaining / 30) * 100) / 100;
-
-    let invoiceUrl: string | undefined;
-    if (prorated > 0 && tenant.asaas_customer_id) {
-      const today = new Date().toISOString().slice(0, 10);
-      const payment = await createOneOffPayment({
-        customer: tenant.asaas_customer_id,
-        billingType,
-        value: prorated,
-        dueDate: today,
-        description: `Fideliza.OS — upgrade ${tenant.saas_plan} → ${newPlan} (diferença proporcional)`,
-      });
-      invoiceUrl = payment.invoiceUrl ? `${payment.invoiceUrl}?autoRedirect=true` : undefined;
-    }
-
-    await updateSubscriptionValue(tenant.asaas_subscription_id!, PLAN_PRICES[newPlan]);
+    // Upgrade vale na hora: acesso melhora já, sem cobrança extra — o valor
+    // novo só aparece na próxima fatura.
     await db
       .from("tenants")
       .update({
@@ -251,17 +214,17 @@ export async function changeTenantPlan(
         pending_plan: null,
         pending_plan_effective_at: null,
         pending_keep_tenant_ids: null,
+        cancel_at: null,
       })
       .eq("id", tenantId);
 
-    return { subscription, invoiceUrl };
+    return { subscription, invoiceUrl: undefined };
   }
 
-  // Downgrade: o plano atual continua valendo até o fim do período já pago.
-  // Só troca o valor cobrado nos PRÓXIMOS ciclos; a mudança de fato (e a
-  // suspensão dos negócios excedentes) só acontece quando o período vira —
-  // ver applyPendingPlanChange.
-  await updateSubscriptionValue(tenant.asaas_subscription_id!, PLAN_PRICES[newPlan]);
+  // Downgrade: o plano atual continua valendo (e com acesso completo) até o
+  // fim do período já pago. A troca de fato — e a suspensão dos negócios
+  // excedentes, se houver — só acontece quando o período vira (ver
+  // applyScheduledChanges).
   await db
     .from("tenants")
     .update({
@@ -270,14 +233,15 @@ export async function changeTenantPlan(
       pending_keep_tenant_ids: opts?.keepActiveTenantIds?.length
         ? opts.keepActiveTenantIds
         : null,
+      cancel_at: null,
     })
     .eq("id", tenantId);
 
   return { subscription, invoiceUrl: undefined, scheduledFor: subscription.nextDueDate };
 }
 
-// Desfaz um downgrade agendado (ex: dono mudou de ideia) — restaura o valor
-// da assinatura no Asaas pro plano atual e limpa os campos pendentes.
+// Desfaz um downgrade agendado (dono mudou de ideia) — restaura o valor da
+// assinatura no Asaas pro plano atual e limpa os campos pendentes.
 export async function cancelPendingPlanChange(tenantId: string) {
   const db = createAdminClient();
   const { data: tenant } = await db
@@ -305,36 +269,113 @@ export async function cancelPendingPlanChange(tenantId: string) {
     .eq("id", tenantId);
 }
 
-// Aplica um downgrade agendado cujo prazo já virou — chamada tanto pelo
-// webhook (quando a próxima cobrança é confirmada) quanto pela sincronização
-// de status nas telas, como fallback caso o webhook não dispare.
-export async function applyPendingPlanChange(tenantId: string): Promise<void> {
+// Cancela a cobrança na hora (para o Asaas de cobrar de novo), mas mantém o
+// acesso ativo até o fim do período já pago — estilo Netflix/Spotify.
+// force=true (Super Admin) suspende na hora, sem esperar.
+export async function cancelTenantSubscription(
+  tenantId: string,
+  opts?: { force?: boolean },
+) {
   const db = createAdminClient();
   const { data: tenant } = await db
     .from("tenants")
-    .select("pending_plan, pending_plan_effective_at, pending_keep_tenant_ids")
+    .select("asaas_subscription_id, status")
+    .eq("id", tenantId)
+    .maybeSingle<{ asaas_subscription_id: string | null; status: string }>();
+
+  if (!tenant?.asaas_subscription_id) return;
+
+  let accessUntil: string | null = null;
+  if (!opts?.force && tenant.status === "active") {
+    try {
+      const sub = await getSubscription(tenant.asaas_subscription_id);
+      if (new Date() < new Date(sub.nextDueDate)) accessUntil = sub.nextDueDate;
+    } catch {
+      // Asaas offline — cancela sem grace period.
+    }
+  }
+
+  try {
+    await cancelSubscription(tenant.asaas_subscription_id);
+  } catch {
+    // ignora erro do Asaas — cancela localmente mesmo assim
+  }
+
+  if (accessUntil) {
+    await db
+      .from("tenants")
+      .update({
+        asaas_subscription_id: null,
+        cancel_at: accessUntil,
+        pending_plan: null,
+        pending_plan_effective_at: null,
+        pending_keep_tenant_ids: null,
+      })
+      .eq("id", tenantId);
+  } else {
+    await db
+      .from("tenants")
+      .update({
+        status: "suspended",
+        asaas_subscription_id: null,
+        cancel_at: null,
+        pending_plan: null,
+        pending_plan_effective_at: null,
+        pending_keep_tenant_ids: null,
+      })
+      .eq("id", tenantId);
+  }
+}
+
+// Aplica downgrade agendado ou cancelamento cujo prazo já virou — chamada
+// pela sincronização de status nas telas (fallback principal, já que um
+// cancelamento não gera mais eventos de webhook do Asaas).
+export async function applyScheduledChanges(tenantId: string): Promise<void> {
+  const db = createAdminClient();
+  const { data: tenant } = await db
+    .from("tenants")
+    .select("cancel_at, pending_plan, pending_plan_effective_at, pending_keep_tenant_ids")
     .eq("id", tenantId)
     .maybeSingle<{
+      cancel_at: string | null;
       pending_plan: string | null;
       pending_plan_effective_at: string | null;
       pending_keep_tenant_ids: string[] | null;
     }>();
+  if (!tenant) return;
 
-  if (!tenant?.pending_plan || !tenant.pending_plan_effective_at) return;
-  if (new Date() < new Date(tenant.pending_plan_effective_at)) return;
+  if (tenant.cancel_at && new Date() >= new Date(tenant.cancel_at)) {
+    await db
+      .from("tenants")
+      .update({
+        status: "suspended",
+        cancel_at: null,
+        pending_plan: null,
+        pending_plan_effective_at: null,
+        pending_keep_tenant_ids: null,
+      })
+      .eq("id", tenantId);
+    return;
+  }
 
-  await db
-    .from("tenants")
-    .update({
-      saas_plan: tenant.pending_plan,
-      pending_plan: null,
-      pending_plan_effective_at: null,
-      pending_keep_tenant_ids: null,
-    })
-    .eq("id", tenantId);
+  if (
+    tenant.pending_plan &&
+    tenant.pending_plan_effective_at &&
+    new Date() >= new Date(tenant.pending_plan_effective_at)
+  ) {
+    await db
+      .from("tenants")
+      .update({
+        saas_plan: tenant.pending_plan,
+        pending_plan: null,
+        pending_plan_effective_at: null,
+        pending_keep_tenant_ids: null,
+      })
+      .eq("id", tenantId);
 
-  if (tenant.pending_keep_tenant_ids?.length) {
-    await suspendOverLimitTenants(db, tenantId, tenant.pending_keep_tenant_ids);
+    if (tenant.pending_keep_tenant_ids?.length) {
+      await suspendOverLimitTenants(db, tenantId, tenant.pending_keep_tenant_ids);
+    }
   }
 }
 
@@ -342,12 +383,10 @@ export async function applyPendingPlanChange(tenantId: string): Promise<void> {
 // mas ele depende de estar bem configurado no painel Asaas e de o Asaas
 // efetivamente entregar o evento. Esta função é o fallback: consulta o
 // Asaas direto e sincroniza o status do tenant, cobrindo casos onde o
-// webhook nunca chegou (ex: cliente restaurado manualmente no painel Asaas
-// não dispara PAYMENT_RECEIVED). Chamada sempre que o usuário checa status
-// (botão "Verificar status", página de assinatura) — também aplica downgrade
-// agendado se o prazo já passou.
+// webhook nunca chegou. Também aplica downgrade/cancelamento agendado se o
+// prazo já passou — chamada sempre que o usuário abre a tela de assinatura.
 export async function syncTenantStatusWithAsaas(tenantId: string): Promise<string | null> {
-  await applyPendingPlanChange(tenantId);
+  await applyScheduledChanges(tenantId);
 
   const db = createAdminClient();
   const { data: tenant } = await db
@@ -371,46 +410,4 @@ export async function syncTenantStatusWithAsaas(tenantId: string): Promise<strin
   }
 
   return tenant.status;
-}
-
-export async function cancelTenantSubscription(
-  tenantId: string,
-  opts?: { force?: boolean },
-) {
-  const db = createAdminClient();
-  const { data: tenant } = await db
-    .from("tenants")
-    .select("asaas_subscription_id, status")
-    .eq("id", tenantId)
-    .maybeSingle<{ asaas_subscription_id: string | null; status: string }>();
-
-  if (!opts?.force && tenant?.asaas_subscription_id && tenant.status === "active") {
-    try {
-      const sub = await getSubscription(tenant.asaas_subscription_id);
-      if (new Date() < new Date(sub.nextDueDate)) {
-        throw new PlanChangeLockedError(sub.nextDueDate);
-      }
-    } catch (err) {
-      if (err instanceof PlanChangeLockedError) throw err;
-      // Não deu pra consultar o Asaas — não bloqueia o cancelamento.
-    }
-  }
-
-  if (tenant?.asaas_subscription_id) {
-    try {
-      await cancelSubscription(tenant.asaas_subscription_id);
-    } catch {
-      // ignora erro do Asaas — suspende o tenant mesmo assim
-    }
-    await db
-      .from("tenants")
-      .update({
-        status: "suspended",
-        asaas_subscription_id: null,
-        pending_plan: null,
-        pending_plan_effective_at: null,
-        pending_keep_tenant_ids: null,
-      })
-      .eq("id", tenantId);
-  }
 }

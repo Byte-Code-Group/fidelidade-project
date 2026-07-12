@@ -134,27 +134,6 @@ export async function updateSubscriptionValue(
   });
 }
 
-// Cobrança avulsa (fora da assinatura recorrente) — usada pra cobrar só a
-// diferença proporcional quando o dono faz upgrade no meio do ciclo.
-export async function createOneOffPayment(opts: {
-  customer: string;
-  billingType?: BillingType;
-  value: number;
-  dueDate: string;
-  description: string;
-}): Promise<AsaasPayment> {
-  return request<AsaasPayment>("/payments", {
-    method: "POST",
-    body: JSON.stringify({
-      customer: opts.customer,
-      billingType: opts.billingType ?? "PIX",
-      value: opts.value,
-      dueDate: opts.dueDate,
-      description: opts.description,
-    }),
-  });
-}
-
 export interface AsaasPayment {
   id: string;
   status: string;
