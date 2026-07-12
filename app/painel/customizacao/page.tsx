@@ -53,7 +53,7 @@ export default async function OwnerCustomizacaoPage({
     .returns<ProfileField[]>();
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-3xl space-y-5">
       <div>
         <h1 className="text-2xl font-bold">Customização</h1>
         <p className="mt-1 text-sm text-gray-500">

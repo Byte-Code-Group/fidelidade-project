@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/icons";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { ProfileFieldsList } from "@/components/profile-fields-list";
+import { Section, Field } from "@/components/ui/section";
 import type { ProfileField, TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
@@ -45,7 +46,7 @@ export function CustomizationForm({
   const modules = (settings.modules_enabled ?? {}) as Record<string, boolean>;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="space-y-5">
       {/* Barra com link de visualização */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white/70 px-5 py-4 dark:bg-white/5">
         <div>
@@ -296,51 +297,6 @@ function Toggle({
         <span className="h-6 w-11 rounded-full bg-black/20 transition peer-checked:bg-[var(--primary)]" />
         <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5" />
       </span>
-    </label>
-  );
-}
-
-function Section({
-  title,
-  desc,
-  action,
-  children,
-}: {
-  title: string;
-  desc?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-black/5 bg-white/70 p-5 shadow-sm dark:bg-white/5">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-semibold">{title}</h2>
-          {desc && <p className="mt-0.5 text-xs opacity-55">{desc}</p>}
-        </div>
-        {action}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-medium">
-        {label}
-        {hint && <span className="ml-2 font-normal opacity-50">{hint}</span>}
-      </span>
-      {children}
     </label>
   );
 }
