@@ -312,8 +312,12 @@ export async function initiatePayment(formData: FormData) {
     }
 
     // Get invoice URL from first payment
+    // Nota: invoiceUrl só respeita autoRedirect se o parâmetro vier na própria URL
+    // (https://docs.asaas.com/docs/redirecionamento-apos-o-pagamento)
     const payment = await getSubscriptionFirstPayment(subscriptionId);
-    invoiceUrl = payment?.invoiceUrl;
+    invoiceUrl = payment?.invoiceUrl
+      ? `${payment.invoiceUrl}?autoRedirect=true`
+      : undefined;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro ao processar pagamento.";
     redirect(`/conta/planos?error=${encodeURIComponent(msg)}`);
