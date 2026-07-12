@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,14 @@ import { Card, CardContent } from "@/components/ui/card";
 // por isso a checagem de auth/status é feita via fetch client-side
 // (same-site) em vez de gate no server component.
 export default function AguardandoPage() {
+  return (
+    <Suspense>
+      <AguardandoContent />
+    </Suspense>
+  );
+}
+
+function AguardandoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const modo = searchParams.get("modo");
