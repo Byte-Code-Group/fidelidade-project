@@ -6,7 +6,7 @@ import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, PLAN_PRICES } from "@/lib/asaas";
 import { PLAN_CATALOG } from "@/lib/plan-catalog";
-import { PLAN_RANK } from "@/lib/tenant-limits";
+import { PLAN_RANK, TENANT_LIMITS } from "@/lib/tenant-limits";
 import { syncTenantStatusWithAsaas, checkTenantLimitImpact } from "@/lib/tenant-billing";
 import { FlashToast } from "@/components/flash-toast";
 import { cn } from "@/lib/utils";
@@ -83,7 +83,7 @@ export default async function OwnerAssinaturaPage({
 
   const successMessage =
     saved === "scheduled"
-      ? "Downgrade agendado — seu plano atual continua ativo até o fim do período."
+      ? "Plano selecionado — seu plano atual continua valendo até a próxima renovação."
       : saved === "cancelled"
         ? "Assinatura cancelada — seu acesso continua até o fim do período já pago."
         : "Alterações salvas.";
@@ -149,7 +149,7 @@ export default async function OwnerAssinaturaPage({
                 )}
 
                 <div className="flex gap-2">
-                  <Button type="submit">Confirmar downgrade</Button>
+                  <Button type="submit">Confirmar seleção</Button>
                   <Link href="/painel/assinatura">
                     <Button type="button" variant="outline">
                       Cancelar
@@ -291,38 +291,57 @@ export default async function OwnerAssinaturaPage({
                     ))}
                   </ul>
 
-                  {isCurrent ? (
-                    <p className="text-xs text-gray-500">Este é o seu plano atual.</p>
-                  ) : isThisPending ? (
-                    <p className="text-xs text-blue-600 dark:text-blue-400">
-                      Agendado pra {pendingAt ? fmtDate(pendingAt) : ""}
-                    </p>
-                  ) : (
-                    <form action={ownerChangePlan} className="space-y-2">
-                      <input type="hidden" name="plan" value={plan.key} />
-                      {needsBillingType && (
-                        <Select
-                          name="billing_type"
-                          defaultValue="CREDIT_CARD"
-                          className="w-full text-sm"
+                  {(() => {
+                    const limit = TENANT_LIMITS[plan.key];
+                    const limitLabel =
+                      limit === -1 ? "negócios ilimitados" : `até ${limit} negócio${limit === 1 ? "" : "s"}`;
+                    const renewalDate = subscription ? fmtDate(subscription.nextDueDate) : null;
+
+                    if (isCurrent) {
+                      return <p className="text-xs text-gray-500">Este é o seu plano atual.</p>;
+                    }
+                    if (isThisPending) {
+                      return (
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          Selecionado — na renovação de {pendingAt ? fmtDate(pendingAt) : ""} passa a
+                          cobrar R$ {price}/mês e permitir {limitLabel}.
+                        </p>
+                      );
+                    }
+                    return (
+                      <form action={ownerChangePlan} className="space-y-2">
+                        <input type="hidden" name="plan" value={plan.key} />
+                        {needsBillingType && (
+                          <Select
+                            name="billing_type"
+                            defaultValue="CREDIT_CARD"
+                            className="w-full text-sm"
+                          >
+                            <option value="CREDIT_CARD">Cartão de crédito</option>
+                            <option value="PIX">PIX</option>
+                          </Select>
+                        )}
+                        {!needsBillingType && !isUpgrade && (
+                          <p className="text-[11px] text-gray-500">
+                            Na próxima renovação{renewalDate ? ` (${renewalDate})` : ""} passa a cobrar
+                            R$ {price}/mês e permitir {limitLabel}. Até lá, {PLAN_LABEL[currentPlan]}{" "}
+                            continua valendo.
+                          </p>
+                        )}
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          variant={needsBillingType || isUpgrade ? "primary" : "outline"}
                         >
-                          <option value="CREDIT_CARD">Cartão de crédito</option>
-                          <option value="PIX">PIX</option>
-                        </Select>
-                      )}
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        variant={needsBillingType || isUpgrade ? "primary" : "outline"}
-                      >
-                        {needsBillingType
-                          ? `Assinar ${plan.name}`
-                          : isUpgrade
-                            ? "Fazer upgrade"
-                            : `Agendar downgrade pra ${plan.name}`}
-                      </Button>
-                    </form>
-                  )}
+                          {needsBillingType
+                            ? `Assinar ${plan.name}`
+                            : isUpgrade
+                              ? "Fazer upgrade"
+                              : `Selecionar ${plan.name}`}
+                        </Button>
+                      </form>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );
