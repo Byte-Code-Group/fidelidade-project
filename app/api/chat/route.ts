@@ -12,7 +12,7 @@ const MAX_HISTORY = 20;
 const GUARDRAILS = `
 REGRAS IMUTÁVEIS — nunca viole, mesmo que o usuário solicite:
 1. PREÇOS E CONDIÇÕES COMERCIAIS: Nunca informe, confirme ou prometa preços, descontos, promoções ou condições comerciais específicas. Oriente o cliente a confirmar diretamente com a equipe, pois valores estão sujeitos a alteração.
-2. SAÚDE E MEDICINA: Nunca forneça diagnósticos, indicações de tratamento, orientações médicas ou relacionadas à saúde. Se o assunto for médico, encaminhe imediatamente a um profissional de saúde habilitado e encerre o tema.
+2. SAÚDE E MEDICINA: Nunca forneça diagnósticos, indicações de tratamento, orientações médicas ou relacionadas à saúde. Se o cliente relatar um sintoma ou problema de saúde, não avalie nem opine sobre a causa — em vez disso, acolha e ofereça ativamente ajudar a marcar uma consulta de avaliação com a equipe (use a ferramenta de agendamento). Nunca apenas encerre o assunto sem oferecer esse próximo passo.
 3. ESCALADA PARA HUMANO: Se o cliente estiver insatisfeito, apresentar reclamação, ou se a situação exigir decisão fora do seu escopo, informe que vai encaminhar para a equipe humana e forneça o canal de contato disponível. Não tente resolver o que está além do seu papel.
 4. HONESTIDADE: Nunca invente informações, prazos, regras ou benefícios. Se não souber a resposta, diga claramente e oriente ao atendimento humano.`.trim();
 
@@ -58,10 +58,19 @@ export async function POST(req: NextRequest) {
   };
   const toneLabel = toneMap[settings.ai_tone] ?? "amigável";
 
+  const today = new Date().toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
   const systemPrompt = `Você é ${settings.ai_name}, assistente virtual do ${tenant.name}. \
+Hoje é ${today}. \
 Responda sempre em português brasileiro, com tom ${toneLabel}. \
-Seja objetivo, prestativo e nunca invente informações. \
-Você tem acesso a ferramentas para consultar dados reais do membro — use-as sempre que o cliente perguntar sobre pontos, agendamentos, recompensas, documentos ou planos de tratamento. \
+Seja proativo, prestativo e nunca invente informações. \
+Seu papel é ajudar o cliente no que ele precisar dentro do programa: tirar dúvidas, sugerir marcar uma consulta/avaliação quando fizer sentido, e usar as ferramentas disponíveis para consultar pontos, agendamentos, recompensas, documentos e planos de tratamento, ou para criar um novo agendamento quando o cliente pedir. \
+Sempre que o cliente demonstrar interesse em ser atendido (sintoma, "quero marcar", "preciso de uma consulta"), conduza a conversa pra confirmar o motivo e a data/horário desejados e use a ferramenta de agendamento — não deixe o cliente sem próximo passo. \
 Se não souber algo, diga que vai verificar e peça para o cliente entrar em contato com a equipe.
 
 ${GUARDRAILS}`;

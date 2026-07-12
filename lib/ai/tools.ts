@@ -40,6 +40,39 @@ export function getAiTools(ctx: ToolContext) {
       },
     }),
 
+    request_appointment: tool({
+      description:
+        "Solicita um novo agendamento/consulta pro membro. Use quando o cliente pedir pra marcar, agendar ou remarcar uma visita — pergunte antes o motivo/tipo de consulta e a data e horário preferidos, se ele não tiver informado.",
+      inputSchema: z.object({
+        title: z
+          .string()
+          .describe("Motivo ou tipo da consulta, ex: 'Avaliação — dor de dente'."),
+        scheduled_at: z
+          .string()
+          .describe(
+            "Data e horário desejados em ISO 8601 (ex: 2026-07-15T14:00:00). Assuma o fuso local do Brasil.",
+          ),
+        notes: z.string().optional().describe("Observações adicionais do cliente."),
+      }),
+      execute: async ({ title, scheduled_at, notes }) => {
+        const date = new Date(scheduled_at);
+        if (Number.isNaN(date.getTime())) {
+          return "Não entendi a data informada. Peça pro cliente confirmar dia e horário.";
+        }
+        const { error } = await db.from("appointments").insert({
+          tenant_id: tenantId,
+          user_id: userId,
+          title,
+          scheduled_at: date.toISOString(),
+          notes: notes ?? null,
+          status: "scheduled",
+          created_by: userId,
+        });
+        if (error) return "Não consegui criar o agendamento agora. Peça pro cliente tentar de novo ou falar com a equipe.";
+        return `Agendamento criado: "${title}" em ${date.toLocaleString("pt-BR")}.`;
+      },
+    }),
+
     list_appointments: tool({
       description:
         "Lista os agendamentos do membro. Por padrão retorna os próximos (futuros). Passe status='all' para incluir histórico.",
