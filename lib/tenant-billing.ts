@@ -9,6 +9,9 @@ import {
   type BillingType,
 } from "@/lib/asaas";
 
+// Status de pagamento do Asaas que consideramos "pago" — libera o tenant.
+const CONFIRMED_PAYMENT_STATUSES = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
+
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin quanto pelo painel do dono.
 
@@ -95,6 +98,38 @@ export async function changeTenantPlan(
     : undefined;
 
   return { subscription, invoiceUrl };
+}
+
+// Fonte de verdade primária é o webhook (app/api/webhooks/asaas/route.ts),
+// mas ele depende de estar bem configurado no painel Asaas e de o Asaas
+// efetivamente entregar o evento. Esta função é o fallback: consulta o
+// Asaas direto e sincroniza o status do tenant, cobrindo casos onde o
+// webhook nunca chegou (ex: cliente restaurado manualmente no painel Asaas
+// não dispara PAYMENT_RECEIVED). Chamada sempre que o usuário checa status
+// (botão "Verificar status", página de assinatura).
+export async function syncTenantStatusWithAsaas(tenantId: string): Promise<string | null> {
+  const db = createAdminClient();
+  const { data: tenant } = await db
+    .from("tenants")
+    .select("status, asaas_subscription_id")
+    .eq("id", tenantId)
+    .maybeSingle<{ status: string; asaas_subscription_id: string | null }>();
+
+  if (!tenant) return null;
+  if (tenant.status === "active") return tenant.status;
+  if (!tenant.asaas_subscription_id || !process.env.ASAAS_API_KEY) return tenant.status;
+
+  try {
+    const payment = await getSubscriptionFirstPayment(tenant.asaas_subscription_id);
+    if (payment && CONFIRMED_PAYMENT_STATUSES.has(payment.status)) {
+      await db.from("tenants").update({ status: "active" }).eq("id", tenantId);
+      return "active";
+    }
+  } catch {
+    // Asaas offline ou subscription inválida — mantém status atual, não bloqueia.
+  }
+
+  return tenant.status;
 }
 
 export async function cancelTenantSubscription(tenantId: string) {

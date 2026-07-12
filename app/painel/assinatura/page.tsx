@@ -4,6 +4,7 @@ import { Select } from "@/components/ui/select";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, PLAN_PRICES } from "@/lib/asaas";
+import { syncTenantStatusWithAsaas } from "@/lib/tenant-billing";
 import { FlashToast } from "@/components/flash-toast";
 import { ownerCancelSubscription, ownerChangePlan } from "../actions";
 
@@ -32,6 +33,10 @@ export default async function OwnerAssinaturaPage({
 }) {
   const { tenantId } = await requireTenantOwner();
   const { error, saved } = await searchParams;
+
+  // Reconcilia com o Asaas antes de ler o status — cobre o caso do webhook
+  // não ter confirmado o pagamento (falha de config, evento não entregue etc.).
+  await syncTenantStatusWithAsaas(tenantId);
 
   const db = createAdminClient();
   const { data: tenant } = await db
