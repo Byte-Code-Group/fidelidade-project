@@ -79,9 +79,22 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
+    // Chamadas de API feitas pelo portal do cliente (ex: /api/chat) não
+    // carregam o prefixo /p/[slug] — não dá pra redirecionar um fetch, então
+    // resolve o tenant direto pelo cookie gravado na navegação /p/[slug]/...
+    if (
+      cookieSlug &&
+      pathname.startsWith("/api/") &&
+      !pathname.startsWith("/api/webhooks") &&
+      !pathname.startsWith("/api/conta") &&
+      !pathname.startsWith("/api/auth")
+    ) {
+      slug = cookieSlug;
+    }
+
     // Sem cookie: se o host não bate com o ROOT_DOMAIN, pode ser domínio
     // customizado (white-label) — sinaliza p/ lookup por custom_domain.
-    if (isCustomDomainCandidate(host)) {
+    if (!slug && isCustomDomainCandidate(host)) {
       slug = `@${host!.split(":")[0].toLowerCase()}`;
     }
   }
