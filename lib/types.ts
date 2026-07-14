@@ -60,6 +60,8 @@ export interface Membership {
   member_code: string;
   valid_until: string | null;
   points_total: number;
+  pending_plan_id: string | null;
+  pending_plan_effective_at: string | null;
   created_at: string;
 }
 

@@ -91,6 +91,8 @@ export function TemplateDemo({
     member_code: "ORD-26-0481",
     valid_until: validUntilIso(63),
     points_total: 125,
+    pending_plan_id: null,
+    pending_plan_effective_at: null,
     created_at: "",
   };
 

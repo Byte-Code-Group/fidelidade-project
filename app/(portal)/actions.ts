@@ -12,6 +12,7 @@ import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
 import { confirmEmailTemplate } from "@/lib/emails/confirm-email";
 import { validateProfileFieldValues } from "@/lib/profile-fields";
+import { changeMembershipPlan } from "@/lib/memberships";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -226,6 +227,19 @@ export async function saveProfile(formData: FormData) {
 
   revalidatePath("/perfil");
   redirect("/perfil?saved=1");
+}
+
+// Assina ou troca de plano. Upgrade vale na hora; downgrade agenda pro fim
+// do período vigente — ver lib/memberships.ts.
+export async function subscribeToPlan(planId: string) {
+  const ctx = await getCurrentTenant();
+  if (!ctx) redirect("/");
+
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
+  await changeMembershipPlan(ctx.tenant.id, user.id, planId);
+  revalidatePath("/planos");
 }
 
 // Resgate de recompensa na Loja: debita pontos da carteirinha e registra a

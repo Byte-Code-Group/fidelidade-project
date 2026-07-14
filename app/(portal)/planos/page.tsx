@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -7,12 +6,23 @@ import { Icon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
+import { applyScheduledMembershipChange } from "@/lib/memberships";
+import { subscribeToPlan } from "../actions";
 import type { BusinessPlan, Membership } from "@/lib/types";
 
 function formatPrice(value: number) {
   const [reais, cents] = value.toFixed(2).split(".");
   return { reais, cents };
 }
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+type MembershipRow = Pick<
+  Membership,
+  "id" | "plan_id" | "valid_until" | "pending_plan_id" | "pending_plan_effective_at"
+>;
 
 export default async function PlanosPage() {
   const ctx = await getCurrentTenant();
@@ -23,7 +33,7 @@ export default async function PlanosPage() {
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
-  const [{ data: plans }, { data: membership }] = await Promise.all([
+  const [{ data: plans }, { data: membershipBefore }] = await Promise.all([
     supabase
       .from("business_plans")
       .select("*")
@@ -31,12 +41,28 @@ export default async function PlanosPage() {
       .returns<BusinessPlan[]>(),
     supabase
       .from("memberships")
-      .select("plan_id")
+      .select("id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at")
+      .eq("tenant_id", tenant.id)
       .eq("user_id", user.id)
       .order("created_at", { ascending: true })
       .limit(1)
-      .maybeSingle<Pick<Membership, "plan_id">>(),
+      .maybeSingle<MembershipRow>(),
   ]);
+
+  let membership = membershipBefore;
+  if (
+    membership?.pending_plan_id &&
+    membership.pending_plan_effective_at &&
+    new Date() >= new Date(membership.pending_plan_effective_at)
+  ) {
+    await applyScheduledMembershipChange(membership.id);
+    const { data: refreshed } = await supabase
+      .from("memberships")
+      .select("id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at")
+      .eq("id", membership.id)
+      .maybeSingle<MembershipRow>();
+    membership = refreshed;
+  }
 
   return (
     <div>
@@ -52,67 +78,97 @@ export default async function PlanosPage() {
           description="Os planos deste programa ainda não foram publicados."
         />
       ) : (
-        <div className="flex flex-wrap justify-center gap-5">
-          {plans.map((plan) => {
-            const { reais, cents } = formatPrice(plan.price_month);
-            const isCurrent = membership?.plan_id === plan.id;
-            return (
-              <div
-                key={plan.id}
-                className={cn(
-                  "relative flex w-full max-w-sm flex-col rounded-2xl border bg-white p-6 dark:bg-white/5",
-                  plan.is_popular
-                    ? "border-[var(--primary)] ring-1 ring-[var(--primary)]"
-                    : "border-black/5",
-                )}
-              >
-                {plan.is_popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary-foreground)]">
-                    Popular
-                  </span>
-                )}
+        <div className="overflow-x-auto pb-2">
+          <div className="mx-auto flex w-fit gap-5 px-1">
+            {plans.map((plan) => {
+              const { reais, cents } = formatPrice(plan.price_month);
+              const isCurrent = membership?.plan_id === plan.id;
+              const isPendingTarget = membership?.pending_plan_id === plan.id;
+              const currentPlan = plans.find((p) => p.id === membership?.plan_id);
+              const isDowngrade = currentPlan ? plan.price_month < currentPlan.price_month : false;
 
-                <h3 className="text-lg font-bold">{plan.name}</h3>
-                <p className="text-[11px] uppercase tracking-wider opacity-50">
-                  {tenant.name}
-                </p>
-
-                <div className="mt-4 flex items-end gap-1">
-                  <span className="text-sm opacity-60">R$</span>
-                  <span className="text-4xl font-bold leading-none">{reais}</span>
-                  <span className="text-lg font-bold">,{cents}</span>
-                  <span className="mb-0.5 text-sm opacity-60">/mês</span>
-                </div>
-
-                <ul className="mt-5 flex-1 space-y-2.5 text-sm">
-                  {plan.benefits.map((benefit) => (
-                    <li key={benefit} className="flex items-start gap-2">
-                      <Icon
-                        name="check"
-                        className="mt-0.5 h-4 w-4 shrink-0 text-green-500"
-                      />
-                      <span className="opacity-80">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href="/atendente" className="mt-6 block">
-                  {isCurrent ? (
-                    <Button variant="outline" className="w-full" disabled>
-                      Plano atual
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={plan.is_popular ? "primary" : "outline"}
-                      className="w-full"
-                    >
-                      Fazer Upgrade
-                    </Button>
+              return (
+                <div
+                  key={plan.id}
+                  className={cn(
+                    "relative flex w-72 shrink-0 flex-col rounded-2xl border bg-white p-6 dark:bg-white/5",
+                    plan.is_popular
+                      ? "border-[var(--primary)] ring-1 ring-[var(--primary)]"
+                      : "border-black/5",
                   )}
-                </Link>
-              </div>
-            );
-          })}
+                >
+                  {plan.is_popular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary-foreground)]">
+                      Popular
+                    </span>
+                  )}
+
+                  <h3 className="text-lg font-bold">{plan.name}</h3>
+                  <p className="text-[11px] uppercase tracking-wider opacity-50">
+                    {tenant.name}
+                  </p>
+
+                  <div className="mt-4 flex items-end gap-1">
+                    <span className="text-sm opacity-60">R$</span>
+                    <span className="text-4xl font-bold leading-none">{reais}</span>
+                    <span className="text-lg font-bold">,{cents}</span>
+                    <span className="mb-0.5 text-sm opacity-60">/mês</span>
+                  </div>
+
+                  <ul className="mt-5 flex-1 space-y-2.5 text-sm">
+                    {plan.benefits.map((benefit) => (
+                      <li key={benefit} className="flex items-start gap-2">
+                        <Icon
+                          name="check"
+                          className="mt-0.5 h-4 w-4 shrink-0 text-green-500"
+                        />
+                        <span className="opacity-80">{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6">
+                    {isCurrent ? (
+                      <>
+                        <Button variant="outline" className="w-full" disabled>
+                          Plano atual
+                        </Button>
+                        {membership?.pending_plan_id && membership.pending_plan_effective_at && (
+                          <p className="mt-2 text-center text-xs opacity-60">
+                            Válido até {formatDate(membership.pending_plan_effective_at)}
+                          </p>
+                        )}
+                      </>
+                    ) : isPendingTarget && membership?.pending_plan_effective_at ? (
+                      <>
+                        <Button variant="outline" className="w-full" disabled>
+                          Agendado
+                        </Button>
+                        <p className="mt-2 text-center text-xs opacity-60">
+                          Ativa em {formatDate(membership.pending_plan_effective_at)}
+                        </p>
+                      </>
+                    ) : (
+                      <form action={subscribeToPlan.bind(null, plan.id)}>
+                        <Button
+                          type="submit"
+                          variant={plan.is_popular ? "primary" : "outline"}
+                          className="w-full"
+                        >
+                          Assinar
+                        </Button>
+                        {isDowngrade && membership?.valid_until && (
+                          <p className="mt-2 text-center text-xs opacity-60">
+                            Passa a valer em {formatDate(membership.valid_until)}
+                          </p>
+                        )}
+                      </form>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
