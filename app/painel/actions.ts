@@ -14,6 +14,12 @@ import {
 import { insertReward, applyRewardUpdate, removeReward, reorderRewards } from "@/lib/rewards";
 import { insertPlan, applyPlanUpdate, removePlan, reorderPlans } from "@/lib/plans";
 import {
+  insertDocumentTemplate,
+  applyDocumentTemplateUpdate,
+  removeDocumentTemplate,
+  reorderDocumentTemplates,
+} from "@/lib/document-templates";
+import {
   insertProfileField,
   applyProfileFieldUpdate,
   removeProfileField,
@@ -204,6 +210,39 @@ export async function ownerReorderRewards(orderedIds: string[]): Promise<{ error
   const { error } = await reorderRewards(tenantId, orderedIds);
   revalidatePath("/painel/loja");
   revalidatePath("/loja");
+  return { error };
+}
+
+// ---------- Documentos (document_templates) ----------
+
+export async function ownerCreateDocumentTemplate(formData: FormData): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertDocumentTemplate(tenantId, formData);
+  revalidatePath("/painel/documentos");
+  return { error };
+}
+
+export async function ownerUpdateDocumentTemplate(
+  templateId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await applyDocumentTemplateUpdate(tenantId, templateId, formData);
+  revalidatePath("/painel/documentos");
+  return { error };
+}
+
+export async function ownerDeleteDocumentTemplate(templateId: string): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeDocumentTemplate(tenantId, templateId);
+  revalidatePath("/painel/documentos");
+  return { error };
+}
+
+export async function ownerReorderDocumentTemplates(orderedIds: string[]): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await reorderDocumentTemplates(tenantId, orderedIds);
+  revalidatePath("/painel/documentos");
   return { error };
 }
 

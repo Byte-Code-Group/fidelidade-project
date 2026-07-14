@@ -129,6 +129,15 @@ export interface BusinessPlan {
   display_order: number;
 }
 
+export interface DocumentTemplate {
+  id: string;
+  tenant_id: string;
+  name: string;
+  content: string;
+  display_order: number;
+  created_at: string;
+}
+
 export interface RewardRedemption {
   id: string;
   tenant_id: string;

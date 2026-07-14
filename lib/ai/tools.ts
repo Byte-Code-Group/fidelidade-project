@@ -158,6 +158,24 @@ export function getAiTools(ctx: ToolContext) {
       },
     }),
 
+    list_document_templates: tool({
+      description:
+        "Lista os modelos de documento (contrato, atestado, termo...) cadastrados pelo negócio, com o conteúdo de cada um. Use pra gerar um documento quando o cliente pedir — preencha as variáveis {{...}} do modelo com os dados da conversa e do membro, e responda com o texto final do documento preenchido.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data } = await db
+          .from("document_templates")
+          .select("name, content")
+          .eq("tenant_id", tenantId)
+          .order("display_order", { ascending: true });
+
+        if (!data?.length) return "Nenhum modelo de documento cadastrado.";
+        return JSON.stringify(
+          data.map((t) => ({ nome: t.name, conteudo: t.content })),
+        );
+      },
+    }),
+
     list_care_plans: tool({
       description:
         "Lista os planos de acompanhamento/tratamento ativos do membro.",
