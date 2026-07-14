@@ -29,27 +29,15 @@ export function PlanFields({ plan }: { plan?: BusinessPlan }) {
         />
       </Field>
 
-      <div className="flex items-center gap-4">
-        <Field label="Desconto upgrade (%)">
-          <Input
-            name="upgrade_discount_pct"
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={plan?.upgrade_discount_pct ?? 0}
-            className="w-24"
-          />
-        </Field>
-        <label className="flex items-center gap-2 pt-5 text-sm">
-          <input
-            type="checkbox"
-            name="is_popular"
-            defaultChecked={plan?.is_popular ?? false}
-            className="h-4 w-4 accent-[var(--primary)]"
-          />
-          Destaque (popular)
-        </label>
-      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="is_popular"
+          defaultChecked={plan?.is_popular ?? false}
+          className="h-4 w-4 accent-[var(--primary)]"
+        />
+        Destaque (popular)
+      </label>
     </>
   );
 }

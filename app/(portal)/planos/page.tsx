@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -85,12 +84,6 @@ export default async function PlanosPage() {
                   <span className="mb-0.5 text-sm opacity-60">/mês</span>
                 </div>
 
-                {plan.is_popular && plan.upgrade_discount_pct > 0 && (
-                  <Badge className="mt-3 w-fit bg-green-500/15 text-green-600">
-                    ✓ {plan.upgrade_discount_pct}% OFF no upgrade
-                  </Badge>
-                )}
-
                 <ul className="mt-5 flex-1 space-y-2.5 text-sm">
                   {plan.benefits.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-2">
@@ -113,9 +106,7 @@ export default async function PlanosPage() {
                       variant={plan.is_popular ? "primary" : "outline"}
                       className="w-full"
                     >
-                      {plan.is_popular && plan.upgrade_discount_pct > 0
-                        ? `Upgrade · ${plan.upgrade_discount_pct}% OFF`
-                        : "Fazer Upgrade"}
+                      Fazer Upgrade
                     </Button>
                   )}
                 </Link>

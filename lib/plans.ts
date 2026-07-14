@@ -11,7 +11,6 @@ function planFields(formData: FormData) {
     price_month: Number(formData.get("price_month") ?? 0),
     benefits,
     is_popular: formData.get("is_popular") === "on",
-    upgrade_discount_pct: Number(formData.get("upgrade_discount_pct") ?? 0),
   };
 }
 
