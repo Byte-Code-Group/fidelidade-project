@@ -134,6 +134,8 @@ export interface DocumentTemplate {
   tenant_id: string;
   name: string;
   content: string;
+  file_url: string | null;
+  file_name: string | null;
   display_order: number;
   created_at: string;
 }
