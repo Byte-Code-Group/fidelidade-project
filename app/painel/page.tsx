@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireTenantOwner } from "@/lib/owner";
+import { getTenantOwner } from "@/lib/owner";
+import { getAuthUser } from "@/lib/supabase/server";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000";
 
@@ -25,7 +26,30 @@ function thirtyDaysAgo() {
 }
 
 export default async function PainelPage() {
-  const { tenantId } = await requireTenantOwner();
+  const user = await getAuthUser();
+  if (!user) redirect("/conta/login");
+
+  const owner = await getTenantOwner();
+  if (!owner) {
+    return (
+      <div className="mx-auto max-w-lg pt-12">
+        <Card>
+          <CardContent className="text-center">
+            <h1 className="text-xl font-bold">Bem-vindo(a)!</h1>
+            <p className="mt-2 text-sm text-gray-500">
+              Você ainda não tem nenhum negócio criado. Crie o seu pra começar a
+              usar o painel.
+            </p>
+            <Link href="/conta/configurar" className="mt-6 block">
+              <Button className="w-full">Criar meu negócio</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { tenantId } = owner;
 
   const db = createAdminClient();
   const since = thirtyDaysAgo();

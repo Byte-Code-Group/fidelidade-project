@@ -22,7 +22,14 @@ export default async function PainelLayout({
   if (!owner) {
     const admin = await getPlatformAdmin();
     if (admin) redirect("/superadmin");
-    redirect("/conta/configurar");
+    // Sem negócio ainda: sem sidebar (não há tenant pra navegar), deixa
+    // /painel mostrar o estado vazio com CTA pra criar — não força a
+    // pessoa direto na criação.
+    return (
+      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-10">
+        {children}
+      </main>
+    );
   }
 
   const activeTenant = owner.tenants.find((t) => t.id === owner.tenantId);

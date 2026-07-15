@@ -87,7 +87,9 @@ export async function platformSignUp(formData: FormData) {
     }
   }
 
-  redirect("/conta/configurar");
+  // Painel decide: com sessão confirmada mas sem negócio ainda, mostra
+  // estado vazio com CTA pra criar — não força a pessoa na criação.
+  redirect("/painel");
 }
 
 // ---------- Login ----------
@@ -204,20 +206,6 @@ export async function configureBusiness(formData: FormData) {
       loyalty_goal: d.loyalty_goal,
       loyalty_frequency: d.loyalty_frequency,
     });
-
-    if (tpl.profileFields?.length) {
-      await db.from("profile_fields").insert(
-        tpl.profileFields.map((f, i) => ({
-          tenant_id: tenantId,
-          label: f.label,
-          field_key: f.field_key,
-          field_type: f.field_type,
-          options: f.options ?? null,
-          required: f.required ?? false,
-          display_order: i + 1,
-        })),
-      );
-    }
 
     // Link platform_user → tenant: reaproveita a linha placeholder (1º
     // negócio) ou insere uma nova (negócio adicional).
