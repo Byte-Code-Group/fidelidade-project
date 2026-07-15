@@ -210,6 +210,27 @@ export function getAiTools(ctx: ToolContext) {
       },
     }),
 
+    remember_about_user: tool({
+      description:
+        "Atualiza a memória de longo prazo deste cliente — o que você lembra dele entre conversas diferentes (preferências, contexto recorrente, algo que ele pediu pra você lembrar, etc.). Use quando aprender algo que vale a pena lembrar da próxima vez que ele conversar com você. Você já recebe a memória atual no início da conversa: passe o texto COMPLETO já atualizado (mescle o que já existia com o que é novo), não só o que mudou. Mantenha curto — poucas linhas, uma por fato. Nunca guarde senha, dado de pagamento ou informação de saúde sensível.",
+      inputSchema: z.object({
+        content: z
+          .string()
+          .describe("Texto completo e atualizado da memória, uma linha por fato."),
+      }),
+      execute: async ({ content }) => {
+        const trimmed = content.trim().slice(0, 2000);
+        const { error } = await db
+          .from("user_ai_memory")
+          .upsert(
+            { tenant_id: tenantId, user_id: userId, content: trimmed, updated_at: new Date().toISOString() },
+            { onConflict: "tenant_id,user_id" },
+          );
+        if (error) return "Não consegui salvar a memória agora.";
+        return "Memória atualizada.";
+      },
+    }),
+
     list_care_plans: tool({
       description:
         "Lista os planos de acompanhamento/tratamento ativos do membro.",

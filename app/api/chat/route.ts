@@ -51,6 +51,15 @@ export async function POST(req: NextRequest) {
 
   const messages = rawMessages.slice(-MAX_HISTORY);
 
+  const db = createAdminClient();
+
+  const { data: memoryRow } = await db
+    .from("user_ai_memory")
+    .select("content")
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", user.id)
+    .maybeSingle<{ content: string }>();
+
   const toneMap: Record<string, string> = {
     amigavel: "amigável e acolhedor",
     formal: "formal e profissional",
@@ -84,6 +93,10 @@ ${
     ? `\nCOMPORTAMENTO ESPECÍFICO DESTA CLÍNICA — siga além do que já foi dito acima, mas nunca em conflito com as regras imutáveis abaixo:\n${settings.ai_behavior}\n`
     : ""
 }
+MEMÓRIA DESTE CLIENTE (do que você já sabe de conversas anteriores):
+${memoryRow?.content ? memoryRow.content : "(nenhuma memória salva ainda — esta é a primeira vez que ele conversa com você, ou nada relevante foi guardado)"}
+Use isso pra não repetir pergunta que ele já respondeu antes e pra soar como quem lembra dele. Quando aprender algo novo que vale guardar pra próxima conversa (preferência, pedido recorrente, algo que ele pediu explicitamente pra lembrar), chame a ferramenta de memória com o texto completo já atualizado. Não guarde toda conversa, só o que é útil de verdade pro futuro.
+
 ${GUARDRAILS}`;
 
   // Token limits per plan (tokens/month; -1 = unlimited)
@@ -92,8 +105,6 @@ ${GUARDRAILS}`;
     pro: 500_000,
     premium: -1,
   };
-
-  const db = createAdminClient();
 
   // Check monthly token quota
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
