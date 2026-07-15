@@ -40,6 +40,40 @@ export function getAiTools(ctx: ToolContext) {
       },
     }),
 
+    get_member_profile: tool({
+      description:
+        "Retorna os dados de cadastro do cliente: nome, e-mail e os campos de perfil configurados pelo negócio (CPF, telefone, data de nascimento, endereço etc. — variam por tenant). Use SEMPRE antes de gerar um documento pra preencher automaticamente o que já se sabe do cliente, em vez de perguntar de novo o que já está cadastrado.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const [{ data: profile }, { data: fields }, { data: values }] = await Promise.all([
+          db.from("users").select("full_name, email").eq("id", userId).maybeSingle(),
+          db
+            .from("profile_fields")
+            .select("id, label, field_key")
+            .eq("tenant_id", tenantId),
+          db
+            .from("profile_field_values")
+            .select("field_id, value")
+            .eq("tenant_id", tenantId)
+            .eq("user_id", userId),
+        ]);
+
+        const labelById = new Map((fields ?? []).map((f) => [f.id, f.label]));
+        const valueByField = new Map((values ?? []).map((v) => [v.field_id, v.value]));
+        const cadastro = (fields ?? []).reduce<Record<string, string>>((acc, f) => {
+          const v = valueByField.get(f.id);
+          if (v) acc[labelById.get(f.id) ?? f.field_key] = v;
+          return acc;
+        }, {});
+
+        return JSON.stringify({
+          nome: profile?.full_name ?? null,
+          email: profile?.email ?? null,
+          cadastro,
+        });
+      },
+    }),
+
     request_appointment: tool({
       description:
         "Solicita um novo agendamento/consulta pro membro. Use quando o cliente pedir pra marcar, agendar ou remarcar uma visita — pergunte antes o motivo/tipo de consulta e a data e horário preferidos, se ele não tiver informado.",
