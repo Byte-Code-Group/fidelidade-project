@@ -49,6 +49,7 @@ export async function applyTenantSettingsUpdate(
       ai_name: String(formData.get("ai_name") ?? "Assistente"),
       ai_welcome_message: text("ai_welcome_message"),
       ai_tone: String(formData.get("ai_tone") ?? "amigavel"),
+      ai_behavior: text("ai_behavior"),
       // Rodapé
       footer_address: text("footer_address"),
       footer_phone: text("footer_phone"),

@@ -66,6 +66,7 @@ export function TemplateDemo({
       ai_name: config.aiName,
       ai_welcome_message: config.aiWelcome,
       ai_tone: "amigavel",
+      ai_behavior: null,
       label_client: config.labelClient,
       label_appointment: config.labelAppointment,
       footer_address: null,

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Icon } from "@/components/icons";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { ProfileFieldsList } from "@/components/profile-fields-list";
@@ -204,6 +205,17 @@ export function CustomizationForm({
           </div>
           <Field label="Mensagem de boas-vindas">
             <Input name="ai_welcome_message" defaultValue={settings.ai_welcome_message ?? ""} />
+          </Field>
+          <Field
+            label="Comportamento"
+            hint="Instruções extras pra IA seguir nesta clínica (o que priorizar, o que evitar, jeito de conduzir a conversa). Some às regras fixas de segurança, nunca as substitui."
+          >
+            <Textarea
+              name="ai_behavior"
+              rows={4}
+              placeholder="Ex: sempre pergunte se o cliente já é paciente antes de falar de preços; para dúvidas sobre pós-operatório, oriente a chamar a equipe direto pelo WhatsApp."
+              defaultValue={settings.ai_behavior ?? ""}
+            />
           </Field>
         </Section>
 

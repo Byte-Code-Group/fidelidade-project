@@ -30,6 +30,7 @@ export interface TenantSettings {
   ai_name: string;
   ai_welcome_message: string | null;
   ai_tone: string;
+  ai_behavior: string | null;
   label_client: string;
   label_appointment: string;
   footer_address: string | null;

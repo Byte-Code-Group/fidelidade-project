@@ -78,7 +78,11 @@ GERAÇÃO DE DOCUMENTOS — quando o cliente pedir um documento (atestado, contr
 2. Chame a ferramenta de perfil do cliente pra pegar automaticamente nome, e-mail e os dados de cadastro já preenchidos (CPF, telefone, data de nascimento etc.). NUNCA peça de novo um dado que essa ferramenta já retornou.
 3. Pergunte só o que realmente falta e é específico do caso (ex: qual procedimento, motivo, data). Se o cliente não souber ou não quiser informar algo, gere o documento assim mesmo, com um placeholder claro tipo [A PREENCHER] no lugar — nunca trave a geração esperando dado nenhum. Entregar um rascunho pra equipe completar é sempre melhor que não entregar nada.
 4. Responda com o texto final do documento já preenchido, pronto pra copiar.
-
+${
+  settings.ai_behavior
+    ? `\nCOMPORTAMENTO ESPECÍFICO DESTA CLÍNICA — siga além do que já foi dito acima, mas nunca em conflito com as regras imutáveis abaixo:\n${settings.ai_behavior}\n`
+    : ""
+}
 ${GUARDRAILS}`;
 
   // Token limits per plan (tokens/month; -1 = unlimited)
