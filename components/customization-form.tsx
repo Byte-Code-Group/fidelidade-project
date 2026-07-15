@@ -7,6 +7,7 @@ import { Icon } from "@/components/icons";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { ProfileFieldsList } from "@/components/profile-fields-list";
 import { Section, Field } from "@/components/ui/section";
+import { CustomizationTabs } from "@/components/ui/customization-tabs";
 import type { ProfileField, TenantSettings } from "@/lib/types";
 
 interface CustomizationFormProps {
@@ -46,46 +47,45 @@ export function CustomizationForm({
 }: CustomizationFormProps) {
   const modules = (settings.modules_enabled ?? {}) as Record<string, boolean>;
 
-  return (
-    <div className="space-y-5">
-      {/* Barra com link de visualização */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white/70 px-5 py-4 dark:bg-white/5">
-        <div>
-          <h2 className="font-semibold">Customização do portal</h2>
-          <p className="text-xs opacity-55">
-            Edite, salve e veja o resultado no portal real.
-          </p>
-        </div>
-        <a href={portalUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline">
-            <Icon name="arrowRight" className="mr-2 h-4 w-4" /> Ver como ficou
-          </Button>
-        </a>
-      </div>
+  const hasProfileFieldsActions =
+    createProfileFieldAction &&
+    updateProfileFieldAction &&
+    deleteProfileFieldAction &&
+    reorderProfileFieldsAction;
 
-      {/* Logo */}
-      <Section title="Logo da empresa" desc="Aparece na carteirinha e no topo do portal.">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/5 dark:bg-white/10">
-            {settings.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={settings.logo_url} alt="logo" className="h-full w-full object-cover" />
-            ) : (
-              <div
-                className="flex h-full w-full items-center justify-center text-xl font-bold text-white"
-                style={{ background: settings.primary_color }}
-              >
-                {tenantName.charAt(0)}
-              </div>
-            )}
+  const tabs = [
+    { key: "marca", label: "Marca", icon: "sparkles" as const },
+    { key: "paginas", label: "Páginas", icon: "grid" as const },
+    { key: "fidelidade", label: "Fidelidade", icon: "award" as const },
+    { key: "ia", label: "Assistente IA", icon: "chat" as const },
+    { key: "rodape", label: "Rodapé", icon: "building" as const },
+    ...(hasProfileFieldsActions
+      ? [{ key: "cadastro", label: "Campos do cadastro", icon: "users" as const }]
+      : []),
+  ];
+
+  const panels: Record<string, React.ReactNode> = {
+    marca: (
+      <>
+        <Section title="Logo da empresa" desc="Aparece na carteirinha e no topo do portal.">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/5 dark:bg-white/10">
+              {settings.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={settings.logo_url} alt="logo" className="h-full w-full object-cover" />
+              ) : (
+                <div
+                  className="flex h-full w-full items-center justify-center text-xl font-bold text-white"
+                  style={{ background: settings.primary_color }}
+                >
+                  {tenantName.charAt(0)}
+                </div>
+              )}
+            </div>
+            <LogoUploadForm uploadAction={uploadAction} />
           </div>
-          <LogoUploadForm uploadAction={uploadAction} />
-        </div>
-      </Section>
+        </Section>
 
-      {/* Form principal (nativo) */}
-      <form id="customization-form" action={saveAction} className="space-y-5">
-        {/* Marca */}
         <Section title="Marca">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Cor primária">
@@ -103,7 +103,6 @@ export function CustomizationForm({
           </Field>
         </Section>
 
-        {/* Nomenclatura */}
         <Section title="Nomenclatura">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Como chamar o cliente">
@@ -114,149 +113,179 @@ export function CustomizationForm({
             </Field>
           </div>
         </Section>
+      </>
+    ),
 
-        {/* Páginas */}
-        <Section
-          title="Páginas do portal"
-          desc={`Limitado ao template ${templateEmoji} ${templateLabel}. Dá pra desativar, não adicionar.`}
-          action={
-            templateHref ? (
-              <Link
-                href={templateHref}
-                className="text-sm text-[var(--primary)] hover:underline"
-              >
-                Ver template
-              </Link>
-            ) : undefined
-          }
-        >
-          {allowedModules.length === 0 ? (
-            <p className="rounded-lg bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
-              Este template não tem páginas opcionais — só as páginas base.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {allowedModules.map((m) => (
-                <Toggle
-                  key={m.key}
-                  name={`module_${m.key}`}
-                  label={m.label}
-                  defaultChecked={modules[m.key] === true}
-                />
-              ))}
-            </div>
-          )}
-        </Section>
-
-        {/* Fidelidade */}
-        <Section title="Fidelidade">
-          <div className="grid grid-cols-3 gap-4">
-            <Field label="Meta">
-              <Input name="loyalty_goal" type="number" min={1} defaultValue={settings.loyalty_goal} />
-            </Field>
-            <Field label="Frequência">
-              <Select name="loyalty_frequency" defaultValue={settings.loyalty_frequency}>
-                <option value="monthly">Mensal</option>
-                <option value="weekly">Semanal</option>
-                <option value="per_visit">Por visita</option>
-              </Select>
-            </Field>
-            <Field label="Pts/visita">
-              <Input
-                name="loyalty_points_per_checkin"
-                type="number"
-                min={1}
-                defaultValue={settings.loyalty_points_per_checkin}
+    paginas: (
+      <Section
+        title="Páginas do portal"
+        desc={`Limitado ao template ${templateEmoji} ${templateLabel}. Dá pra desativar, não adicionar.`}
+        action={
+          templateHref ? (
+            <Link
+              href={templateHref}
+              className="text-sm text-[var(--primary)] hover:underline"
+            >
+              Ver template
+            </Link>
+          ) : undefined
+        }
+      >
+        {allowedModules.length === 0 ? (
+          <p className="rounded-lg bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
+            Este template não tem páginas opcionais — só as páginas base.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {allowedModules.map((m) => (
+              <Toggle
+                key={m.key}
+                name={`module_${m.key}`}
+                label={m.label}
+                defaultChecked={modules[m.key] === true}
               />
-            </Field>
+            ))}
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="loyalty_streak_reset"
-              defaultChecked={settings.loyalty_streak_reset}
-              className="h-4 w-4 accent-[var(--primary)]"
-            />
-            Zerar progresso ao falhar um período
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Nome da recompensa">
-              <Input name="reward_name" defaultValue={settings.reward_name ?? ""} />
-            </Field>
-            <Field label="Descrição da recompensa">
-              <Input name="reward_description" defaultValue={settings.reward_description ?? ""} />
-            </Field>
-          </div>
-        </Section>
-
-        {/* Assistente IA */}
-        <Section title="Assistente IA">
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Nome do assistente">
-              <Input name="ai_name" defaultValue={settings.ai_name} />
-            </Field>
-            <Field label="Tom">
-              <Select name="ai_tone" defaultValue={settings.ai_tone}>
-                <option value="amigavel">Amigável</option>
-                <option value="casual">Casual</option>
-                <option value="formal">Formal</option>
-              </Select>
-            </Field>
-          </div>
-          <Field label="Mensagem de boas-vindas">
-            <Input name="ai_welcome_message" defaultValue={settings.ai_welcome_message ?? ""} />
-          </Field>
-          <Field
-            label="Comportamento"
-            hint="Instruções extras pra IA seguir nesta clínica (o que priorizar, o que evitar, jeito de conduzir a conversa). Some às regras fixas de segurança, nunca as substitui."
-          >
-            <Textarea
-              name="ai_behavior"
-              rows={4}
-              placeholder="Ex: sempre pergunte se o cliente já é paciente antes de falar de preços; para dúvidas sobre pós-operatório, oriente a chamar a equipe direto pelo WhatsApp."
-              defaultValue={settings.ai_behavior ?? ""}
-            />
-          </Field>
-        </Section>
-
-        {/* Rodapé */}
-        <Section title="Rodapé / contato">
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Endereço">
-              <Input name="footer_address" defaultValue={settings.footer_address ?? ""} />
-            </Field>
-            <Field label="Telefone">
-              <Input name="footer_phone" defaultValue={settings.footer_phone ?? ""} />
-            </Field>
-            <Field label="WhatsApp">
-              <Input name="footer_whatsapp" defaultValue={settings.footer_whatsapp ?? ""} />
-            </Field>
-            <Field label="Site">
-              <Input name="footer_website" defaultValue={settings.footer_website ?? ""} />
-            </Field>
-          </div>
-        </Section>
-
-      </form>
-
-      {/* Campos do cadastro — formulários independentes (não aninham no form acima) */}
-      {createProfileFieldAction &&
-        updateProfileFieldAction &&
-        deleteProfileFieldAction &&
-        reorderProfileFieldsAction && (
-          <Section
-            title="Campos do cadastro"
-            desc="Dados que o cliente preenche no perfil. Nome e e-mail já vêm prontos; adicione outros como CPF, endereço, data de nascimento ou campos personalizados. Arraste pelo ⠿ pra reordenar."
-          >
-            <ProfileFieldsList
-              fields={profileFields ?? []}
-              createAction={createProfileFieldAction}
-              updateAction={updateProfileFieldAction}
-              deleteAction={deleteProfileFieldAction}
-              reorderAction={reorderProfileFieldsAction}
-            />
-          </Section>
         )}
+      </Section>
+    ),
+
+    fidelidade: (
+      <Section title="Fidelidade">
+        <div className="grid grid-cols-3 gap-4">
+          <Field label="Meta">
+            <Input name="loyalty_goal" type="number" min={1} defaultValue={settings.loyalty_goal} />
+          </Field>
+          <Field label="Frequência">
+            <Select name="loyalty_frequency" defaultValue={settings.loyalty_frequency}>
+              <option value="monthly">Mensal</option>
+              <option value="weekly">Semanal</option>
+              <option value="per_visit">Por visita</option>
+            </Select>
+          </Field>
+          <Field label="Pts/visita">
+            <Input
+              name="loyalty_points_per_checkin"
+              type="number"
+              min={1}
+              defaultValue={settings.loyalty_points_per_checkin}
+            />
+          </Field>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="loyalty_streak_reset"
+            defaultChecked={settings.loyalty_streak_reset}
+            className="h-4 w-4 accent-[var(--primary)]"
+          />
+          Zerar progresso ao falhar um período
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Nome da recompensa">
+            <Input name="reward_name" defaultValue={settings.reward_name ?? ""} />
+          </Field>
+          <Field label="Descrição da recompensa">
+            <Input name="reward_description" defaultValue={settings.reward_description ?? ""} />
+          </Field>
+        </div>
+      </Section>
+    ),
+
+    ia: (
+      <Section title="Assistente IA">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Nome do assistente">
+            <Input name="ai_name" defaultValue={settings.ai_name} />
+          </Field>
+          <Field label="Tom">
+            <Select name="ai_tone" defaultValue={settings.ai_tone}>
+              <option value="amigavel">Amigável</option>
+              <option value="casual">Casual</option>
+              <option value="formal">Formal</option>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Mensagem de boas-vindas">
+          <Input name="ai_welcome_message" defaultValue={settings.ai_welcome_message ?? ""} />
+        </Field>
+        <Field
+          label="Comportamento"
+          hint="Instruções extras pra IA seguir nesta clínica (o que priorizar, o que evitar, jeito de conduzir a conversa). Some às regras fixas de segurança, nunca as substitui."
+        >
+          <Textarea
+            name="ai_behavior"
+            rows={4}
+            placeholder="Ex: sempre pergunte se o cliente já é paciente antes de falar de preços; para dúvidas sobre pós-operatório, oriente a chamar a equipe direto pelo WhatsApp."
+            defaultValue={settings.ai_behavior ?? ""}
+          />
+        </Field>
+      </Section>
+    ),
+
+    rodape: (
+      <Section title="Rodapé / contato">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Endereço">
+            <Input name="footer_address" defaultValue={settings.footer_address ?? ""} />
+          </Field>
+          <Field label="Telefone">
+            <Input name="footer_phone" defaultValue={settings.footer_phone ?? ""} />
+          </Field>
+          <Field label="WhatsApp">
+            <Input name="footer_whatsapp" defaultValue={settings.footer_whatsapp ?? ""} />
+          </Field>
+          <Field label="Site">
+            <Input name="footer_website" defaultValue={settings.footer_website ?? ""} />
+          </Field>
+        </div>
+      </Section>
+    ),
+
+    ...(hasProfileFieldsActions
+      ? {
+          cadastro: (
+            <Section
+              title="Campos do cadastro"
+              desc="Dados que o cliente preenche no perfil. Nome e e-mail já vêm prontos; adicione outros como CPF, endereço, data de nascimento ou campos personalizados. Arraste pelo ⠿ pra reordenar."
+            >
+              <ProfileFieldsList
+                fields={profileFields ?? []}
+                createAction={createProfileFieldAction!}
+                updateAction={updateProfileFieldAction!}
+                deleteAction={deleteProfileFieldAction!}
+                reorderAction={reorderProfileFieldsAction!}
+              />
+            </Section>
+          ),
+        }
+      : {}),
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Barra com link de visualização */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white/70 px-5 py-4 dark:bg-white/5">
+        <div>
+          <h2 className="font-semibold">Customização do portal</h2>
+          <p className="text-xs opacity-55">
+            Edite, salve e veja o resultado no portal real.
+          </p>
+        </div>
+        <a href={portalUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline">
+            <Icon name="arrowRight" className="mr-2 h-4 w-4" /> Ver como ficou
+          </Button>
+        </a>
+      </div>
+
+      <CustomizationTabs
+        tabs={tabs}
+        panels={panels}
+        formId="customization-form"
+        saveAction={saveAction}
+        formTabKeys={["marca", "paginas", "fidelidade", "ia", "rodape"]}
+      />
 
       <div className="flex items-center justify-end gap-3">
         <a href={portalUrl} target="_blank" rel="noopener noreferrer">
