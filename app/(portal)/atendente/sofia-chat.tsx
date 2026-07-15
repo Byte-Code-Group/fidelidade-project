@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
+import { ChatMarkdown } from "@/components/chat-markdown";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -187,7 +188,13 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
                       : "bg-black/5 dark:bg-white/10",
                   )}
                 >
-                  {m.content || (
+                  {m.content ? (
+                    m.role === "assistant" ? (
+                      <ChatMarkdown text={m.content} />
+                    ) : (
+                      m.content
+                    )
+                  ) : (
                     <span className="inline-flex gap-1 opacity-60">
                       <span className="animate-bounce">•</span>
                       <span className="animate-bounce [animation-delay:0.15s]">•</span>
