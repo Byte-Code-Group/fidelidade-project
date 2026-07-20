@@ -10,7 +10,6 @@ import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/emails/welcome";
 import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
-import { confirmEmailTemplate } from "@/lib/emails/confirm-email";
 import { validateProfileFieldValues } from "@/lib/profile-fields";
 import { changeMembershipPlan } from "@/lib/memberships";
 
@@ -127,7 +126,8 @@ export async function signUp(formData: FormData) {
     portalUrl: origin,
   });
   await sendEmail({ to: email, subject, html });
-// Enviar email de confirmacao com link magic const confirmLink = `${origin}/auth/confirm`; const { subject: confirmSubject, html: confirmHtml } = confirmEmailTemplate({ tenantName: tenant.name, primaryColor: settings.primary_color, confirmLink, userName: fullName, }); await sendEmail({ to: email, subject: confirmSubject, html: confirmHtml });
+  // O e-mail de confirmação é enviado pelo webhook do Supabase Auth
+  // (app/api/auth/email/route.ts), não daqui.
 
   redirect("/");
 }
@@ -176,7 +176,6 @@ export async function saveProfile(formData: FormData) {
   const ctx = await getCurrentTenant();
   if (!ctx) redirect("/");
 
-  const supabase = await createClient();
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
@@ -248,7 +247,6 @@ export async function redeemReward(rewardId: string) {
   const ctx = await getCurrentTenant();
   if (!ctx) redirect("/");
 
-  const supabase = await createClient();
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
@@ -328,7 +326,6 @@ export async function doCheckin(token: string) {
   if (!ctx) redirect("/");
   const { tenant, settings } = ctx;
 
-  const supabase = await createClient();
   const user = await getAuthUser();
   if (!user) redirect("/login");
 

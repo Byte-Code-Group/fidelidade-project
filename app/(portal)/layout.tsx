@@ -1,10 +1,38 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentTenant } from "@/lib/tenant";
 import { getAuthUser } from "@/lib/supabase/server";
 import { PortalSidebar } from "@/components/portal-sidebar";
 import { buildPortalNav } from "@/lib/portal-nav";
 import { signOut } from "./actions";
+import type { Metadata } from "next";
+
+// White-label: cada portal aparece com o nome e a logo do próprio negócio na
+// aba do navegador e no compartilhamento em redes sociais.
+export async function generateMetadata(): Promise<Metadata> {
+  const ctx = await getCurrentTenant();
+  if (!ctx) return {};
+
+  const { tenant, settings } = ctx;
+  const description =
+    settings.ai_welcome_message ??
+    `Portal de ${tenant.name}: carteirinha digital, pontos, recompensas e agendamentos.`;
+
+  return {
+    title: { absolute: tenant.name },
+    description,
+    icons: settings.logo_url ? { icon: settings.logo_url } : undefined,
+    openGraph: {
+      type: "website",
+      locale: "pt_BR",
+      siteName: tenant.name,
+      title: tenant.name,
+      description,
+      images: settings.logo_url ? [settings.logo_url] : undefined,
+    },
+    // Portais de cliente são de acesso privado — fora do índice de busca.
+    robots: { index: false, follow: false },
+  };
+}
 
 // Layout do portal do cliente final.
 // Resolve o tenant da request, injeta o tema (CSS variables) e monta a

@@ -24,8 +24,8 @@ function AguardandoContent() {
   const modo = searchParams.get("modo");
   const [checking, setChecking] = useState(true);
 
-  const checkStatus = useCallback(async () => {
-    setChecking(true);
+  // Retorna true quando já redirecionou — aí não faz sentido seguir olhando.
+  const checkStatus = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch("/api/conta/status", { cache: "no-store" });
       const data: { authenticated: boolean; tenantStatus: string | null } =
@@ -33,20 +33,49 @@ function AguardandoContent() {
 
       if (!data.authenticated) {
         router.replace("/conta/login");
-        return;
+        return true;
       }
       if (data.tenantStatus === "active") {
         router.replace("/painel");
-        return;
+        return true;
       }
-    } finally {
-      setChecking(false);
+    } catch {
+      // Rede instável no retorno do checkout: silencia e tenta no próximo ciclo.
     }
+    return false;
   }, [router]);
 
+  // A ativação vem por webhook do Asaas, que pode levar alguns segundos —
+  // consulta em intervalo pra que o portal abra sozinho, sem o dono precisar
+  // clicar em "Verificar status".
   useEffect(() => {
-    checkStatus();
+    let stopped = false;
+
+    const run = async () => {
+      const redirected = await checkStatus();
+      if (stopped) return;
+      if (redirected) {
+        stopped = true;
+        clearInterval(timer);
+        return;
+      }
+      setChecking(false);
+    };
+
+    const timer = setInterval(run, 5000);
+    void run();
+
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }, [checkStatus]);
+
+  const handleManualCheck = async () => {
+    setChecking(true);
+    const redirected = await checkStatus();
+    if (!redirected) setChecking(false);
+  };
 
   return (
     <div className="mx-auto max-w-lg">
@@ -65,7 +94,7 @@ function AguardandoContent() {
             <Button
               className="w-full"
               variant="outline"
-              onClick={checkStatus}
+              onClick={handleManualCheck}
               disabled={checking}
             >
               {checking ? "Verificando..." : "Verificar status"}

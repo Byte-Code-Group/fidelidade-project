@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { z } from "zod";
 import { sendEmail } from "@/lib/email";
 import { confirmEmailTemplate } from "@/lib/emails/confirm-email";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const WEBHOOK_SECRET = process.env.SUPABASE_WEBHOOK_SECRET || "";
 
-async function verifySignature(
-  req: NextRequest,
-  body: string
-): Promise<boolean> {
+// Comparação de tamanho fixo — evita vazar o segredo por timing.
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function verifySignature(req: NextRequest, body: string): boolean {
   const signature = req.headers.get("x-webhook-signature");
   if (!signature || !WEBHOOK_SECRET) return false;
 
@@ -23,82 +29,103 @@ async function verifySignature(
     .update(body)
     .digest("base64");
 
-  return `v1,${hash}` === signature;
+  return safeEqual(`v1,${hash}`, signature);
 }
+
+const userShape = z
+  .object({
+    email: z.string().email().optional(),
+    user_metadata: z
+      .object({ full_name: z.string().optional() })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+
+const webhookSchema = z
+  .object({
+    type: z.string().optional(),
+    record: userShape.optional(),
+    user: userShape.optional(),
+  })
+  .passthrough();
+
+// Eventos que disparam o e-mail de confirmação com o branding do tenant.
+const CONFIRM_EVENTS = new Set([
+  "auth.user_confirmation_email_requested",
+  "auth.user_signup",
+  "user.confirmation_email",
+]);
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  console.log("[webhook] Full payload:", body);
 
-  let payload: unknown;
+  // Fail-closed: sem assinatura válida a request nem é parseada.
+  if (!verifySignature(req, body)) {
+    console.error("[webhook] assinatura invalida/ausente");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let raw: unknown;
   try {
-    payload = JSON.parse(body);
+    raw = JSON.parse(body);
   } catch {
-    console.error("[webhook] JSON parse error");
+    console.error("[webhook] JSON invalido no body");
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const webhookPayload = payload as Record<string, any>;
-  console.log("[webhook] Parsed:", JSON.stringify(webhookPayload, null, 2));
-  console.log("[webhook] Event type:", webhookPayload.type);
+  const parsed = webhookSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.error("[webhook] payload fora do formato esperado");
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
 
-  // Aceitar qualquer evento de confirmação/email
-  const isConfirmEmail =
-    webhookPayload.type === "auth.user_confirmation_email_requested" ||
-    webhookPayload.type === "auth.user_signup" ||
-    webhookPayload.type === "user.confirmation_email";
+  const payload = parsed.data;
 
-  if (!isConfirmEmail) {
-    console.log("[webhook] Skipping event type:", webhookPayload.type);
+  if (!payload.type || !CONFIRM_EVENTS.has(payload.type)) {
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
-  const email = webhookPayload.record?.email || webhookPayload.user?.email;
+  const email = payload.record?.email ?? payload.user?.email;
   const fullName =
-    webhookPayload.record?.user_metadata?.full_name ||
-    webhookPayload.user?.user_metadata?.full_name;
-
-  console.log("[webhook] Email:", email, "Name:", fullName);
+    payload.record?.user_metadata?.full_name ??
+    payload.user?.user_metadata?.full_name;
 
   if (!email) {
-    console.error("[webhook] Missing email");
-    return NextResponse.json(
-      { error: "Missing email" },
-      { status: 400 }
-    );
+    console.error("[webhook] evento de confirmacao sem email");
+    return NextResponse.json({ error: "Missing email" }, { status: 400 });
   }
 
   try {
-    // Extrair tenant a partir do domínio ou email
     const db = createAdminClient();
     const { data: user } = await db
       .from("users")
       .select("tenant_id")
       .eq("email", email)
-      .single();
+      .maybeSingle<{ tenant_id: string | null }>();
 
     const tenantId = user?.tenant_id;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Tenant not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
     const { data: tenant } = await db
       .from("tenants")
       .select("name, primary_color, slug")
       .eq("id", tenantId)
-      .single();
+      .maybeSingle<{
+        name: string;
+        primary_color: string | null;
+        slug: string;
+      }>();
 
     if (!tenant) {
       return NextResponse.json(
         { error: "Tenant config not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    // Gerar magic link (Supabase fornece via payload, mas vamos construir)
     const confirmLink = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/confirm`;
 
     const { subject, html } = confirmEmailTemplate({
@@ -108,22 +135,14 @@ export async function POST(req: NextRequest) {
       userName: fullName,
     });
 
-    console.log("[webhook] Sending email to:", email);
     await sendEmail({ to: email, subject, html });
-    console.log("[webhook] Email sent successfully");
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Email sent via webhook",
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("[webhook] Error:", err);
+    console.error("[webhook] falha ao enviar email:", err);
     return NextResponse.json(
       { error: "Failed to send email" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -10,7 +10,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
 import type { Tenant } from "@/lib/types";
 
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
 const PAGE_SIZE = 10;
 
 const statusStyle: Record<string, string> = {

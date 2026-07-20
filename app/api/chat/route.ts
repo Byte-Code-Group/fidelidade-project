@@ -28,6 +28,21 @@ export async function POST(req: NextRequest) {
 
   const { settings, tenant } = ctx;
 
+  const db = createAdminClient();
+
+  // O login do Supabase é global à plataforma, mas o tenant vem do host/cookie
+  // — sem esta checagem um cliente de um tenant conversaria (e queimaria a
+  // cota de IA) no tenant de outro.
+  const { data: membership } = await db
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user.id)
+    .maybeSingle<{ tenant_id: string | null }>();
+
+  if (membership?.tenant_id !== tenant.id) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   const body = await req.json();
   const rawMessages: { role: "user" | "assistant"; content: string }[] =
     body.messages ?? [];
@@ -50,8 +65,6 @@ export async function POST(req: NextRequest) {
   }
 
   const messages = rawMessages.slice(-MAX_HISTORY);
-
-  const db = createAdminClient();
 
   const { data: memoryRow } = await db
     .from("user_ai_memory")
@@ -122,26 +135,39 @@ ${GUARDRAILS}`;
     }
   }
 
-  const convId: string = body.conversationId ?? null;
-  let conversationId: string;
+  const convId: string | null = body.conversationId ?? null;
+  let conversationId: string | null = null;
 
+  // O id vem do cliente — só é aceito se a conversa for mesmo deste usuário
+  // neste tenant. Caso contrário ignora e abre uma nova.
   if (convId) {
-    conversationId = convId;
-  } else {
+    const { data: owned } = await db
+      .from("chat_conversations")
+      .select("id")
+      .eq("id", convId)
+      .eq("user_id", user.id)
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<{ id: string }>();
+    conversationId = owned?.id ?? null;
+  }
+
+  if (!conversationId) {
     const { data: conv, error } = await db
       .from("chat_conversations")
       .insert({ tenant_id: tenant.id, user_id: user.id })
       .select("id")
-      .single();
+      .single<{ id: string }>();
     if (error || !conv)
       return new Response("Failed to create conversation", { status: 500 });
     conversationId = conv.id;
   }
 
+  const activeConversationId = conversationId;
+
   const lastUserMsg = messages[messages.length - 1];
   if (lastUserMsg.role === "user") {
     await db.from("chat_messages").insert({
-      conversation_id: conversationId,
+      conversation_id: activeConversationId,
       tenant_id: tenant.id,
       role: "user",
       content: lastUserMsg.content,
@@ -156,7 +182,7 @@ ${GUARDRAILS}`;
         const send = (chunk: string) =>
           controller.enqueue(encoder.encode(chunk));
 
-        send(`\x00${conversationId}\x00`);
+        send(`\x00${activeConversationId}\x00`);
 
         const result = streamText({
           model: google("gemini-2.5-flash"),
@@ -177,7 +203,7 @@ ${GUARDRAILS}`;
 
         if (assistantContent) {
           await db.from("chat_messages").insert({
-            conversation_id: conversationId,
+            conversation_id: activeConversationId,
             tenant_id: tenant.id,
             role: "assistant",
             content: assistantContent,
@@ -205,7 +231,7 @@ ${GUARDRAILS}`;
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Transfer-Encoding": "chunked",
-      "X-Conversation-Id": conversationId,
+      "X-Conversation-Id": activeConversationId,
     },
   });
 }

@@ -6,7 +6,6 @@ import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantOwner, requireTenantOwner, ACTIVE_TENANT_COOKIE } from "@/lib/owner";
 import { canCreateAnotherTenant } from "@/lib/tenant-limits";
-import { sendEmail } from "@/lib/email";
 import { isValidCpfCnpj } from "@/lib/masks";
 import {
   SEGMENT_TEMPLATES,
@@ -20,11 +19,6 @@ import {
   isRemovedCustomerError,
   type BillingType,
 } from "@/lib/asaas";
-
-const ROOT_URL =
-  process.env.NEXT_PUBLIC_ROOT_DOMAIN
-    ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-    : "http://localhost:3000";
 
 function slugify(s: string) {
   return s
@@ -205,6 +199,8 @@ export async function configureBusiness(formData: FormData) {
       reward_description: d.reward_description,
       loyalty_goal: d.loyalty_goal,
       loyalty_frequency: d.loyalty_frequency,
+      // Telefone informado no cadastro vira o contato exibido no portal.
+      footer_phone: phone || null,
     });
 
     // Link platform_user → tenant: reaproveita a linha placeholder (1º

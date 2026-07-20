@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/use-theme";
 import { Icon, type IconKey } from "@/components/icons";
 
 export interface NavItem {
@@ -22,22 +23,8 @@ interface PortalSidebarProps {
 export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: PortalSidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">(defaultTheme);
-
   // Preferência salva do cliente > tema padrão definido pelo dono do tenant.
-  useEffect(() => {
-    const stored = localStorage.getItem("portal-theme") as "light" | "dark" | null;
-    const initial = stored ?? defaultTheme;
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-  }, [defaultTheme]);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("portal-theme", next);
-    document.documentElement.setAttribute("data-theme", next);
-  };
+  const [theme, toggleTheme] = useTheme("portal-theme", defaultTheme);
 
   // Path-based portal: /p/[slug]/... → detect base so links and isActive work correctly
   const pathMatch = pathname.match(/^(\/p\/[^/]+)/);

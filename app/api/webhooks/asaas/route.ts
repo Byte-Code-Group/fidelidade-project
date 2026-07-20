@@ -1,6 +1,15 @@
 import { NextRequest } from "next/server";
+import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applyScheduledChanges } from "@/lib/tenant-billing";
+
+// Comparação de tamanho fixo — evita vazar o token por timing.
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 // Asaas eventos que afetam status do tenant
 const ACTIVATE_EVENTS = new Set(["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"]);
@@ -14,7 +23,8 @@ const SUSPEND_EVENTS = new Set([
 export async function POST(req: NextRequest) {
   // Validar token secreto no header (configurado no painel Asaas)
   const token = req.headers.get("asaas-access-token");
-  if (token !== process.env.ASAAS_WEBHOOK_TOKEN) {
+  const expected = process.env.ASAAS_WEBHOOK_TOKEN ?? "";
+  if (!token || !expected || !safeEqual(token, expected)) {
     console.error("[asaas webhook] token invalido/ausente");
     return new Response("Unauthorized", { status: 401 });
   }
