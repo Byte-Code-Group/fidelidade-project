@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BUCKETS, documentPath } from "@/lib/storage";
+import { textToPdf } from "@/lib/pdf";
 
 interface ToolContext {
   tenantId: string;
@@ -215,12 +216,13 @@ export function getAiTools(ctx: ToolContext) {
           .describe("Texto final e completo do documento, pronto pra imprimir."),
       }),
       execute: async ({ title, category, content }) => {
-        const path = documentPath(tenantId, userId, "ia", "txt");
+        const path = documentPath(tenantId, userId, "ia", "pdf");
 
+        const pdfBytes = await textToPdf(content);
         const { error: upErr } = await db.storage
           .from(BUCKETS.documents)
-          .upload(path, new Blob([content], { type: "text/plain" }), {
-            contentType: "text/plain; charset=utf-8",
+          .upload(path, pdfBytes, {
+            contentType: "application/pdf",
             upsert: false,
           });
         if (upErr) return "Não consegui salvar o documento agora.";
