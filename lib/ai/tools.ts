@@ -197,7 +197,7 @@ export function getAiTools(ctx: ToolContext) {
 
     save_document: tool({
       description:
-        "Salva na área de Documentos do cliente um documento que você acabou de gerar (atestado, contrato, termo, recibo...). Chame SEMPRE depois de escrever o texto final, pra que ele não se perca quando a conversa fechar. Passe o texto completo e já preenchido, incluindo os placeholders [A PREENCHER] que sobraram.",
+        "Gera o PDF e salva na área de Documentos do cliente um documento (atestado, contrato, termo, recibo...). Esta é a forma de ENTREGAR o documento ao cliente — chame-a com o texto final completo em vez de colar o documento inteiro na conversa. Passe o texto já preenchido, incluindo os placeholders [A PREENCHER] que sobraram. Só diga ao cliente que salvou depois que esta ferramenta confirmar.",
       inputSchema: z.object({
         title: z
           .string()
@@ -218,30 +218,39 @@ export function getAiTools(ctx: ToolContext) {
       execute: async ({ title, category, content }) => {
         const path = documentPath(tenantId, userId, "ia", "pdf");
 
-        const pdfBytes = await textToPdf(content);
-        const { error: upErr } = await db.storage
-          .from(BUCKETS.documents)
-          .upload(path, pdfBytes, {
-            contentType: "application/pdf",
-            upsert: false,
-          });
-        if (upErr) return "Não consegui salvar o documento agora.";
+        try {
+          const pdfBytes = await textToPdf(content);
+          const { error: upErr } = await db.storage
+            .from(BUCKETS.documents)
+            .upload(path, pdfBytes, {
+              contentType: "application/pdf",
+              upsert: false,
+            });
+          if (upErr) {
+            console.error("[save_document] upload", upErr);
+            return "Não consegui salvar o documento agora.";
+          }
 
-        const { error } = await db.from("documents").insert({
-          tenant_id: tenantId,
-          user_id: userId,
-          category,
-          title: title.trim(),
-          file_url: path,
-          source: "ia",
-        });
-        if (error) {
-          // Não deixa o arquivo órfão se a linha não entrou.
-          await db.storage.from(BUCKETS.documents).remove([path]);
+          const { error } = await db.from("documents").insert({
+            tenant_id: tenantId,
+            user_id: userId,
+            category,
+            title: title.trim(),
+            file_url: path,
+            source: "ia",
+          });
+          if (error) {
+            console.error("[save_document] insert", error);
+            // Não deixa o arquivo órfão se a linha não entrou.
+            await db.storage.from(BUCKETS.documents).remove([path]);
+            return "Não consegui salvar o documento agora.";
+          }
+
+          return `Documento "${title}" salvo na aba Documentos do portal.`;
+        } catch (err) {
+          console.error("[save_document] throw", err);
           return "Não consegui salvar o documento agora.";
         }
-
-        return `Documento "${title}" salvo na aba Documentos do portal.`;
       },
     }),
 
