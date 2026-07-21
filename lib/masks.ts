@@ -33,6 +33,35 @@ export function formatPhone(value: string): string {
     .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
 }
 
+// dd/mm/aaaa. Converte também um valor ISO (aaaa-mm-dd) que tenha sido salvo
+// antes, quando o campo usava <input type="date">.
+export function formatDate(value: string): string {
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+
+  const digits = onlyDigits(value).slice(0, 8);
+  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)]
+    .filter(Boolean)
+    .join("/");
+}
+
+export function isValidDate(value: string): boolean {
+  const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return false;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) {
+    return false;
+  }
+  const dt = new Date(year, month - 1, day);
+  return (
+    dt.getDate() === day &&
+    dt.getMonth() === month - 1 &&
+    dt.getFullYear() === year
+  );
+}
+
 export function formatCpf(value: string): string {
   const digits = onlyDigits(value).slice(0, 11);
   return digits

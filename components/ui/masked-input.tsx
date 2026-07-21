@@ -5,32 +5,37 @@ import { Input } from "@/components/ui/input";
 import {
   formatCpf,
   formatCpfCnpj,
+  formatDate,
   formatPhone,
   isValidCpf,
   isValidCpfCnpj,
+  isValidDate,
   isValidPhone,
 } from "@/lib/masks";
 
 type MaskedInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
-  mask: "cpf-cnpj" | "cpf" | "phone";
+  mask: "cpf-cnpj" | "cpf" | "phone" | "date";
 };
 
 const maskFormatters = {
   "cpf-cnpj": formatCpfCnpj,
   cpf: formatCpf,
   phone: formatPhone,
+  date: formatDate,
 };
 
 const maskValidators = {
   "cpf-cnpj": isValidCpfCnpj,
   cpf: isValidCpf,
   phone: isValidPhone,
+  date: isValidDate,
 };
 
 const maskMessages = {
   "cpf-cnpj": "CPF/CNPJ inválido.",
   cpf: "CPF inválido.",
   phone: "Telefone inválido.",
+  date: "Data inválida (use dd/mm/aaaa).",
 };
 
 export function MaskedInput({ mask, defaultValue, required, ...props }: MaskedInputProps) {

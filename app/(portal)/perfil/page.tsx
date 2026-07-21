@@ -210,14 +210,19 @@ export default async function PerfilPage({
                         maxLength={field.max_length ?? undefined}
                         placeholder="Rua, número, bairro, cidade"
                       />
+                    ) : field.field_type === "date" || field.field_type === "birthdate" ? (
+                      <MaskedInput
+                        mask="date"
+                        name={name}
+                        defaultValue={value}
+                        required={field.required}
+                        placeholder="dd/mm/aaaa"
+                        inputMode="numeric"
+                      />
                     ) : (
                       <Input
                         name={name}
-                        type={
-                          field.field_type === "date" || field.field_type === "birthdate"
-                            ? "date"
-                            : "text"
-                        }
+                        type="text"
                         defaultValue={value}
                         required={field.required}
                         maxLength={field.max_length ?? undefined}
