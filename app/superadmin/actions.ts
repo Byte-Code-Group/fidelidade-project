@@ -23,6 +23,7 @@ import { cancelTenantSubscription } from "@/lib/tenant-billing";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { createCustomer, createSubscription } from "@/lib/asaas";
 import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
+import { BUCKETS, documentPath } from "@/lib/storage";
 
 // ---------- Auth ----------
 
@@ -544,9 +545,9 @@ export async function createDocument(tenantId: string, formData: FormData) {
       throw new Error("Arquivo maior que 10 MB.");
     }
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
-    const path = `${tenantId}/${userId}/${crypto.randomUUID()}.${ext}`;
+    const path = documentPath(tenantId, userId, "upload", ext);
     const { error: upErr } = await db.storage
-      .from("documents")
+      .from(BUCKETS.documents)
       .upload(path, file, { contentType: file.type, upsert: false });
     if (upErr) throw new Error(upErr.message);
     fileUrl = path;
@@ -560,6 +561,7 @@ export async function createDocument(tenantId: string, formData: FormData) {
     category,
     title,
     file_url: fileUrl,
+    source: "upload",
   });
   revalidatePath(`/superadmin/tenants/${tenantId}/documentos`);
 }
@@ -583,7 +585,7 @@ export async function deleteDocument(tenantId: string, documentId: string) {
 
   // Remove do Storage se for path interno (não URL externa)
   if (doc?.file_url && !doc.file_url.startsWith("http")) {
-    await db.storage.from("documents").remove([doc.file_url]);
+    await db.storage.from(BUCKETS.documents).remove([doc.file_url]);
   }
 
   revalidatePath(`/superadmin/tenants/${tenantId}/documentos`);

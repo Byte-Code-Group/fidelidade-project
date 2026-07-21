@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BUCKETS, documentTemplatePath, pathBelongsTo } from "@/lib/storage";
 
 const ALLOWED_EXTENSIONS = ["pdf", "docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -28,20 +29,21 @@ async function extractTemplateText(
   return { text: result.value.trim() };
 }
 
+// Bucket privado: guarda o PATH, não uma URL pública. Quem for exibir o
+// arquivo gera uma signed URL na hora (ver signedUrl em lib/storage.ts).
 async function uploadTemplateFile(
   tenantId: string,
   file: File,
   ext: string,
 ): Promise<{ url?: string; error?: string }> {
   const db = createAdminClient();
-  const path = `${tenantId}/${Date.now()}.${ext}`;
+  const path = documentTemplatePath(tenantId, ext);
   const { error } = await db.storage
-    .from("document-templates")
+    .from(BUCKETS.documentTemplates)
     .upload(path, file, { contentType: file.type, upsert: true });
   if (error) return { error: error.message };
 
-  const { data } = db.storage.from("document-templates").getPublicUrl(path);
-  return { url: data.publicUrl };
+  return { url: path };
 }
 
 // Se um arquivo PDF/DOCX foi anexado, extrai o texto (vira o content) e
@@ -112,6 +114,19 @@ export async function applyDocumentTemplateUpdate(
   if (!content) return { error: "Cole o conteúdo ou anexe um arquivo PDF/DOCX." };
 
   const db = createAdminClient();
+
+  // Troca de anexo: guarda o path antigo pra apagar depois do update.
+  let previousFile: string | null = null;
+  if (fromFile.file_url) {
+    const { data: existing } = await db
+      .from("document_templates")
+      .select("file_url")
+      .eq("id", templateId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle<{ file_url: string | null }>();
+    previousFile = existing?.file_url ?? null;
+  }
+
   const { error } = await db
     .from("document_templates")
     .update({
@@ -121,7 +136,12 @@ export async function applyDocumentTemplateUpdate(
     })
     .eq("id", templateId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  if (error) return { error: error.message };
+
+  if (previousFile && previousFile !== fromFile.file_url) {
+    await removeTemplateFile(tenantId, previousFile);
+  }
+  return {};
 }
 
 export async function removeDocumentTemplate(
@@ -129,12 +149,33 @@ export async function removeDocumentTemplate(
   templateId: string,
 ): Promise<{ error?: string }> {
   const db = createAdminClient();
+
+  // Lê o anexo antes de apagar a linha, senão o arquivo fica órfão no bucket.
+  const { data: existing } = await db
+    .from("document_templates")
+    .select("file_url")
+    .eq("id", templateId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle<{ file_url: string | null }>();
+
   const { error } = await db
     .from("document_templates")
     .delete()
     .eq("id", templateId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  if (error) return { error: error.message };
+
+  await removeTemplateFile(tenantId, existing?.file_url);
+  return {};
+}
+
+// Remove o anexo do bucket, conferindo que o path é mesmo do tenant (barreira
+// contra id manipulado). Paths antigos em formato de URL externa são ignorados.
+async function removeTemplateFile(tenantId: string, path?: string | null) {
+  if (!path || path.startsWith("http")) return;
+  if (!pathBelongsTo(path, tenantId)) return;
+  const db = createAdminClient();
+  await db.storage.from(BUCKETS.documentTemplates).remove([path]);
 }
 
 // Reordena conforme a posição arrastada no painel do dono.

@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BUCKETS, rewardPath } from "@/lib/storage";
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -37,14 +38,14 @@ async function uploadRewardImage(
 
   const db = createAdminClient();
   const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-  const path = `${tenantId}/${Date.now()}.${ext}`;
+  const path = rewardPath(tenantId, ext);
 
   const { error: upErr } = await db.storage
-    .from("rewards")
+    .from(BUCKETS.rewards)
     .upload(path, file, { contentType: file.type, upsert: true });
   if (upErr) return { error: upErr.message };
 
-  const { data: pub } = db.storage.from("rewards").getPublicUrl(path);
+  const { data: pub } = db.storage.from(BUCKETS.rewards).getPublicUrl(path);
   return { url: pub.publicUrl };
 }
 

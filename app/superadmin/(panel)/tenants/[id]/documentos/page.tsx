@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BUCKETS, signedUrl } from "@/lib/storage";
 import type { Document } from "@/lib/types";
 import { createDocument, deleteDocument } from "../../../../actions";
 
@@ -54,6 +55,14 @@ export default async function DocumentosAdminPage({
       .order("full_name", { ascending: true })
       .returns<ClientOption[]>(),
   ]);
+
+  // Bucket privado: o file_url guardado é um path, precisa de signed URL.
+  const documentRows = await Promise.all(
+    (documents ?? []).map(async (doc) => ({
+      ...doc,
+      file_url: await signedUrl(BUCKETS.documents, doc.file_url),
+    })),
+  );
 
   return (
     <div className="space-y-6">
@@ -123,10 +132,10 @@ export default async function DocumentosAdminPage({
       </Card>
 
       {/* Lista */}
-      {(documents ?? []).length > 0 && (
+      {documentRows.length > 0 && (
         <Card>
           <div className="divide-y divide-black/5">
-            {(documents ?? []).map((doc) => (
+            {documentRows.map((doc) => (
               <div key={doc.id} className="flex items-center gap-3 px-5 py-3.5">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{doc.title}</p>

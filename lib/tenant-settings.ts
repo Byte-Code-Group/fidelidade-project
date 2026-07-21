@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clampModulesToTemplate, MODULES } from "@/lib/segment-templates";
+import { BUCKETS, brandingPath } from "@/lib/storage";
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin (app/superadmin/actions.ts) quanto pelo painel do dono
@@ -94,14 +95,14 @@ export async function applyTenantLogoUpload(
 
   const db = createAdminClient();
   const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-  const path = `${tenantId}/logo-${Date.now()}.${ext}`;
+  const path = brandingPath(tenantId, ext);
 
   const { error: upErr } = await db.storage
-    .from("branding")
+    .from(BUCKETS.branding)
     .upload(path, file, { contentType: file.type, upsert: true });
   if (upErr) return { error: upErr.message };
 
-  const { data: pub } = db.storage.from("branding").getPublicUrl(path);
+  const { data: pub } = db.storage.from(BUCKETS.branding).getPublicUrl(path);
   const { error } = await db
     .from("tenant_settings")
     .update({ logo_url: pub.publicUrl })

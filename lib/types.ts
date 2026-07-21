@@ -202,6 +202,8 @@ export interface Document {
   category: DocumentCategory;
   title: string;
   file_url: string;
+  // upload = enviado por alguém do negócio; ia = gerado pelo assistente.
+  source: "upload" | "ia";
   created_by: string | null;
   created_at: string;
 }

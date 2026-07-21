@@ -7,6 +7,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Icon } from "@/components/icons";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BUCKETS, signedUrl } from "@/lib/storage";
 import type {
   Appointment,
   Checkin,
@@ -168,6 +169,14 @@ export default async function OwnerClientDetailPage({
   ]);
 
   const valueByField = new Map((values ?? []).map((v) => [v.field_id, v.value]));
+
+  // Bucket privado: o file_url guardado é um path, precisa de signed URL.
+  const documentLinks = await Promise.all(
+    (documents ?? []).map(async (d) => ({
+      ...d,
+      file_url: await signedUrl(BUCKETS.documents, d.file_url),
+    })),
+  );
 
   return (
     <div className="space-y-4">
@@ -400,14 +409,14 @@ export default async function OwnerClientDetailPage({
             key: "documentos",
             label: "Documentos",
             icon: "document",
-            count: (documents ?? []).length,
+            count: documentLinks.length,
             content: (
               <Card>
-                {!documents || documents.length === 0 ? (
+                {documentLinks.length === 0 ? (
                   <EmptyRow text="Nenhum documento enviado ainda." />
                 ) : (
                   <div className="divide-y divide-black/5 dark:divide-white/5">
-                    {documents.map((d) => (
+                    {documentLinks.map((d) => (
                       <a
                         key={d.id}
                         href={d.file_url}

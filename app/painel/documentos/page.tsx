@@ -1,5 +1,6 @@
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BUCKETS, signedUrl } from "@/lib/storage";
 import { DocumentTemplatesList } from "@/components/document-templates-list";
 import type { DocumentTemplate } from "@/lib/types";
 import {
@@ -19,6 +20,16 @@ export default async function OwnerDocumentTemplatesPage() {
     .order("display_order", { ascending: true })
     .returns<DocumentTemplate[]>();
 
+  // Bucket privado: o anexo do modelo é um path, precisa de signed URL.
+  const templateRows = await Promise.all(
+    (templates ?? []).map(async (t) => ({
+      ...t,
+      file_url: t.file_url
+        ? await signedUrl(BUCKETS.documentTemplates, t.file_url)
+        : null,
+    })),
+  );
+
   return (
     <div className="space-y-4">
       <div>
@@ -30,7 +41,7 @@ export default async function OwnerDocumentTemplatesPage() {
       </div>
 
       <DocumentTemplatesList
-        templates={templates ?? []}
+        templates={templateRows}
         createAction={ownerCreateDocumentTemplate}
         updateAction={ownerUpdateDocumentTemplate}
         deleteAction={ownerDeleteDocumentTemplate}

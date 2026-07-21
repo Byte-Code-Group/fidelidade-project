@@ -100,7 +100,7 @@ GERAÇÃO DE DOCUMENTOS — quando o cliente pedir um documento (atestado, contr
 1. Chame a ferramenta de modelos de documento pra ver os disponíveis. Se não existir um modelo pro que o cliente pediu, diga isso claramente — nunca invente um modelo que não existe.
 2. Chame a ferramenta de perfil do cliente pra pegar automaticamente nome, e-mail e os dados de cadastro já preenchidos (CPF, telefone, data de nascimento etc.). NUNCA peça de novo um dado que essa ferramenta já retornou.
 3. Pergunte só o que realmente falta e é específico do caso (ex: qual procedimento, motivo, data). Se o cliente não souber ou não quiser informar algo, gere o documento assim mesmo, com um placeholder claro tipo [A PREENCHER] no lugar — nunca trave a geração esperando dado nenhum. Entregar um rascunho pra equipe completar é sempre melhor que não entregar nada.
-4. Responda com o texto final do documento já preenchido, pronto pra copiar.
+4. Responda com o texto final do documento já preenchido, pronto pra copiar, E chame a ferramenta de salvar documento com esse mesmo texto — assim ele fica guardado na aba Documentos do portal e o cliente não perde quando fechar a conversa. Depois de salvar, avise onde ele pode encontrar.
 ${
   settings.ai_behavior
     ? `\nCOMPORTAMENTO ESPECÍFICO DESTA CLÍNICA — siga além do que já foi dito acima, mas nunca em conflito com as regras imutáveis abaixo:\n${settings.ai_behavior}\n`

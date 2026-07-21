@@ -2,6 +2,7 @@ import "server-only";
 import { tool } from "ai";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BUCKETS, documentPath } from "@/lib/storage";
 
 interface ToolContext {
   tenantId: string;
@@ -175,7 +176,7 @@ export function getAiTools(ctx: ToolContext) {
       execute: async () => {
         const { data } = await db
           .from("documents")
-          .select("title, type, created_at")
+          .select("title, category, source, created_at")
           .eq("tenant_id", tenantId)
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
@@ -185,10 +186,60 @@ export function getAiTools(ctx: ToolContext) {
         return JSON.stringify(
           data.map((d) => ({
             titulo: d.title,
-            tipo: d.type,
+            tipo: d.category,
+            origem: d.source === "ia" ? "gerado por você" : "enviado pela equipe",
             data: new Date(d.created_at).toLocaleDateString("pt-BR"),
           })),
         );
+      },
+    }),
+
+    save_document: tool({
+      description:
+        "Salva na área de Documentos do cliente um documento que você acabou de gerar (atestado, contrato, termo, recibo...). Chame SEMPRE depois de escrever o texto final, pra que ele não se perca quando a conversa fechar. Passe o texto completo e já preenchido, incluindo os placeholders [A PREENCHER] que sobraram.",
+      inputSchema: z.object({
+        title: z
+          .string()
+          .min(1)
+          .max(120)
+          .describe("Título curto, ex: 'Atestado de comparecimento 19/07'."),
+        category: z
+          .enum(["documentos", "termos", "receituarios"])
+          .describe(
+            "termos = contrato/termo de consentimento; receituarios = receita/prescrição; documentos = qualquer outro.",
+          ),
+        content: z
+          .string()
+          .min(1)
+          .max(20_000)
+          .describe("Texto final e completo do documento, pronto pra imprimir."),
+      }),
+      execute: async ({ title, category, content }) => {
+        const path = documentPath(tenantId, userId, "ia", "txt");
+
+        const { error: upErr } = await db.storage
+          .from(BUCKETS.documents)
+          .upload(path, new Blob([content], { type: "text/plain" }), {
+            contentType: "text/plain; charset=utf-8",
+            upsert: false,
+          });
+        if (upErr) return "Não consegui salvar o documento agora.";
+
+        const { error } = await db.from("documents").insert({
+          tenant_id: tenantId,
+          user_id: userId,
+          category,
+          title: title.trim(),
+          file_url: path,
+          source: "ia",
+        });
+        if (error) {
+          // Não deixa o arquivo órfão se a linha não entrou.
+          await db.storage.from(BUCKETS.documents).remove([path]);
+          return "Não consegui salvar o documento agora.";
+        }
+
+        return `Documento "${title}" salvo na aba Documentos do portal.`;
       },
     }),
 
