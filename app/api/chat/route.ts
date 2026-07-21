@@ -33,13 +33,24 @@ export async function POST(req: NextRequest) {
   // O login do Supabase é global à plataforma, mas o tenant vem do host/cookie
   // — sem esta checagem um cliente de um tenant conversaria (e queimaria a
   // cota de IA) no tenant de outro.
-  const { data: membership } = await db
-    .from("users")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .maybeSingle<{ tenant_id: string | null }>();
+  // Pertence a este tenant quem for cliente (public.users) OU dono/staff
+  // (platform_users) dele — o dono precisa conseguir testar o próprio portal.
+  const [{ data: clientRow }, { data: staffRow }] = await Promise.all([
+    db
+      .from("users")
+      .select("tenant_id")
+      .eq("id", user.id)
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<{ tenant_id: string }>(),
+    db
+      .from("platform_users")
+      .select("tenant_id")
+      .eq("user_id", user.id)
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<{ tenant_id: string }>(),
+  ]);
 
-  if (membership?.tenant_id !== tenant.id) {
+  if (!clientRow && !staffRow) {
     return new Response("Forbidden", { status: 403 });
   }
 
