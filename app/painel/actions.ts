@@ -308,6 +308,23 @@ export async function ownerAdjustMemberPoints(membershipId: string, formData: Fo
   revalidatePath("/painel/clientes");
 }
 
+// Define o total de pontos de forma absoluta (o dono corrige o saldo direto,
+// não só somando/subtraindo).
+export async function ownerSetMemberPoints(membershipId: string, formData: FormData) {
+  const { tenantId } = await requireTenantOwner();
+  const raw = Number(formData.get("points") ?? NaN);
+  if (!Number.isFinite(raw)) return;
+  const points = Math.max(0, Math.round(raw));
+
+  const db = createAdminClient();
+  await db
+    .from("memberships")
+    .update({ points_total: points })
+    .eq("id", membershipId)
+    .eq("tenant_id", tenantId);
+  revalidatePath("/painel/clientes/[id]", "page");
+}
+
 export async function ownerToggleMemberStatus(membershipId: string, nextStatus: string) {
   const { tenantId } = await requireTenantOwner();
   if (!["active", "suspended"].includes(nextStatus)) return;

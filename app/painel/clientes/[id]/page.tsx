@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
+import { DataList, type DataListRow } from "@/components/data-list";
 import { Icon } from "@/components/icons";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,7 +18,7 @@ import type {
   ProfileField,
   RewardRedemption,
 } from "@/lib/types";
-import { ownerAdjustMemberPoints, ownerToggleMemberStatus } from "../../actions";
+import { ownerSetMemberPoints, ownerToggleMemberStatus } from "../../actions";
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/10 text-green-600",
@@ -178,6 +179,64 @@ export default async function OwnerClientDetailPage({
     })),
   );
 
+  // ----- Linhas para as listas paginadas (busca/filtro no cliente) -----
+  const redemptionRows: DataListRow[] = (redemptions ?? []).map((r) => ({
+    id: r.id,
+    title: r.reward_name,
+    subtitle: `${r.points_spent} pts · ${formatDate(r.created_at)}`,
+    badge: {
+      label: redemptionStatusLabel[r.status] ?? r.status,
+      className: redemptionStatusStyle[r.status] ?? "bg-black/5",
+    },
+    search: `${r.reward_name} ${redemptionStatusLabel[r.status] ?? r.status}`.toLowerCase(),
+    filter: r.status,
+  }));
+
+  const completionRows: DataListRow[] = (completions ?? []).map((c) => ({
+    id: c.id,
+    title: c.missions?.title ?? "Missão removida",
+    subtitle: `${c.missions?.points ?? 0} pts${c.completed_at ? ` · ${formatDate(c.completed_at)}` : ""}`,
+    badge: {
+      label: completionStatusLabel[c.status] ?? c.status,
+      className: completionStatusStyle[c.status] ?? "bg-black/5",
+    },
+    search: `${c.missions?.title ?? ""} ${completionStatusLabel[c.status] ?? c.status}`.toLowerCase(),
+    filter: c.status,
+  }));
+
+  const checkinRows: DataListRow[] = (checkins ?? []).map((c) => ({
+    id: c.id,
+    title: formatDateTime(c.created_at),
+    subtitle: c.method,
+    trailing: `+${c.points_earned} pts`,
+    search: `${formatDateTime(c.created_at)} ${c.method}`.toLowerCase(),
+    filter: c.method,
+  }));
+  const checkinMethods = Array.from(new Set((checkins ?? []).map((c) => c.method)));
+
+  const appointmentRows: DataListRow[] = (appointments ?? []).map((a) => ({
+    id: a.id,
+    title: a.title,
+    subtitle: formatDateTime(a.scheduled_at),
+    note: a.notes ?? undefined,
+    badge: {
+      label: appointmentStatusLabel[a.status] ?? a.status,
+      className: appointmentStatusStyle[a.status] ?? "bg-black/5",
+    },
+    search: `${a.title} ${a.notes ?? ""} ${appointmentStatusLabel[a.status] ?? a.status}`.toLowerCase(),
+    filter: a.status,
+  }));
+
+  const documentRows: DataListRow[] = documentLinks.map((d) => ({
+    id: d.id,
+    title: d.title,
+    subtitle: `${d.category} · ${formatDate(d.created_at)}`,
+    href: d.file_url,
+    search: `${d.title} ${d.category}`.toLowerCase(),
+    filter: d.category,
+  }));
+  const documentCategories = Array.from(new Set(documentLinks.map((d) => d.category)));
+
   return (
     <div className="space-y-4">
       <Link
@@ -228,17 +287,19 @@ export default async function OwnerClientDetailPage({
 
             <div className="flex flex-wrap items-center gap-3 border-t border-black/10 pt-4 dark:border-white/10">
               <form
-                action={ownerAdjustMemberPoints.bind(null, membership.id)}
+                action={ownerSetMemberPoints.bind(null, membership.id)}
                 className="flex items-center gap-1.5"
               >
+                <label className="text-sm opacity-60">Pontos:</label>
                 <input
                   type="number"
-                  name="delta"
-                  placeholder="±pts"
+                  name="points"
+                  min={0}
+                  defaultValue={membership.points_total}
                   className="w-24 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
                 />
                 <Button type="submit" variant="outline" className="px-3 py-1.5 text-sm">
-                  Ajustar pontos
+                  Salvar pontos
                 </Button>
               </form>
 
@@ -295,28 +356,18 @@ export default async function OwnerClientDetailPage({
             key: "resgates",
             label: "Resgates",
             icon: "gift",
-            count: (redemptions ?? []).length,
+            count: redemptionRows.length,
             content: (
               <Card>
-                {!redemptions || redemptions.length === 0 ? (
-                  <EmptyRow text="Nenhum resgate ainda." />
-                ) : (
-                  <div className="divide-y divide-black/5 dark:divide-white/5">
-                    {redemptions.map((r) => (
-                      <div key={r.id} className="flex items-center gap-3 px-6 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{r.reward_name}</p>
-                          <p className="text-xs opacity-60">
-                            {r.points_spent} pts · {formatDate(r.created_at)}
-                          </p>
-                        </div>
-                        <Badge className={redemptionStatusStyle[r.status] ?? "bg-black/5"}>
-                          {redemptionStatusLabel[r.status] ?? r.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <DataList
+                  rows={redemptionRows}
+                  emptyText="Nenhum resgate ainda."
+                  searchPlaceholder="Buscar recompensa..."
+                  filters={[
+                    { label: "Pendente", value: "pending" },
+                    { label: "Entregue", value: "redeemed" },
+                  ]}
+                />
               </Card>
             ),
           },
@@ -324,29 +375,18 @@ export default async function OwnerClientDetailPage({
             key: "validacoes",
             label: "Validações",
             icon: "check",
-            count: (completions ?? []).length,
+            count: completionRows.length,
             content: (
               <Card>
-                {!completions || completions.length === 0 ? (
-                  <EmptyRow text="Nenhuma missão concluída ainda." />
-                ) : (
-                  <div className="divide-y divide-black/5 dark:divide-white/5">
-                    {completions.map((c) => (
-                      <div key={c.id} className="flex items-center gap-3 px-6 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{c.missions?.title ?? "Missão removida"}</p>
-                          <p className="text-xs opacity-60">
-                            {c.missions?.points ?? 0} pts
-                            {c.completed_at && ` · ${formatDate(c.completed_at)}`}
-                          </p>
-                        </div>
-                        <Badge className={completionStatusStyle[c.status] ?? "bg-black/5"}>
-                          {completionStatusLabel[c.status] ?? c.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <DataList
+                  rows={completionRows}
+                  emptyText="Nenhuma missão concluída ainda."
+                  searchPlaceholder="Buscar missão..."
+                  filters={[
+                    { label: "Pendente", value: "pending_validation" },
+                    { label: "Validada", value: "completed" },
+                  ]}
+                />
               </Card>
             ),
           },
@@ -354,26 +394,15 @@ export default async function OwnerClientDetailPage({
             key: "checkins",
             label: "Check-ins",
             icon: "activity",
-            count: (checkins ?? []).length,
+            count: checkinRows.length,
             content: (
               <Card>
-                {!checkins || checkins.length === 0 ? (
-                  <EmptyRow text="Nenhum check-in ainda." />
-                ) : (
-                  <div className="divide-y divide-black/5 dark:divide-white/5">
-                    {checkins.map((c) => (
-                      <div key={c.id} className="flex items-center gap-3 px-6 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium">{formatDateTime(c.created_at)}</p>
-                          <p className="text-xs opacity-60 capitalize">{c.method}</p>
-                        </div>
-                        <span className="text-sm font-medium tabular-nums opacity-70">
-                          +{c.points_earned} pts
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <DataList
+                  rows={checkinRows}
+                  emptyText="Nenhum check-in ainda."
+                  searchPlaceholder="Buscar check-in..."
+                  filters={checkinMethods.map((m) => ({ label: m, value: m }))}
+                />
               </Card>
             ),
           },
@@ -381,27 +410,19 @@ export default async function OwnerClientDetailPage({
             key: "agendamentos",
             label: "Agendamentos",
             icon: "calendar",
-            count: (appointments ?? []).length,
+            count: appointmentRows.length,
             content: (
               <Card>
-                {!appointments || appointments.length === 0 ? (
-                  <EmptyRow text="Nenhum agendamento ainda." />
-                ) : (
-                  <div className="divide-y divide-black/5 dark:divide-white/5">
-                    {appointments.map((a) => (
-                      <div key={a.id} className="flex items-center gap-3 px-6 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{a.title}</p>
-                          <p className="text-xs opacity-60">{formatDateTime(a.scheduled_at)}</p>
-                          {a.notes && <p className="mt-0.5 text-xs opacity-50">{a.notes}</p>}
-                        </div>
-                        <Badge className={appointmentStatusStyle[a.status] ?? "bg-black/5"}>
-                          {appointmentStatusLabel[a.status] ?? a.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <DataList
+                  rows={appointmentRows}
+                  emptyText="Nenhum agendamento ainda."
+                  searchPlaceholder="Buscar agendamento..."
+                  filters={[
+                    { label: "Agendado", value: "scheduled" },
+                    { label: "Concluído", value: "completed" },
+                    { label: "Cancelado", value: "cancelled" },
+                  ]}
+                />
               </Card>
             ),
           },
@@ -409,32 +430,15 @@ export default async function OwnerClientDetailPage({
             key: "documentos",
             label: "Documentos",
             icon: "document",
-            count: documentLinks.length,
+            count: documentRows.length,
             content: (
               <Card>
-                {documentLinks.length === 0 ? (
-                  <EmptyRow text="Nenhum documento enviado ainda." />
-                ) : (
-                  <div className="divide-y divide-black/5 dark:divide-white/5">
-                    {documentLinks.map((d) => (
-                      <a
-                        key={d.id}
-                        href={d.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-3 px-6 py-3 hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{d.title}</p>
-                          <p className="text-xs capitalize opacity-60">
-                            {d.category} · {formatDate(d.created_at)}
-                          </p>
-                        </div>
-                        <Icon name="chevronRight" className="h-4 w-4 shrink-0 opacity-40" />
-                      </a>
-                    ))}
-                  </div>
-                )}
+                <DataList
+                  rows={documentRows}
+                  emptyText="Nenhum documento ainda."
+                  searchPlaceholder="Buscar documento..."
+                  filters={documentCategories.map((c) => ({ label: c, value: c }))}
+                />
               </Card>
             ),
           },
