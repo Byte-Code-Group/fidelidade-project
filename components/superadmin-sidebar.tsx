@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/use-theme";
 import { Icon, type IconKey } from "@/components/icons";
+import { Logo } from "@/components/logo";
 
 interface NavItem {
   href: string;
@@ -127,15 +128,12 @@ export function SuperadminSidebar({
 function Brand() {
   return (
     <Link href="/superadmin" className="flex min-w-0 items-center gap-3">
-      <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--primary-foreground)]"
-        style={{ background: "var(--primary)" }}
-      >
-        <Icon name="grid" className="h-5 w-5" />
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-black/10 dark:border-white/15">
+        <Logo className="h-5 w-5" />
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-bold leading-tight">
-          Fideliza<span className="text-[var(--primary)]">.OS</span>
+          Fideliza
         </p>
         <p className="truncate text-[10px] uppercase tracking-wider opacity-50">
           Console do Operador

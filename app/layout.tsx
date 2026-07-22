@@ -18,10 +18,10 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Fidelidade — programa de fidelidade para o seu negócio",
+    default: "Fideliza",
     // Cada portal de cliente sobrescreve o título com o nome do próprio
     // negócio (ver app/(portal)/layout.tsx).
-    template: "%s | Fidelidade",
+    template: "%s | Fideliza",
   },
   description:
     "Plataforma de fidelidade white-label: carteirinha digital, missões, recompensas, agendamentos e assistente de IA com a marca do seu negócio.",

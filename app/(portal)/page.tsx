@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/icons";
+import { Logo } from "@/components/logo";
 import { MembershipCard } from "@/components/membership-card";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
@@ -67,7 +68,10 @@ function LandingPage({ sent }: { sent?: boolean }) {
       {/* Nav */}
       <nav className="sticky top-0 z-10 border-b border-black/5 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <span className="text-xl font-bold tracking-tight">Fideliza<span className="text-blue-600">.OS</span></span>
+          <span className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            <Logo className="h-6 w-6" />
+            Fideliza
+          </span>
           <div className="flex items-center gap-3">
             <Link href="/conta/login" className="text-sm text-gray-500 hover:text-gray-900">
               Entrar
@@ -241,7 +245,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
 
       {/* Footer */}
       <footer className="border-t border-black/5 py-8 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} Fideliza.OS · Todos os direitos reservados ·{" "}
+        © {new Date().getFullYear()} Fideliza · Todos os direitos reservados ·{" "}
         <Link href="/conta/login" className="hover:underline">Entrar</Link>
       </footer>
     </div>
