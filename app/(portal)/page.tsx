@@ -114,13 +114,13 @@ function LandingPage({ sent }: { sent?: boolean }) {
       </section>
 
       {/* Features */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <h2 className="mb-10 text-center text-2xl font-bold">Tudo que seu negócio precisa</h2>
+          <h2 className="mb-12 text-center text-3xl font-bold">Tudo que seu negócio precisa</h2>
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
             {features.map((f) => (
-              <div key={f.title} className="rounded-2xl bg-white p-6 shadow-sm">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <div key={f.title} className="rounded-2xl border border-gray-200 bg-white p-7">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <Icon name={f.icon} />
                 </div>
                 <h3 className="font-semibold">{f.title}</h3>
@@ -132,9 +132,9 @@ function LandingPage({ sent }: { sent?: boolean }) {
       </section>
 
       {/* Segmentos */}
-      <section className="py-14">
+      <section className="py-20">
         <div className="mx-auto max-w-3xl px-5 text-center">
-          <h2 className="mb-6 text-2xl font-bold">Para qual segmento?</h2>
+          <h2 className="mb-8 text-3xl font-bold">Para qual segmento?</h2>
           <div className="flex flex-wrap justify-center gap-3">
             {segments.map((s) => (
               <span key={s} className="rounded-full border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-700">
@@ -146,9 +146,9 @@ function LandingPage({ sent }: { sent?: boolean }) {
       </section>
 
       {/* Planos */}
-      <section id="planos" className="bg-gray-50 py-16">
+      <section id="planos" className="bg-gray-50 py-20">
         <div className="mx-auto max-w-4xl px-5">
-          <h2 className="mb-2 text-center text-2xl font-bold">Planos e preços</h2>
+          <h2 className="mb-2 text-center text-3xl font-bold">Planos e preços</h2>
           <p className="mb-10 text-center text-gray-500">Cancele a qualquer momento.</p>
           <div className="grid gap-5 sm:grid-cols-3">
             {PLANS.map((plan) => (
@@ -188,9 +188,9 @@ function LandingPage({ sent }: { sent?: boolean }) {
       </section>
 
       {/* CTA final */}
-      <section className="bg-blue-600 py-16 text-white">
+      <section className="bg-blue-600 py-20 text-white">
         <div className="mx-auto max-w-lg px-5 text-center">
-          <h2 className="text-2xl font-bold">Comece agora mesmo</h2>
+          <h2 className="text-3xl font-extrabold">Comece agora mesmo</h2>
           <p className="mt-2 text-blue-100">
             Configure seu portal em menos de 5 minutos.
           </p>
@@ -203,7 +203,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
       </section>
 
       {/* Contato / lead */}
-      <section id="contato" className="py-14">
+      <section id="contato" className="py-20">
         <div className="mx-auto max-w-lg px-5">
           <h2 className="mb-2 text-center text-xl font-bold">Prefere falar com a gente?</h2>
           <p className="mb-8 text-center text-sm text-gray-500">

@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
-import { platformSignUp } from "../actions";
+import { Logo } from "@/components/logo";
+import { CadastroForm } from "@/components/cadastro-form";
 
 export default async function CadastroPage({
   searchParams,
@@ -12,43 +9,76 @@ export default async function CadastroPage({
 }) {
   const { error } = await searchParams;
 
+  const bullets = [
+    "Carteirinha digital com QR Code",
+    "Pontos, recompensas e loja",
+    "Atendente IA 24h",
+  ];
+
   return (
-    <div className="mx-auto max-w-lg">
-      <Card>
-        <CardContent>
-          <h1 className="text-xl font-bold">Crie sua conta</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Configure seu portal e ative com o plano que preferir.
-          </p>
+    // fixed inset-0 → tela cheia, escapa do nav/limite do (platform)/layout.
+    <div className="fixed inset-0 z-50 grid grid-cols-1 overflow-y-auto bg-white md:grid-cols-2">
+      {/* Painel de marca (esquerda) */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-blue-600 p-12 text-white md:flex">
+        <div className="pointer-events-none absolute -right-44 -top-44 h-[480px] w-[480px] rounded-full border border-white/25" />
+        <div className="pointer-events-none absolute -bottom-36 -left-24 h-[340px] w-[340px] rounded-full border border-white/25" />
+
+        <div className="relative z-10 flex items-center gap-2.5">
+          <Logo className="h-6 w-6 text-white" />
+          <span className="text-xl font-extrabold">Fideliza</span>
+        </div>
+
+        <div className="relative z-10 max-w-sm">
+          <h2 className="mb-4 text-3xl font-extrabold leading-tight">
+            Configure seu portal em minutos
+          </h2>
+          <ul className="flex flex-col gap-3.5 text-sm text-white/90">
+            {bullets.map((b) => (
+              <li key={b} className="flex items-center gap-2.5">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative z-10 text-[13px] text-white/70">
+          © {new Date().getFullYear()} Fideliza
+        </p>
+      </div>
+
+      {/* Formulário (direita) */}
+      <div className="flex items-center justify-center px-6 py-10">
+        <div className="flex w-full max-w-sm flex-col gap-7">
+          {/* Logo topo só no mobile (painel de marca fica oculto) */}
+          <div className="flex items-center gap-2.5 text-gray-900 md:hidden">
+            <Logo className="h-6 w-6" />
+            <span className="text-xl font-extrabold">Fideliza</span>
+          </div>
+
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Crie sua conta</h1>
+            <p className="mt-2 text-sm text-gray-500">
+              Configure seu portal e ative com o plano que preferir.
+            </p>
+          </div>
 
           {error && (
-            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
               {decodeURIComponent(error)}
             </p>
           )}
 
-          <form action={platformSignUp} className="mt-6 space-y-4">
-            <Input name="name" required placeholder="Seu nome completo" autoComplete="name" />
-            <Input name="email" type="email" required placeholder="E-mail" autoComplete="email" />
-            <PasswordInput
-              name="password"
-              required
-              placeholder="Senha (mín. 6 caracteres)"
-              autoComplete="new-password"
-            />
-            <Button type="submit" className="w-full">
-              Criar conta e continuar
-            </Button>
-          </form>
+          <CadastroForm />
 
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500">
             Já tem conta?{" "}
-            <Link href="/conta/login" className="text-blue-600 hover:underline">
+            <Link href="/conta/login" className="font-semibold text-blue-600 hover:underline">
               Entrar
             </Link>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
