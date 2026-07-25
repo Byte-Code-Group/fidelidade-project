@@ -13,6 +13,7 @@ import {
 } from "@/lib/loyalty";
 import type { BusinessPlan, Checkin, Membership } from "@/lib/types";
 import { submitLead } from "./landing-actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const PLANS = [
   {
@@ -234,10 +235,11 @@ function LandingPage({ sent }: { sent?: boolean }) {
               </select>
               <input name="phone" type="tel" placeholder="WhatsApp (opcional)"
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <button type="submit"
-                className="w-full rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white transition hover:bg-gray-800">
+              <SubmitButton
+                pendingLabel="Enviando…"
+                className="w-full rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white hover:bg-gray-800">
                 Enviar mensagem
-              </button>
+              </SubmitButton>
             </form>
           )}
         </div>

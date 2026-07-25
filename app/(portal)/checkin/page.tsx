@@ -114,7 +114,7 @@ export default async function CheckinPage({
           ponto(s).
         </p>
         <form action={doCheckin.bind(null, token)} className="mt-4">
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" pendingLabel="Confirmando…">
             Confirmar check-in
           </Button>
         </form>

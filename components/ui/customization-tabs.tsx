@@ -23,12 +23,16 @@ export function CustomizationTabs({
   formId,
   saveAction,
   formTabKeys,
+  footer,
 }: {
   tabs: TabDef[];
   panels: Record<string, ReactNode>;
   formId: string;
   saveAction: (formData: FormData) => void;
   formTabKeys: string[];
+  /** Ações do form (ex.: "Salvar"). Fica dentro do <form> para que o botão
+   *  enxergue o estado de envio via useFormStatus. */
+  footer?: ReactNode;
 }) {
   const [active, setActive] = useState(tabs[0]?.key);
 
@@ -59,6 +63,7 @@ export function CustomizationTabs({
             {panels[key]}
           </div>
         ))}
+        {footer}
       </form>
 
       {tabs

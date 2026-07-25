@@ -44,7 +44,7 @@ export default async function NewTenantPage({
               </Select>
             </Field>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" pendingLabel="Criando…">
               Criar cliente
             </Button>
           </form>

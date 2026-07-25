@@ -122,7 +122,7 @@ export default async function EditTenantPage({
             </Select>
           </Field>
           <div className="col-span-2">
-            <Button type="submit">Salvar conta</Button>
+            <Button type="submit" pendingLabel="Salvando…">Salvar conta</Button>
           </div>
         </form>
       </Section>

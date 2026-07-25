@@ -38,7 +38,7 @@ export default async function SuperLoginPage({
               placeholder="Senha"
             />
             <FormError error={error} expirado={expirado} />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" pendingLabel="Entrando…">
               Entrar
             </Button>
           </form>

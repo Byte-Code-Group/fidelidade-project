@@ -149,7 +149,7 @@ export default async function OwnerAssinaturaPage({
                 )}
 
                 <div className="flex gap-2">
-                  <Button type="submit">Confirmar seleção</Button>
+                  <Button type="submit" pendingLabel="Confirmando…">Confirmar seleção</Button>
                   <Link href="/painel/assinatura">
                     <Button type="button" variant="outline">
                       Cancelar

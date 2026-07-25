@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { platformSignUp } from "@/app/(platform)/conta/actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 // Regex simples de e-mail (suficiente p/ feedback ao usuário; o Supabase
 // valida de forma definitiva no servidor).
@@ -132,12 +133,12 @@ export function CadastroForm() {
         {errors.terms && <p className="text-[13px] text-red-600">{errors.terms}</p>}
       </div>
 
-      <button
-        type="submit"
-        className="mt-1 w-full rounded-lg bg-blue-600 py-3.5 text-[15px] font-semibold text-white transition hover:bg-blue-700"
+      <SubmitButton
+        pendingLabel="Criando conta…"
+        className="mt-1 w-full rounded-lg bg-blue-600 py-3.5 text-[15px] font-semibold text-white hover:bg-blue-700"
       >
         Criar conta e continuar
-      </button>
+      </SubmitButton>
     </form>
   );
 }

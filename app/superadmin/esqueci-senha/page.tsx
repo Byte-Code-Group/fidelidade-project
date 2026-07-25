@@ -50,7 +50,7 @@ export default async function SuperadminEsqueciSenhaPage({
               autoComplete="email"
             />
             <FormError error={error} />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" pendingLabel="Enviando…">
               Enviar link de redefinição
             </Button>
           </form>

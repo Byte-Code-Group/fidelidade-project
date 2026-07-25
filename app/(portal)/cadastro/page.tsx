@@ -47,7 +47,7 @@ export default async function CadastroPage({
             autoComplete="new-password"
           />
           <FormError error={error} />
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" pendingLabel="Criando conta…">
             Criar conta
           </Button>
         </form>

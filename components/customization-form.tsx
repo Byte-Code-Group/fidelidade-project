@@ -277,14 +277,17 @@ export function CustomizationForm({
         formId="customization-form"
         saveAction={saveAction}
         formTabKeys={["marca", "paginas", "fidelidade", "ia", "rodape"]}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <a href={portalUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" type="button">Ver como ficou ↗</Button>
+            </a>
+            <Button type="submit" pendingLabel="Salvando…">
+              Salvar customização
+            </Button>
+          </div>
+        }
       />
-
-      <div className="flex items-center justify-end gap-3">
-        <a href={portalUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" type="button">Ver como ficou ↗</Button>
-        </a>
-        <Button type="submit" form="customization-form">Salvar customização</Button>
-      </div>
     </div>
   );
 }

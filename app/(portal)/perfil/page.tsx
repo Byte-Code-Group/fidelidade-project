@@ -234,7 +234,7 @@ export default async function PerfilPage({
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit">Salvar alterações</Button>
+              <Button type="submit" pendingLabel="Salvando…">Salvar alterações</Button>
             </div>
           </CardContent>
         </Card>

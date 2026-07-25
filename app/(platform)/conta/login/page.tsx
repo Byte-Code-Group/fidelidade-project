@@ -6,6 +6,7 @@ import { Logo } from "@/components/logo";
 import { getAuthUser } from "@/lib/supabase/server";
 import { platformSignIn } from "../actions";
 import { FormError } from "@/components/ui/form-alert";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function LoginPage({
   searchParams,
@@ -91,12 +92,12 @@ export default async function LoginPage({
               />
             </div>
 
-            <button
-              type="submit"
-              className="mt-1 w-full rounded-lg bg-blue-600 py-3.5 text-[15px] font-semibold text-white transition hover:bg-blue-700"
+            <SubmitButton
+              pendingLabel="Entrando…"
+              className="mt-1 w-full rounded-lg bg-blue-600 py-3.5 text-[15px] font-semibold text-white hover:bg-blue-700"
             >
               Entrar
-            </button>
+            </SubmitButton>
           </form>
 
           <p className="text-center text-sm text-gray-500">

@@ -78,6 +78,7 @@ export default async function PlanosPage({
                   type="submit"
                   className="w-full"
                   variant={plan.highlight ? "primary" : "outline"}
+                  pendingLabel="Redirecionando…"
                 >
                   Assinar {plan.name}
                 </Button>

@@ -43,7 +43,7 @@ export function BusinessInfoForm({
           />
         </Field>
         <div className="flex justify-end">
-          <Button type="submit">Salvar</Button>
+          <Button type="submit" pendingLabel="Salvando…">Salvar</Button>
         </div>
       </form>
     </Section>

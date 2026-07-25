@@ -101,7 +101,7 @@ export default async function ConfigurarPage({
               <label className="mb-1 block text-sm font-medium">WhatsApp (opcional)</label>
               <MaskedInput mask="phone" name="phone" type="tel" placeholder="(00) 00000-0000" />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" pendingLabel="Salvando…">
               Continuar →
             </Button>
           </form>
