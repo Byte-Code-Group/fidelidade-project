@@ -28,6 +28,14 @@ function AguardandoContent() {
   const checkStatus = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch("/api/conta/status", { cache: "no-store" });
+
+      // 401 = sessão expirada por tempo (middleware). O reload cai no
+      // middleware de novo, que redireciona pro login com o motivo.
+      if (res.status === 401) {
+        window.location.reload();
+        return true;
+      }
+
       const data: { authenticated: boolean; tenantStatus: string | null } =
         await res.json();
 

@@ -33,6 +33,19 @@ function isCustomDomainCandidate(host: string | null): boolean {
 
 const TENANT_COOKIE = "x-tenant-slug";
 
+// Para onde mandar quem teve a sessão expirada — cada área tem seu login.
+function resolveLoginPath(pathname: string): string {
+  if (pathname.startsWith("/superadmin")) return "/superadmin/login";
+  if (
+    pathname.startsWith("/painel") ||
+    pathname.startsWith("/conta") ||
+    pathname.startsWith("/api/conta")
+  ) {
+    return "/conta/login";
+  }
+  return "/login";
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const parts = pathname.split("/");
@@ -57,7 +70,7 @@ export async function proxy(request: NextRequest) {
       httpOnly: true,
       sameSite: "lax",
     });
-    return updateSession(request, response);
+    return updateSession(request, response, `/p/${slug}/login`);
   }
 
   const host = request.headers.get("host");
@@ -107,7 +120,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  return updateSession(request, response);
+  return updateSession(request, response, resolveLoginPath(pathname));
 }
 
 export const config = {

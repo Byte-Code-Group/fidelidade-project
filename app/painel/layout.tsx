@@ -6,6 +6,7 @@ import { canCreateAnotherTenant } from "@/lib/tenant-limits";
 import { OwnerSidebar } from "@/components/owner-sidebar";
 import { platformSignOut } from "@/app/(platform)/conta/actions";
 import { switchActiveTenant } from "./actions";
+import { SessionWatch } from "@/components/session-watch";
 
 // Shell do painel do dono do tenant. O guard roda aqui → todas as páginas
 // do grupo exigem um dono de tenant autenticado (mesmo fallback de
@@ -27,6 +28,7 @@ export default async function PainelLayout({
     // pessoa direto na criação.
     return (
       <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-10">
+        <SessionWatch />
         {children}
       </main>
     );
@@ -39,6 +41,7 @@ export default async function PainelLayout({
 
   return (
     <div className="min-h-dvh md:pl-64">
+      <SessionWatch />
       <OwnerSidebar
         signOutAction={platformSignOut}
         businessName={activeTenant?.name}

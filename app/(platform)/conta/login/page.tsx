@@ -10,12 +10,12 @@ import { FormError } from "@/components/ui/form-alert";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; expirado?: string }>;
 }) {
   const user = await getAuthUser();
   if (user) redirect("/painel");
 
-  const { error } = await searchParams;
+  const { error, expirado } = await searchParams;
 
   return (
     // fixed inset-0 → tela cheia, escapa do nav/limite do (platform)/layout.
@@ -61,7 +61,7 @@ export default async function LoginPage({
             </p>
           </div>
 
-          <FormError error={error} />
+          <FormError error={error} expirado={expirado} />
 
           <form action={platformSignIn} className="flex flex-col gap-[18px]">
             <div className="flex flex-col gap-1.5">

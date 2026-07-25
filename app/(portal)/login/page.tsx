@@ -10,10 +10,10 @@ import { FormError } from "@/components/ui/form-alert";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; expirado?: string }>;
 }) {
   const ctx = await getCurrentTenant();
-  const { error } = await searchParams;
+  const { error, expirado } = await searchParams;
 
   return (
     <Card>
@@ -32,7 +32,7 @@ export default async function LoginPage({
             required
             placeholder="Senha"
           />
-          <FormError error={error} />
+          <FormError error={error} expirado={expirado} />
           <Button type="submit" className="w-full">
             Entrar
           </Button>

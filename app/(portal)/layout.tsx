@@ -5,6 +5,7 @@ import { PortalSidebar } from "@/components/portal-sidebar";
 import { buildPortalNav } from "@/lib/portal-nav";
 import { signOut } from "./actions";
 import type { Metadata } from "next";
+import { SessionWatch } from "@/components/session-watch";
 
 // White-label: cada portal aparece com o nome e a logo do próprio negócio na
 // aba do navegador e no compartilhamento em redes sociais.
@@ -116,6 +117,8 @@ export default async function PortalLayout({
     <div data-theme={settings.theme_mode} className="min-h-dvh md:pl-64">
       {/* Tokens de marca do tenant (Server Component → sem flash) */}
       <style dangerouslySetInnerHTML={{ __html: themeVars }} />
+
+      <SessionWatch />
 
       <PortalSidebar
         brand={{
