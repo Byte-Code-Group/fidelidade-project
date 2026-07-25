@@ -13,6 +13,12 @@ import type { Membership, Mission, MissionCompletion, ProfileField, Reward } fro
 import { validateProfileFieldValues } from "@/lib/profile-fields";
 import { changeMembershipPlan } from "@/lib/memberships";
 import { traduzirErro } from "@/lib/error-messages";
+import { listProcedures } from "@/lib/procedures";
+import {
+  horariosDisponiveis,
+  createAppointmentValidado,
+  cancelAppointmentAsClient,
+} from "@/lib/appointments";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -377,4 +383,69 @@ export async function doCheckin(token: string) {
   revalidatePath("/engajamento");
   revalidatePath("/");
   redirect("/checkin?done=1");
+}
+
+// ---------- Agendamento pelo cliente ----------
+
+// Contexto do portal: tenant da request + cliente logado. Todo agendamento
+// feito aqui é obrigatoriamente do próprio usuário.
+async function requireClientContext() {
+  const ctx = await getCurrentTenant();
+  if (!ctx) redirect("/");
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+  return { tenantId: ctx.tenant.id, timeZone: ctx.settings.timezone, userId: user.id };
+}
+
+export async function clientAvailableSlots(
+  providerId: string,
+  procedureId: string | null,
+  dateISO: string,
+): Promise<{ slots?: string[]; error?: string }> {
+  const { tenantId, timeZone } = await requireClientContext();
+  if (!providerId || !dateISO) return { slots: [] };
+
+  const procedures = await listProcedures(tenantId, { somenteAtivos: true });
+  const procedimento = procedureId ? procedures.find((p) => p.id === procedureId) : null;
+  if (procedureId && !procedimento) return { error: "Procedimento não disponível." };
+
+  const slots = await horariosDisponiveis({
+    tenantId,
+    dateISO,
+    providerId,
+    duracao: procedimento?.duration_min ?? 30,
+    timeZone,
+    // Dá margem para a recepção se organizar em vez de aceitar "para agora".
+    // (a antecedência mínima também evita marcar um horário que vence no clique)
+  });
+  return { slots };
+}
+
+export async function clientBookAppointment(
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId, timeZone, userId } = await requireClientContext();
+
+  const { error } = await createAppointmentValidado(tenantId, formData, {
+    timeZone,
+    createdBy: userId,
+    forcarUserId: userId,
+  });
+  if (error) return { error };
+
+  revalidatePath("/agendamentos");
+  revalidatePath("/painel/agenda");
+  return {};
+}
+
+export async function clientCancelAppointment(
+  appointmentId: string,
+): Promise<{ error?: string }> {
+  const { tenantId, userId } = await requireClientContext();
+  const { error } = await cancelAppointmentAsClient(tenantId, userId, appointmentId);
+  if (error) return { error };
+
+  revalidatePath("/agendamentos");
+  revalidatePath("/painel/agenda");
+  return {};
 }

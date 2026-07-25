@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { clampModulesToTemplate, MODULES } from "@/lib/segment-templates";
 import { BUCKETS, brandingPath } from "@/lib/storage";
 import { traduzirErro } from "@/lib/error-messages";
+import { DEFAULT_TIMEZONE } from "@/lib/scheduling";
+import { TIMEZONES } from "@/lib/timezones";
+import type { TenantSettings } from "@/lib/types";
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin (app/superadmin/actions.ts) quanto pelo painel do dono
@@ -109,5 +112,40 @@ export async function applyTenantLogoUpload(
     .update({ logo_url: pub.publicUrl })
     .eq("tenant_id", tenantId);
 
+  return { error: error ? traduzirErro(error.message) : undefined };
+}
+
+// ---------- Leitura ----------
+
+export async function getTenantSettings(
+  tenantId: string,
+): Promise<TenantSettings | null> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("tenant_settings")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .maybeSingle<TenantSettings>();
+  return data ?? null;
+}
+
+/** Fuso do negócio — base para transformar "09:00 de terça" em instante. */
+export async function getTenantTimezone(tenantId: string): Promise<string> {
+  const settings = await getTenantSettings(tenantId);
+  return settings?.timezone || DEFAULT_TIMEZONE;
+}
+
+export async function applyTenantTimezoneUpdate(
+  tenantId: string,
+  timezone: string,
+): Promise<{ error?: string }> {
+  if (!TIMEZONES.some((tz) => tz.value === timezone)) {
+    return { error: "Fuso horário inválido." };
+  }
+  const db = createAdminClient();
+  const { error } = await db
+    .from("tenant_settings")
+    .update({ timezone })
+    .eq("tenant_id", tenantId);
   return { error: error ? traduzirErro(error.message) : undefined };
 }

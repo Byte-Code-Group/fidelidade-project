@@ -17,6 +17,7 @@ interface NavItem {
 
 const ITEMS: NavItem[] = [
   { href: "/painel", label: "Dashboard", icon: "chart", exact: true },
+  { href: "/painel/agenda", label: "Agenda", icon: "calendar" },
   { href: "/painel/customizacao", label: "Customização", icon: "template" },
   { href: "/painel/missoes", label: "Missões", icon: "award" },
   { href: "/painel/validacoes", label: "Validações", icon: "check" },

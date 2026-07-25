@@ -37,7 +37,42 @@ import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { approveRedemption, rejectRedemption } from "@/lib/reward-redemptions";
 import { isValidCpfCnpj } from "@/lib/masks";
 import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
+import {
+  insertProvider,
+  applyProviderUpdate,
+  removeProvider,
+  reorderProviders,
+  insertProviderSchedule,
+  removeProviderSchedule,
+  copyProviderScheduleDay,
+  insertScheduleException,
+  removeScheduleException,
+} from "@/lib/providers";
+import {
+  insertProcedure,
+  applyProcedureUpdate,
+  removeProcedure,
+  reorderProcedures,
+  setProviderProcedures,
+  listProcedures,
+} from "@/lib/procedures";
+import {
+  horariosDisponiveis,
+  createAppointmentValidado,
+  rescheduleAppointment,
+  setAppointmentStatus,
+  removeAppointment,
+} from "@/lib/appointments";
+import { getTenantTimezone, applyTenantTimezoneUpdate } from "@/lib/tenant-settings";
+import type { AppointmentStatus } from "@/lib/types";
 import { traduzirErroDesconhecido } from "@/lib/error-messages";
+
+// Agenda do painel + agendamentos do portal do cliente saem do mesmo dado.
+function revalidateAgenda() {
+  revalidatePath("/painel/agenda");
+  revalidatePath("/painel/agenda/configuracoes");
+  revalidatePath("/agendamentos");
+}
 
 function redirectBack(path: string, error?: string) {
   revalidatePath(path);
@@ -437,4 +472,221 @@ export async function ownerRejectMissionCompletion(completionId: string) {
   const { tenantId } = await requireTenantOwner();
   await rejectCompletion(tenantId, completionId);
   revalidatePath("/painel/validacoes");
+}
+
+// ---------- Agenda: profissionais ----------
+
+export async function ownerCreateProvider(formData: FormData): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertProvider(tenantId, formData);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerUpdateProvider(
+  providerId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await applyProviderUpdate(tenantId, providerId, formData);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerDeleteProvider(providerId: string): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeProvider(tenantId, providerId);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerReorderProviders(orderedIds: string[]): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await reorderProviders(tenantId, orderedIds);
+  revalidateAgenda();
+  return { error };
+}
+
+// ---------- Agenda: horários de trabalho ----------
+
+export async function ownerCreateProviderSchedule(
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertProviderSchedule(tenantId, formData);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerDeleteProviderSchedule(
+  scheduleId: string,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeProviderSchedule(tenantId, scheduleId);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerCopyProviderScheduleDay(
+  providerId: string,
+  origem: number,
+  destinos: number[],
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await copyProviderScheduleDay(tenantId, providerId, origem, destinos);
+  revalidateAgenda();
+  return { error };
+}
+
+// ---------- Agenda: folgas e bloqueios ----------
+
+export async function ownerCreateScheduleException(
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertScheduleException(tenantId, formData);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerDeleteScheduleException(
+  exceptionId: string,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeScheduleException(tenantId, exceptionId);
+  revalidateAgenda();
+  return { error };
+}
+
+// ---------- Agenda: procedimentos ----------
+
+export async function ownerCreateProcedure(formData: FormData): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertProcedure(tenantId, formData);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerUpdateProcedure(
+  procedureId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await applyProcedureUpdate(tenantId, procedureId, formData);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerDeleteProcedure(procedureId: string): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeProcedure(tenantId, procedureId);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerReorderProcedures(orderedIds: string[]): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await reorderProcedures(tenantId, orderedIds);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerSetProviderProcedures(
+  providerId: string,
+  procedureIds: string[],
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await setProviderProcedures(tenantId, providerId, procedureIds);
+  revalidateAgenda();
+  return { error };
+}
+
+// ---------- Agenda: fuso do negócio ----------
+
+export async function ownerUpdateTimezone(formData: FormData): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await applyTenantTimezoneUpdate(
+    tenantId,
+    String(formData.get("timezone") ?? ""),
+  );
+  revalidateAgenda();
+  return { error };
+}
+
+// ---------- Agenda: agendamentos ----------
+
+/** Horários livres de um profissional numa data — alimenta o seletor de horário. */
+export async function ownerAvailableSlots(
+  providerId: string,
+  procedureId: string | null,
+  dateISO: string,
+  ignorarAppointmentId?: string,
+): Promise<{ slots?: string[]; error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  if (!providerId || !dateISO) return { slots: [] };
+
+  const [timeZone, procedures] = await Promise.all([
+    getTenantTimezone(tenantId),
+    procedureId ? listProcedures(tenantId) : Promise.resolve([]),
+  ]);
+  const duracao = procedureId
+    ? procedures.find((p) => p.id === procedureId)?.duration_min ?? 30
+    : 30;
+
+  const slots = await horariosDisponiveis({
+    tenantId,
+    dateISO,
+    providerId,
+    duracao,
+    timeZone,
+    ignorarAppointmentId,
+  });
+  return { slots };
+}
+
+export async function ownerCreateAppointment(
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const timeZone = await getTenantTimezone(tenantId);
+  const { error } = await createAppointmentValidado(tenantId, formData, {
+    timeZone,
+    // created_by referencia public.users; o dono vive em platform_users, então
+    // fica null (a autoria do lado do painel é implícita).
+    createdBy: null,
+  });
+  if (!error) revalidateAgenda();
+  return { error };
+}
+
+export async function ownerRescheduleAppointment(
+  appointmentId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const timeZone = await getTenantTimezone(tenantId);
+  const { error } = await rescheduleAppointment(tenantId, appointmentId, formData, {
+    timeZone,
+  });
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerSetAppointmentStatus(
+  appointmentId: string,
+  status: AppointmentStatus,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await setAppointmentStatus(tenantId, appointmentId, status);
+  revalidateAgenda();
+  return { error };
+}
+
+export async function ownerDeleteAppointment(
+  appointmentId: string,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeAppointment(tenantId, appointmentId);
+  revalidateAgenda();
+  return { error };
 }

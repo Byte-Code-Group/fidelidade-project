@@ -44,6 +44,7 @@ const TRADUCOES: Array<[RegExp, string]> = [
   [/violates foreign key constraint/i, "Este registro está vinculado a outros dados e não pode ser alterado."],
   [/violates not-null constraint/i, "Preencha todos os campos obrigatórios."],
   [/violates check constraint/i, "Algum valor informado é inválido."],
+  [/(exclusion constraint|conflicting key value)/i, "Esse horário já está ocupado. Escolha outro."],
   [/violates row-level security policy/i, "Você não tem permissão para esta ação."],
   [/permission denied/i, "Você não tem permissão para esta ação."],
   [/value too long for type/i, "Um dos textos informados é longo demais."],

@@ -1,14 +1,23 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
 import { Icon } from "@/components/icons";
+import { BookingForm } from "@/components/agenda/booking-form";
+import { ClientAppointments } from "@/components/agenda/client-appointments";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
-import type { Appointment } from "@/lib/types";
+import { listProviders } from "@/lib/providers";
+import { listProcedures, listProviderProcedures } from "@/lib/procedures";
+import { DEFAULT_TIMEZONE, formatarDataHora, hojeNoFuso } from "@/lib/scheduling";
+import type { AppointmentDetalhado } from "@/lib/types";
+import {
+  clientAvailableSlots,
+  clientBookAppointment,
+  clientCancelAppointment,
+} from "../actions";
 
 const statusStyle: Record<string, string> = {
   scheduled: "bg-blue-500/10 text-blue-600",
@@ -22,17 +31,6 @@ const statusLabel: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default async function AgendamentosPage() {
   const ctx = await getCurrentTenant();
   if (!ctx) notFound();
@@ -41,94 +39,88 @@ export default async function AgendamentosPage() {
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
-  const { data: appointments } = await supabase
-    .from("appointments")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("scheduled_at", { ascending: false })
-    .returns<Appointment[]>();
+  const timeZone = ctx.settings.timezone || DEFAULT_TIMEZONE;
+  const labelAppointment = ctx.settings.label_appointment ?? "Agendamento";
+  const tenantId = ctx.tenant.id;
 
-  const now = new Date().toISOString();
+  const [{ data: appointments }, providers, procedures, vinculos] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("*, providers(id, name, color), procedures(id, name, duration_min)")
+      .eq("user_id", user.id)
+      .order("scheduled_at", { ascending: false })
+      .returns<AppointmentDetalhado[]>(),
+    listProviders(tenantId, { somenteAtivos: true }),
+    listProcedures(tenantId, { somenteAtivos: true }),
+    listProviderProcedures(tenantId),
+  ]);
+
+  const agora = new Date().toISOString();
   const upcoming = (appointments ?? []).filter(
-    (a) => a.status === "scheduled" && a.scheduled_at >= now,
+    (a) => a.status === "scheduled" && a.scheduled_at >= agora,
   );
   const past = (appointments ?? []).filter(
-    (a) => a.status !== "scheduled" || a.scheduled_at < now,
+    (a) => a.status !== "scheduled" || a.scheduled_at < agora,
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Meus Agendamentos"
-        subtitle="Acompanhe suas próximas consultas e histórico."
+        title={`Meus ${labelAppointment.toLowerCase()}s`}
+        subtitle="Marque um horário e acompanhe seu histórico."
       />
+
+      <Section
+        title={`Marcar ${labelAppointment.toLowerCase()}`}
+        desc="Escolha o serviço, o profissional e um horário livre."
+      >
+        <BookingForm
+          providers={providers}
+          procedures={procedures}
+          vinculos={vinculos}
+          dataInicial={hojeNoFuso(timeZone)}
+          labelAppointment={labelAppointment}
+          slotsAction={clientAvailableSlots}
+          bookAction={clientBookAppointment}
+        />
+      </Section>
 
       {/* Próximos */}
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <Icon name="calendar" className="h-4 w-4 opacity-60" />
-          Próximas consultas
+          Próximos
         </h2>
 
         {upcoming.length === 0 ? (
           <EmptyState
             icon={<Icon name="calendar" className="h-6 w-6" />}
             title="Nenhum agendamento futuro"
-            description={`Fale com a ${ctx.settings.ai_name} para marcar sua próxima visita de forma rápida.`}
-          >
-            <Link href="/atendente">
-              <Button>
-                <Icon name="sparkles" className="mr-2 h-4 w-4" />
-                Conversar com a {ctx.settings.ai_name}
-              </Button>
-            </Link>
-          </EmptyState>
+            description="Escolha um horário acima para marcar sua próxima visita."
+          />
         ) : (
-          <Card>
-            <div className="divide-y divide-black/5">
-              {upcoming.map((a) => (
-                <div key={a.id} className="flex items-start gap-4 px-5 py-4">
-                  <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--primary)]/10 text-center leading-tight">
-                    <span className="text-[10px] font-medium uppercase text-[var(--primary)] opacity-70">
-                      {new Date(a.scheduled_at).toLocaleDateString("pt-BR", { month: "short" })}
-                    </span>
-                    <span className="text-lg font-bold text-[var(--primary)]">
-                      {new Date(a.scheduled_at).getDate()}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{a.title}</p>
-                    <p className="text-xs opacity-60">{fmtDate(a.scheduled_at)}</p>
-                    {a.notes && (
-                      <p className="mt-1 text-xs opacity-50">{a.notes}</p>
-                    )}
-                  </div>
-                  <Badge className={statusStyle[a.status]}>
-                    {statusLabel[a.status]}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <ClientAppointments
+            agendamentos={upcoming}
+            timeZone={timeZone}
+            cancelAction={clientCancelAppointment}
+          />
         )}
       </section>
 
       {/* Histórico */}
       {past.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold opacity-60">
-            Histórico ({past.length})
-          </h2>
+          <h2 className="text-sm font-semibold opacity-60">Histórico ({past.length})</h2>
           <Card>
             <div className="divide-y divide-black/5">
               {past.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-center gap-4 px-5 py-3.5 opacity-70"
-                >
+                <div key={a.id} className="flex items-center gap-4 px-5 py-3.5 opacity-70">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{a.title}</p>
-                    <p className="text-xs opacity-60">{fmtDate(a.scheduled_at)}</p>
+                    <p className="text-xs opacity-60">
+                      {formatarDataHora(a.scheduled_at, timeZone)}
+                      {a.providers ? ` · ${a.providers.name}` : ""}
+                    </p>
                   </div>
                   <Badge className={statusStyle[a.status] ?? "bg-black/5"}>
                     {statusLabel[a.status] ?? a.status}

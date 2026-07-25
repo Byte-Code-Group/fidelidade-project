@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:reset": "supabase db reset",
     "seed:auth": "tsx scripts/seed-auth.ts",
-    "seed:superadmin": "tsx scripts/seed-superadmin.ts"
+    "seed:superadmin": "tsx scripts/seed-superadmin.ts",
+    "test:scheduling": "tsx scripts/test-scheduling.mts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.12",

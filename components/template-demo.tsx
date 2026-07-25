@@ -67,6 +67,7 @@ export function TemplateDemo({
       ai_welcome_message: config.aiWelcome,
       ai_tone: "amigavel",
       ai_behavior: null,
+      timezone: "America/Sao_Paulo",
       label_client: config.labelClient,
       label_appointment: config.labelAppointment,
       footer_address: null,

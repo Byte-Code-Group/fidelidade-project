@@ -44,6 +44,7 @@ export interface TenantSettings {
   loyalty_streak_reset: boolean;
   reward_name: string | null;
   reward_description: string | null;
+  timezone: string;
 }
 
 export interface TenantContext {
@@ -187,10 +188,73 @@ export interface Appointment {
   user_id: string;
   title: string;
   scheduled_at: string;
+  /** Fim do atendimento — preenchido por trigger a partir de duration_min. */
+  ends_at: string;
+  duration_min: number;
+  provider_id: string | null;
+  procedure_id: string | null;
   notes: string | null;
   status: AppointmentStatus;
   created_by: string | null;
   created_at: string;
+}
+
+// ---------- Agenda: profissionais, procedimentos, horários ----------
+
+export interface Provider {
+  id: string;
+  tenant_id: string;
+  name: string;
+  specialty: string | null;
+  color: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface Procedure {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  duration_min: number;
+  price_cents: number | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+/** Bloco de trabalho recorrente. weekday: 0 = domingo … 6 = sábado. */
+export interface ProviderSchedule {
+  id: string;
+  tenant_id: string;
+  provider_id: string;
+  weekday: number;
+  start_time: string;
+  end_time: string;
+  created_at: string;
+}
+
+/**
+ * Folga ou bloqueio numa data. provider_id null = negócio inteiro fechado;
+ * start_time/end_time null = dia inteiro.
+ */
+export interface ScheduleException {
+  id: string;
+  tenant_id: string;
+  provider_id: string | null;
+  exception_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+/** Agendamento com os dados relacionados que as telas mostram. */
+export interface AppointmentDetalhado extends Appointment {
+  providers: Pick<Provider, "id" | "name" | "color"> | null;
+  procedures: Pick<Procedure, "id" | "name" | "duration_min"> | null;
+  users: { id: string; full_name: string | null; email: string | null } | null;
 }
 
 export type DocumentCategory = "documentos" | "termos" | "receituarios";
