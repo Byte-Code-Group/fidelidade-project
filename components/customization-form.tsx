@@ -68,22 +68,14 @@ export function CustomizationForm({
     marca: (
       <>
         <Section title="Logo da empresa" desc="Aparece na carteirinha e no topo do portal.">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/5 dark:bg-white/10">
-              {settings.logo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={settings.logo_url} alt="logo" className="h-full w-full object-cover" />
-              ) : (
-                <div
-                  className="flex h-full w-full items-center justify-center text-xl font-bold text-white"
-                  style={{ background: settings.primary_color }}
-                >
-                  {tenantName.charAt(0)}
-                </div>
-              )}
-            </div>
-            <LogoUploadForm uploadAction={uploadAction} />
-          </div>
+          {/* A miniatura vive dentro do LogoUploadForm p/ virar preview do
+              arquivo escolhido enquanto o upload acontece. */}
+          <LogoUploadForm
+            uploadAction={uploadAction}
+            logoUrl={settings.logo_url}
+            fallbackLabel={tenantName}
+            fallbackColor={settings.primary_color}
+          />
         </Section>
 
         <Section title="Marca">
