@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSocialKey } from "@/components/social-logos";
 import type { MissionType } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 // O tipo determina o ícone (logo da rede social, ou genérico p/ "custom") —
 // nunca é um valor livre escolhido à parte.
@@ -42,7 +43,7 @@ export async function insertMission(
   const { error } = await db
     .from("missions")
     .insert({ tenant_id: tenantId, ...fields, display_order: count ?? 0 });
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 // Reordena conforme a posição arrastada no painel do dono.
@@ -61,7 +62,7 @@ export async function reorderMissions(
     ),
   );
   const failed = results.find((r) => r.error);
-  return { error: failed?.error?.message };
+  return { error: failed?.error ? traduzirErro(failed.error.message) : undefined };
 }
 
 export async function applyMissionUpdate(
@@ -75,7 +76,7 @@ export async function applyMissionUpdate(
     .update(missionFields(formData))
     .eq("id", missionId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function removeMission(
@@ -88,5 +89,5 @@ export async function removeMission(
     .delete()
     .eq("id", missionId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }

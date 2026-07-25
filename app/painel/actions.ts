@@ -37,6 +37,7 @@ import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { approveRedemption, rejectRedemption } from "@/lib/reward-redemptions";
 import { isValidCpfCnpj } from "@/lib/masks";
 import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
+import { traduzirErroDesconhecido } from "@/lib/error-messages";
 
 function redirectBack(path: string, error?: string) {
   revalidatePath(path);
@@ -385,7 +386,7 @@ export async function ownerChangePlan(formData: FormData) {
     invoiceUrl = result.invoiceUrl;
     scheduledFor = "scheduledFor" in result ? result.scheduledFor : undefined;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erro ao trocar plano.";
+    const msg = traduzirErroDesconhecido(err, "Erro ao trocar plano.");
     redirectBack("/painel/assinatura", msg);
   }
 

@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BUCKETS, documentTemplatePath, pathBelongsTo } from "@/lib/storage";
+import { traduzirErro } from "@/lib/error-messages";
 
 const ALLOWED_EXTENSIONS = ["pdf", "docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -41,7 +42,7 @@ async function uploadTemplateFile(
   const { error } = await db.storage
     .from(BUCKETS.documentTemplates)
     .upload(path, file, { contentType: file.type, upsert: true });
-  if (error) return { error: error.message };
+  if (error) return { error: traduzirErro(error.message) };
 
   return { url: path };
 }
@@ -96,7 +97,7 @@ export async function insertDocumentTemplate(
     file_name: fromFile.file_name ?? null,
     display_order: count ?? 0,
   });
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function applyDocumentTemplateUpdate(
@@ -136,7 +137,7 @@ export async function applyDocumentTemplateUpdate(
     })
     .eq("id", templateId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: traduzirErro(error.message) };
 
   if (previousFile && previousFile !== fromFile.file_url) {
     await removeTemplateFile(tenantId, previousFile);
@@ -163,7 +164,7 @@ export async function removeDocumentTemplate(
     .delete()
     .eq("id", templateId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: traduzirErro(error.message) };
 
   await removeTemplateFile(tenantId, existing?.file_url);
   return {};
@@ -194,5 +195,5 @@ export async function reorderDocumentTemplates(
     ),
   );
   const failed = results.find((r) => r.error);
-  return { error: failed?.error?.message };
+  return { error: failed?.error ? traduzirErro(failed.error.message) : undefined };
 }

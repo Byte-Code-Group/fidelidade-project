@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { traduzirErro } from "@/lib/error-messages";
 
 // Mostra o resultado de uma action (?saved=1 / ?error=...) como toast e
 // limpa a query string, pra não reaparecer num refresh da página.
@@ -20,7 +21,7 @@ export function FlashToast({
 
   useEffect(() => {
     if (error) {
-      toast.error(decodeURIComponent(error));
+      toast.error(traduzirErro(decodeURIComponent(error)));
       router.replace(pathname);
     } else if (saved) {
       toast.success(successMessage);

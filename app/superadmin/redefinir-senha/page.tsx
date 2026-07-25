@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
 import { createClient } from "@/lib/supabase/client";
+import { traduzirErro } from "@/lib/error-messages";
+import { FormAlert } from "@/components/ui/form-alert";
 
 export default function SuperadminRedefinirSenhaPage() {
   const [password, setPassword] = useState("");
@@ -30,7 +32,7 @@ export default function SuperadminRedefinirSenhaPage() {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      setErrorMsg(error.message);
+      setErrorMsg(traduzirErro(error.message));
       setStatus("error");
     } else {
       setStatus("done");
@@ -77,9 +79,7 @@ export default function SuperadminRedefinirSenhaPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
-            {(errorMsg || status === "error") && (
-              <p className="text-sm text-red-600">{errorMsg}</p>
-            )}
+            {errorMsg && <FormAlert>{errorMsg}</FormAlert>}
             <Button type="submit" className="w-full" disabled={status === "loading"}>
               {status === "loading" ? "Salvando…" : "Salvar nova senha"}
             </Button>

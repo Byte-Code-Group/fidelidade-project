@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/icons";
 import { DocumentTemplateFields } from "@/components/document-template-fields";
 import type { DocumentTemplate } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 interface DocumentTemplatesListProps {
   templates: DocumentTemplate[];
@@ -36,7 +37,7 @@ export function DocumentTemplatesList({
   async function persistOrder(next: DocumentTemplate[]) {
     setItems(next);
     const { error } = await reorderAction(next.map((t) => t.id));
-    if (error) toast.error(error);
+    if (error) toast.error(traduzirErro(error));
   }
 
   return (
@@ -77,7 +78,7 @@ function NewTemplateForm({
             const formData = new FormData(form);
             startTransition(async () => {
               const { error } = await createAction(formData);
-              if (error) toast.error(error);
+              if (error) toast.error(traduzirErro(error));
               else {
                 toast.success("Modelo criado.");
                 form.reset();
@@ -160,7 +161,7 @@ function TemplateRow({
               const formData = new FormData(e.currentTarget);
               startTransition(async () => {
                 const { error } = await updateAction(t.id, formData);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
                 else toast.success("Modelo salvo.");
               });
             }}
@@ -177,7 +178,7 @@ function TemplateRow({
               e.preventDefault();
               startDeleteTransition(async () => {
                 const { error } = await deleteAction(t.id);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
               });
             }}
           >

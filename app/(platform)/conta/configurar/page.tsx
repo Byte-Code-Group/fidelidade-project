@@ -8,6 +8,7 @@ import { getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantOwner } from "@/lib/owner";
 import { configureBusiness } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function ConfigurarPage({
   searchParams,
@@ -57,11 +58,9 @@ export default async function ConfigurarPage({
               : "Estas informações personalizam o seu portal de fidelidade."}
           </p>
 
-          {error && (
-            <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-              {error === "campos" ? "Preencha todos os campos obrigatórios." : decodeURIComponent(error)}
-            </p>
-          )}
+          <div className="mt-3">
+            <FormError error={error} />
+          </div>
 
           <form action={configureBusiness} className="mt-6 space-y-4">
             {isNew && <input type="hidden" name="mode" value="new" />}

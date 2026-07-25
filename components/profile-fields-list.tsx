@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/icons";
 import { ProfileFieldForm, FIELD_TYPE_LABELS } from "@/components/profile-field-form";
 import type { ProfileField } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 interface ProfileFieldsListProps {
   fields: ProfileField[];
@@ -39,7 +40,7 @@ export function ProfileFieldsList({
   async function persistOrder(next: ProfileField[]) {
     setItems(next);
     const { error } = await reorderAction(next.map((f) => f.id));
-    if (error) toast.error(error);
+    if (error) toast.error(traduzirErro(error));
   }
 
   return (
@@ -85,7 +86,7 @@ function NewFieldForm({
             const formData = new FormData(form);
             startTransition(async () => {
               const { error } = await createAction(formData);
-              if (error) toast.error(error);
+              if (error) toast.error(traduzirErro(error));
               else {
                 toast.success("Campo criado.");
                 form.reset();
@@ -173,7 +174,7 @@ function ProfileFieldRow({
               const formData = new FormData(e.currentTarget);
               startTransition(async () => {
                 const { error } = await updateAction(f.id, formData);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
                 else toast.success("Campo salvo.");
               });
             }}
@@ -190,7 +191,7 @@ function ProfileFieldRow({
               e.preventDefault();
               startDeleteTransition(async () => {
                 const { error } = await deleteAction(f.id);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
               });
             }}
           >

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getCurrentTenant } from "@/lib/tenant";
 import { requestPasswordReset } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function EsqueciSenhaPage({
   searchParams,
@@ -53,9 +54,7 @@ export default async function EsqueciSenhaPage({
             placeholder="Seu e-mail"
             autoComplete="email"
           />
-          {error && (
-            <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>
-          )}
+          <FormError error={error} />
           <Button type="submit" className="w-full">
             Enviar link de redefinição
           </Button>

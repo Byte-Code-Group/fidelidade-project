@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { traduzirErro } from "@/lib/error-messages";
 
 function planFields(formData: FormData) {
   const benefits = String(formData.get("benefits") ?? "")
@@ -28,7 +29,7 @@ export async function insertPlan(
   const { error } = await db
     .from("business_plans")
     .insert({ tenant_id: tenantId, ...fields, display_order: count ?? 0 });
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function applyPlanUpdate(
@@ -42,7 +43,7 @@ export async function applyPlanUpdate(
     .update(planFields(formData))
     .eq("id", planId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function removePlan(
@@ -55,7 +56,7 @@ export async function removePlan(
     .delete()
     .eq("id", planId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 // Reordena conforme a posição arrastada no painel do dono.
@@ -74,5 +75,5 @@ export async function reorderPlans(
     ),
   );
   const failed = results.find((r) => r.error);
-  return { error: failed?.error?.message };
+  return { error: failed?.error ? traduzirErro(failed.error.message) : undefined };
 }

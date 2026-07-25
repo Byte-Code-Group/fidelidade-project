@@ -8,14 +8,8 @@ import { FlashToast } from "@/components/flash-toast";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
 import type { Membership, Reward } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 import { redeemReward } from "../actions";
-
-const ERRORS: Record<string, string> = {
-  pontos: "Você ainda não tem pontos suficientes para esse prêmio.",
-  esgotado: "Esse prêmio está esgotado.",
-  indisponivel: "Esse prêmio não está mais disponível.",
-  sem_carteirinha: "Você ainda não tem uma carteirinha ativa.",
-};
 
 export default async function LojaPage({
   searchParams,
@@ -64,7 +58,7 @@ export default async function LojaPage({
 
       <FlashToast
         saved={done}
-        error={error ? ERRORS[error] ?? "Não foi possível resgatar agora." : undefined}
+        error={error ? traduzirErro(error, "Não foi possível resgatar agora.") : undefined}
         successMessage="🎉 Resgate solicitado! Retire seu prêmio na recepção."
       />
 

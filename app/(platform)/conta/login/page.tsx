@@ -5,6 +5,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Logo } from "@/components/logo";
 import { getAuthUser } from "@/lib/supabase/server";
 import { platformSignIn } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function LoginPage({
   searchParams,
@@ -60,11 +61,7 @@ export default async function LoginPage({
             </p>
           </div>
 
-          {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {decodeURIComponent(error)}
-            </p>
-          )}
+          <FormError error={error} />
 
           <form action={platformSignIn} className="flex flex-col gap-[18px]">
             <div className="flex flex-col gap-1.5">

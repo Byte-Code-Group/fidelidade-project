@@ -7,6 +7,7 @@ import { getTenantOwner } from "@/lib/owner";
 import { PLAN_CATALOG } from "@/lib/plan-catalog";
 import { PLAN_PRICES } from "@/lib/asaas";
 import { initiatePayment } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 const PLANS = PLAN_CATALOG.map((p) => ({ ...p, price: PLAN_PRICES[p.key] }));
 
@@ -33,11 +34,9 @@ export default async function PlanosPage({
         <p className="mt-1 text-sm text-gray-500">Cancele a qualquer momento.</p>
       </div>
 
-      {error && (
-        <p className="mx-auto max-w-lg rounded-lg bg-red-50 px-3 py-2 text-center text-sm text-red-600">
-          {decodeURIComponent(error)}
-        </p>
-      )}
+      <div className="mx-auto max-w-lg">
+        <FormError error={error} />
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-3">
         {PLANS.map((plan) => (

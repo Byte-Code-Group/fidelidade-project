@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/icons";
 import { PlanFields } from "@/components/plan-fields";
 import type { BusinessPlan } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 interface PlansListProps {
   plans: BusinessPlan[];
@@ -36,7 +37,7 @@ export function PlansList({
   async function persistOrder(next: BusinessPlan[]) {
     setItems(next);
     const { error } = await reorderAction(next.map((p) => p.id));
-    if (error) toast.error(error);
+    if (error) toast.error(traduzirErro(error));
   }
 
   return (
@@ -77,7 +78,7 @@ function NewPlanForm({
             const formData = new FormData(form);
             startTransition(async () => {
               const { error } = await createAction(formData);
-              if (error) toast.error(error);
+              if (error) toast.error(traduzirErro(error));
               else {
                 toast.success("Plano criado.");
                 form.reset();
@@ -163,7 +164,7 @@ function PlanRow({
               const formData = new FormData(e.currentTarget);
               startTransition(async () => {
                 const { error } = await updateAction(p.id, formData);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
                 else toast.success("Plano salvo.");
               });
             }}
@@ -180,7 +181,7 @@ function PlanRow({
               e.preventDefault();
               startDeleteTransition(async () => {
                 const { error } = await deleteAction(p.id);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
               });
             }}
           >

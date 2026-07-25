@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getCurrentTenant } from "@/lib/tenant";
 import { signUp } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function CadastroPage({
   searchParams,
@@ -45,7 +46,7 @@ export default async function CadastroPage({
             placeholder="Senha (mínimo 6 caracteres)"
             autoComplete="new-password"
           />
-          {error && <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>}
+          <FormError error={error} />
           <Button type="submit" className="w-full">
             Criar conta
           </Button>

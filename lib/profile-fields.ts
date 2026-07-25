@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidCpf, isValidPhone } from "@/lib/masks";
 import type { ProfileField, ProfileFieldType } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin (app/superadmin/actions.ts) quanto pelo painel do dono
@@ -85,7 +86,7 @@ export async function insertProfileField(
   const { error } = await db
     .from("profile_fields")
     .insert({ tenant_id: tenantId, ...fields, field_key, display_order: count ?? 0 });
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 // Reordena os campos conforme a posição arrastada no painel do dono.
@@ -104,7 +105,7 @@ export async function reorderProfileFields(
     ),
   );
   const failed = results.find((r) => r.error);
-  return { error: failed?.error?.message };
+  return { error: failed?.error ? traduzirErro(failed.error.message) : undefined };
 }
 
 export async function applyProfileFieldUpdate(
@@ -118,7 +119,7 @@ export async function applyProfileFieldUpdate(
     .update(profileFieldData(formData))
     .eq("id", fieldId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function removeProfileField(
@@ -131,7 +132,7 @@ export async function removeProfileField(
     .delete()
     .eq("id", fieldId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 // Valida os valores enviados no form de perfil do cliente contra a

@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BUCKETS, rewardPath } from "@/lib/storage";
+import { traduzirErro } from "@/lib/error-messages";
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -43,7 +44,7 @@ async function uploadRewardImage(
   const { error: upErr } = await db.storage
     .from(BUCKETS.rewards)
     .upload(path, file, { contentType: file.type, upsert: true });
-  if (upErr) return { error: upErr.message };
+  if (upErr) return { error: traduzirErro(upErr.message) };
 
   const { data: pub } = db.storage.from(BUCKETS.rewards).getPublicUrl(path);
   return { url: pub.publicUrl };
@@ -67,7 +68,7 @@ export async function insertReward(
   const { error } = await db
     .from("rewards")
     .insert({ tenant_id: tenantId, ...fields, image_url: image_url ?? null, display_order: count ?? 0 });
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function applyRewardUpdate(
@@ -84,7 +85,7 @@ export async function applyRewardUpdate(
     .update({ ...rewardFields(formData), ...(image_url ? { image_url } : {}) })
     .eq("id", rewardId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 export async function removeReward(
@@ -97,7 +98,7 @@ export async function removeReward(
     .delete()
     .eq("id", rewardId)
     .eq("tenant_id", tenantId);
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 // Reordena conforme a posição arrastada no painel do dono.
@@ -116,5 +117,5 @@ export async function reorderRewards(
     ),
   );
   const failed = results.find((r) => r.error);
-  return { error: failed?.error?.message };
+  return { error: failed?.error ? traduzirErro(failed.error.message) : undefined };
 }

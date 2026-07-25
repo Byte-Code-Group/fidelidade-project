@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/icons";
 import { MissionFields, MissionTypeIcon } from "@/components/mission-fields";
 import type { Mission } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 interface MissionsListProps {
   missions: Mission[];
@@ -36,7 +37,7 @@ export function MissionsList({
   async function persistOrder(next: Mission[]) {
     setItems(next);
     const { error } = await reorderAction(next.map((m) => m.id));
-    if (error) toast.error(error);
+    if (error) toast.error(traduzirErro(error));
   }
 
   return (
@@ -77,7 +78,7 @@ function NewMissionForm({
             const formData = new FormData(form);
             startTransition(async () => {
               const { error } = await createAction(formData);
-              if (error) toast.error(error);
+              if (error) toast.error(traduzirErro(error));
               else {
                 toast.success("Missão criada.");
                 form.reset();
@@ -163,7 +164,7 @@ function MissionRow({
               const formData = new FormData(e.currentTarget);
               startTransition(async () => {
                 const { error } = await updateAction(m.id, formData);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
                 else toast.success("Missão salva.");
               });
             }}
@@ -180,7 +181,7 @@ function MissionRow({
               e.preventDefault();
               startDeleteTransition(async () => {
                 const { error } = await deleteAction(m.id);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
               });
             }}
           >

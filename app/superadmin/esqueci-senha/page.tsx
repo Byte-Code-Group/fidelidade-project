@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { requestSuperadminPasswordReset } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function SuperadminEsqueciSenhaPage({
   searchParams,
@@ -48,9 +49,7 @@ export default async function SuperadminEsqueciSenhaPage({
               placeholder="admin@plataforma.com"
               autoComplete="email"
             />
-            {error && (
-              <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>
-            )}
+            <FormError error={error} />
             <Button type="submit" className="w-full">
               Enviar link de redefinição
             </Button>

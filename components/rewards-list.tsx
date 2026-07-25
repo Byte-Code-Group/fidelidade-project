@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/icons";
 import { RewardFields } from "@/components/reward-fields";
 import type { Reward } from "@/lib/types";
+import { traduzirErro } from "@/lib/error-messages";
 
 interface RewardsListProps {
   rewards: Reward[];
@@ -36,7 +37,7 @@ export function RewardsList({
   async function persistOrder(next: Reward[]) {
     setItems(next);
     const { error } = await reorderAction(next.map((r) => r.id));
-    if (error) toast.error(error);
+    if (error) toast.error(traduzirErro(error));
   }
 
   return (
@@ -77,7 +78,7 @@ function NewRewardForm({
             const formData = new FormData(form);
             startTransition(async () => {
               const { error } = await createAction(formData);
-              if (error) toast.error(error);
+              if (error) toast.error(traduzirErro(error));
               else {
                 toast.success("Prêmio criado.");
                 form.reset();
@@ -163,7 +164,7 @@ function RewardRow({
               const formData = new FormData(e.currentTarget);
               startTransition(async () => {
                 const { error } = await updateAction(r.id, formData);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
                 else toast.success("Prêmio salvo.");
               });
             }}
@@ -180,7 +181,7 @@ function RewardRow({
               e.preventDefault();
               startDeleteTransition(async () => {
                 const { error } = await deleteAction(r.id);
-                if (error) toast.error(error);
+                if (error) toast.error(traduzirErro(error));
               });
             }}
           >

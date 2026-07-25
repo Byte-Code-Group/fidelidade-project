@@ -19,6 +19,7 @@ import {
   isRemovedCustomerError,
   type BillingType,
 } from "@/lib/asaas";
+import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
 
 function slugify(s: string) {
   return s
@@ -63,7 +64,7 @@ export async function platformSignUp(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/conta/cadastro?error=${encodeURIComponent(error.message)}`);
+    redirect(`/conta/cadastro?error=${encodeURIComponent(traduzirErro(error.message))}`);
   }
 
   // Cria a linha "placeholder" (tenant_id null) — só se ainda não existir
@@ -96,7 +97,7 @@ export async function platformSignIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/conta/login?error=${encodeURIComponent(error.message)}`);
+    redirect(`/conta/login?error=${encodeURIComponent(traduzirErro(error.message))}`);
   }
 
   redirect("/painel");
@@ -179,7 +180,7 @@ export async function configureBusiness(formData: FormData) {
       .single<{ id: string }>();
 
     if (tErr || !tenant) {
-      redirect(`/conta/configurar?error=${encodeURIComponent(tErr?.message ?? "Erro ao criar negócio.")}`);
+      redirect(`/conta/configurar?error=${encodeURIComponent(traduzirErro(tErr?.message, "Erro ao criar negócio."))}`);
     }
 
     tenantId = tenant.id;
@@ -329,7 +330,7 @@ export async function initiatePayment(formData: FormData) {
       ? `${payment.invoiceUrl}?autoRedirect=true`
       : undefined;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erro ao processar pagamento.";
+    const msg = traduzirErroDesconhecido(err, "Erro ao processar pagamento.");
     redirect(`/conta/planos?error=${encodeURIComponent(msg)}`);
   }
 

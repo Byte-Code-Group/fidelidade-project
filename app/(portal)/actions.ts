@@ -12,6 +12,7 @@ import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
 import { validateProfileFieldValues } from "@/lib/profile-fields";
 import { changeMembershipPlan } from "@/lib/memberships";
+import { traduzirErro } from "@/lib/error-messages";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -21,7 +22,7 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    redirect(`/login?error=${encodeURIComponent(traduzirErro(error.message))}`);
   }
   redirect("/");
 }
@@ -53,7 +54,7 @@ export async function requestPasswordReset(formData: FormData) {
   });
 
   if (error) {
-    redirect("/esqueci-senha?error=" + encodeURIComponent(error.message));
+    redirect("/esqueci-senha?error=" + encodeURIComponent(traduzirErro(error.message)));
   }
   redirect("/esqueci-senha?sent=1");
 }
@@ -85,7 +86,7 @@ export async function signUp(formData: FormData) {
   });
 
   if (authErr || !authData.user) {
-    const msg = authErr?.message ?? "Erro ao criar conta.";
+    const msg = traduzirErro(authErr?.message, "Erro ao criar conta.");
     redirect("/cadastro?error=" + encodeURIComponent(msg));
   }
 

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
 import { createTenant } from "../../../actions";
+import { FlashToast } from "@/components/flash-toast";
 
 export default async function NewTenantPage({
   searchParams,
@@ -15,6 +16,7 @@ export default async function NewTenantPage({
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
+      <FlashToast error={error} />
       <div>
         <Link href="/superadmin" className="text-sm opacity-60 hover:opacity-100">
           ← Clientes
@@ -41,8 +43,6 @@ export default async function NewTenantPage({
                 ))}
               </Select>
             </Field>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <Button type="submit" className="w-full">
               Criar cliente

@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { clampModulesToTemplate, MODULES } from "@/lib/segment-templates";
 import { BUCKETS, brandingPath } from "@/lib/storage";
+import { traduzirErro } from "@/lib/error-messages";
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin (app/superadmin/actions.ts) quanto pelo painel do dono
@@ -71,7 +72,7 @@ export async function applyTenantSettingsUpdate(
     })
     .eq("tenant_id", tenantId);
 
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }
 
 // Upload do logo da empresa para o Storage (bucket público 'branding') e grava
@@ -100,7 +101,7 @@ export async function applyTenantLogoUpload(
   const { error: upErr } = await db.storage
     .from(BUCKETS.branding)
     .upload(path, file, { contentType: file.type, upsert: true });
-  if (upErr) return { error: upErr.message };
+  if (upErr) return { error: traduzirErro(upErr.message) };
 
   const { data: pub } = db.storage.from(BUCKETS.branding).getPublicUrl(path);
   const { error } = await db
@@ -108,5 +109,5 @@ export async function applyTenantLogoUpload(
     .update({ logo_url: pub.publicUrl })
     .eq("tenant_id", tenantId);
 
-  return { error: error?.message };
+  return { error: error ? traduzirErro(error.message) : undefined };
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { CadastroForm } from "@/components/cadastro-form";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function CadastroPage({
   searchParams,
@@ -63,11 +64,7 @@ export default async function CadastroPage({
             </p>
           </div>
 
-          {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {decodeURIComponent(error)}
-            </p>
-          )}
+          <FormError error={error} />
 
           <CadastroForm />
 

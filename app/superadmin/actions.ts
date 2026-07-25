@@ -24,6 +24,7 @@ import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { createCustomer, createSubscription } from "@/lib/asaas";
 import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
 import { BUCKETS, documentPath } from "@/lib/storage";
+import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
 
 // ---------- Auth ----------
 
@@ -34,7 +35,7 @@ export async function superSignIn(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    redirect(`/superadmin/login?error=${encodeURIComponent(error.message)}`);
+    redirect(`/superadmin/login?error=${encodeURIComponent(traduzirErro(error.message))}`);
   }
 
   // Autenticou — mas é platform admin? Senão, desloga e barra.
@@ -64,7 +65,7 @@ export async function requestSuperadminPasswordReset(formData: FormData) {
   });
 
   if (error) {
-    redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent(error.message));
+    redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent(traduzirErro(error.message)));
   }
   redirect("/superadmin/esqueci-senha?sent=1");
 }
@@ -107,7 +108,7 @@ export async function createTenant(formData: FormData) {
     .single<{ id: string }>();
 
   if (tErr || !tenant) {
-    const msg = tErr?.code === "23505" ? "Slug já em uso." : tErr?.message;
+    const msg = tErr?.code === "23505" ? "Slug já em uso." : traduzirErro(tErr?.message, "Erro ao criar cliente.");
     redirect(
       `/superadmin/tenants/new?error=${encodeURIComponent(msg ?? "Erro ao criar.")}`,
     );
@@ -134,7 +135,7 @@ export async function createTenant(formData: FormData) {
     // rollback do tenant para não deixar órfão sem settings
     await db.from("tenants").delete().eq("id", tenant.id);
     redirect(
-      `/superadmin/tenants/new?error=${encodeURIComponent(sErr.message)}`,
+      `/superadmin/tenants/new?error=${encodeURIComponent(traduzirErro(sErr.message))}`,
     );
   }
 
@@ -192,7 +193,7 @@ export async function updateTenantCore(tenantId: string, formData: FormData) {
     if (newDomain) await addVercelDomain(newDomain);
   }
 
-  redirectBack(tenantId, error?.message);
+  redirectBack(tenantId, error ? traduzirErro(error.message) : undefined);
 }
 
 export async function updateTenantSettings(
@@ -549,7 +550,7 @@ export async function createDocument(tenantId: string, formData: FormData) {
     const { error: upErr } = await db.storage
       .from(BUCKETS.documents)
       .upload(path, file, { contentType: file.type, upsert: false });
-    if (upErr) throw new Error(upErr.message);
+    if (upErr) throw new Error(traduzirErro(upErr.message));
     fileUrl = path;
   } else {
     return; // sem arquivo = noop
@@ -716,7 +717,7 @@ export async function activateTenantBilling(tenantId: string, formData: FormData
       })
       .eq("id", tenantId);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erro ao criar assinatura.";
+    const msg = traduzirErroDesconhecido(err, "Erro ao criar assinatura.");
     redirect(`/superadmin/tenants/${tenantId}?error=${encodeURIComponent(msg)}`);
   }
 

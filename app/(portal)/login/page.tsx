@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getCurrentTenant } from "@/lib/tenant";
 import { signIn } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 export default async function LoginPage({
   searchParams,
@@ -31,7 +32,7 @@ export default async function LoginPage({
             required
             placeholder="Senha"
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <FormError error={error} />
           <Button type="submit" className="w-full">
             Entrar
           </Button>

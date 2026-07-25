@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getPlatformAdmin } from "@/lib/superadmin";
 import { superSignIn } from "../actions";
+import { FormError } from "@/components/ui/form-alert";
 
 // Login do Super Admin (apex: lvh.me:3000/superadmin/login).
 // Fora do route group (panel) → não passa pelo guard.
@@ -36,7 +37,7 @@ export default async function SuperLoginPage({
               required
               placeholder="Senha"
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            <FormError error={error} />
             <Button type="submit" className="w-full">
               Entrar
             </Button>
