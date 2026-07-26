@@ -18,6 +18,21 @@ interface SofiaChatProps {
   welcome: string;
 }
 
+// "Ainda tem mais vindo": antes da 1ª palavra e entre um pedaço e outro da
+// resposta (a IA pausa enquanto consulta a agenda, gera documento etc).
+function Reticencias({ className }: { className?: string }) {
+  return (
+    <span
+      aria-label="escrevendo"
+      className={cn("inline-flex gap-1 leading-none opacity-60", className)}
+    >
+      <span className="animate-bounce">•</span>
+      <span className="animate-bounce [animation-delay:0.15s]">•</span>
+      <span className="animate-bounce [animation-delay:0.3s]">•</span>
+    </span>
+  );
+}
+
 export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
@@ -37,6 +52,9 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
     if (!content || loading) return;
 
     setDraft("");
+    // O campo nunca perde o foco: dá pra mandar uma mensagem atrás da outra
+    // sem clicar de novo (o envio em si é bloqueado enquanto `loading`).
+    inputRef.current?.focus();
     const history = messages.filter((m) => !m.streaming);
     const next: Message[] = [...history, { role: "user", content }];
     setMessages([...next, { role: "assistant", content: "", streaming: true }]);
@@ -113,6 +131,7 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
       });
     } finally {
       setLoading(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -190,16 +209,17 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
                 >
                   {m.content ? (
                     m.role === "assistant" ? (
-                      <ChatMarkdown text={m.content} />
+                      <>
+                        <ChatMarkdown text={m.content} />
+                        {/* Ainda escrevendo: sem isso a resposta parece ter
+                            acabado no meio de uma frase. */}
+                        {m.streaming && <Reticencias className="mt-1" />}
+                      </>
                     ) : (
                       m.content
                     )
                   ) : (
-                    <span className="inline-flex gap-1 opacity-60">
-                      <span className="animate-bounce">•</span>
-                      <span className="animate-bounce [animation-delay:0.15s]">•</span>
-                      <span className="animate-bounce [animation-delay:0.3s]">•</span>
-                    </span>
+                    <Reticencias />
                   )}
                 </div>
               </div>
@@ -221,8 +241,7 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Digite sua mensagem..."
-          disabled={loading}
-          className="flex-1 rounded-xl border border-black/10 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--primary)] disabled:opacity-50"
+          className="flex-1 rounded-xl border border-black/10 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
         />
         <button
           type="submit"
