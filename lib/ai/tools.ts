@@ -4,10 +4,22 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BUCKETS, documentPath } from "@/lib/storage";
 import { textToPdf } from "@/lib/pdf";
+import {
+  createAppointmentValidado,
+  proximasVagas,
+  type OpcaoDeHorario,
+} from "@/lib/appointments";
+import {
+  DEFAULT_TIMEZONE,
+  formatarDataLonga,
+  hojeNoFuso,
+} from "@/lib/scheduling";
 
 interface ToolContext {
   tenantId: string;
   userId: string;
+  /** Fuso do negócio (tenant_settings.timezone) — base das datas oferecidas. */
+  timeZone?: string;
 }
 
 // Ferramentas do assistente — uma por consulta de dados do membro. `getAiTools`
@@ -15,7 +27,17 @@ interface ToolContext {
 // arbitrário pro execute, só o input validado pelo schema).
 export function getAiTools(ctx: ToolContext) {
   const db = createAdminClient();
-  const { tenantId, userId } = ctx;
+  const { tenantId, userId, timeZone = DEFAULT_TIMEZONE } = ctx;
+
+  const formatarOpcao = (o: OpcaoDeHorario) => ({
+    data: formatarDataLonga(o.dateISO),
+    date: o.dateISO,
+    hora: o.time,
+    profissional: o.providerName,
+    provider_id: o.providerId,
+    procedure_id: o.procedureId,
+    duracao_min: o.duracao,
+  });
 
   return {
     get_member_info: tool({
@@ -76,36 +98,135 @@ export function getAiTools(ctx: ToolContext) {
       },
     }),
 
+    list_scheduling_catalog: tool({
+      description:
+        "Lista os procedimentos oferecidos (com duração) e os profissionais, dizendo quais procedimentos cada um atende. Use ANTES de falar de agendamento pra saber o que existe nesta clínica — nunca invente procedimento nem profissional.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const [{ data: procedimentos }, { data: profissionais }, { data: vinculos }] =
+          await Promise.all([
+            db
+              .from("procedures")
+              .select("id, name, duration_min, description")
+              .eq("tenant_id", tenantId)
+              .eq("is_active", true)
+              .order("display_order", { ascending: true }),
+            db
+              .from("providers")
+              .select("id, name, specialty")
+              .eq("tenant_id", tenantId)
+              .eq("is_active", true)
+              .order("display_order", { ascending: true }),
+            db
+              .from("provider_procedures")
+              .select("provider_id, procedure_id")
+              .eq("tenant_id", tenantId)
+              .returns<{ provider_id: string; procedure_id: string }[]>(),
+          ]);
+
+        if (!profissionais?.length) {
+          return "Esta clínica ainda não tem profissional cadastrado na agenda — não dá pra marcar por aqui. Oriente o cliente a falar com a equipe.";
+        }
+
+        return JSON.stringify({
+          procedimentos: (procedimentos ?? []).map((p) => ({
+            procedure_id: p.id,
+            nome: p.name,
+            duracao_min: p.duration_min,
+            descricao: p.description,
+          })),
+          profissionais: profissionais.map((p) => {
+            const meus = (vinculos ?? []).filter((v) => v.provider_id === p.id);
+            return {
+              provider_id: p.id,
+              nome: p.name,
+              especialidade: p.specialty,
+              atende:
+                meus.length === 0
+                  ? "todos os procedimentos"
+                  : meus.map((v) => v.procedure_id),
+            };
+          }),
+        });
+      },
+    }),
+
+    list_available_slots: tool({
+      description:
+        "Horários REAIS livres na agenda, já considerando o horário de trabalho do profissional, folgas e o que já está marcado. Use SEMPRE que o cliente quiser marcar: ofereça as opções retornadas pra ele escolher, em vez de perguntar que data ele prefere. Devolve no máximo 6 opções; se vier vazio, não há vaga no período — aumente days ou oriente a falar com a equipe.",
+      inputSchema: z.object({
+        procedure_id: z
+          .string()
+          .optional()
+          .describe(
+            "Id do procedimento (de list_scheduling_catalog). Define a duração do horário. Omita só se a clínica não tiver procedimentos cadastrados.",
+          ),
+        provider_id: z
+          .string()
+          .optional()
+          .describe("Id do profissional, se o cliente já escolheu um."),
+        from_date: z
+          .string()
+          .optional()
+          .describe("Data inicial da busca, YYYY-MM-DD. Padrão: hoje."),
+        days: z
+          .number()
+          .int()
+          .min(1)
+          .max(60)
+          .optional()
+          .describe("Quantos dias varrer a partir de from_date. Padrão: 14."),
+      }),
+      execute: async ({ procedure_id, provider_id, from_date, days }) => {
+        const hoje = hojeNoFuso(timeZone);
+        const opcoes = await proximasVagas(tenantId, {
+          procedureId: procedure_id ?? null,
+          providerId: provider_id ?? null,
+          deISO: from_date && from_date >= hoje ? from_date : hoje,
+          dias: days ?? 14,
+          timeZone,
+        });
+
+        if (opcoes.length === 0) {
+          return "Nenhum horário livre nesse período. Tente um período maior ou oriente o cliente a falar com a equipe.";
+        }
+        return JSON.stringify(opcoes.map(formatarOpcao));
+      },
+    }),
+
     request_appointment: tool({
       description:
-        "Solicita um novo agendamento/consulta pro membro. Use quando o cliente pedir pra marcar, agendar ou remarcar uma visita — pergunte antes o motivo/tipo de consulta e a data e horário preferidos, se ele não tiver informado.",
+        "Marca o agendamento DEPOIS que o cliente escolheu uma das opções devolvidas por list_available_slots. Passe exatamente o provider_id, procedure_id, date e hora daquela opção — o horário é validado de novo, e se tiver sido ocupado nesse meio tempo a ferramenta avisa e você deve oferecer outro.",
       inputSchema: z.object({
+        provider_id: z.string().describe("Id do profissional da opção escolhida."),
+        date: z.string().describe("Data da opção escolhida, YYYY-MM-DD."),
+        time: z.string().describe("Horário da opção escolhida, HH:MM em 24h."),
+        procedure_id: z
+          .string()
+          .optional()
+          .describe("Id do procedimento da opção escolhida."),
         title: z
           .string()
-          .describe("Motivo ou tipo da consulta, ex: 'Avaliação — dor de dente'."),
-        scheduled_at: z
-          .string()
-          .describe(
-            "Data e horário desejados em ISO 8601 (ex: 2026-07-15T14:00:00). Assuma o fuso local do Brasil.",
-          ),
-        notes: z.string().optional().describe("Observações adicionais do cliente."),
+          .optional()
+          .describe("Motivo, ex: 'Avaliação — dor de dente'. Padrão: nome do procedimento."),
+        notes: z.string().optional().describe("Observações do cliente."),
       }),
-      execute: async ({ title, scheduled_at, notes }) => {
-        const date = new Date(scheduled_at);
-        if (Number.isNaN(date.getTime())) {
-          return "Não entendi a data informada. Peça pro cliente confirmar dia e horário.";
-        }
-        const { error } = await db.from("appointments").insert({
-          tenant_id: tenantId,
-          user_id: userId,
-          title,
-          scheduled_at: date.toISOString(),
-          notes: notes ?? null,
-          status: "scheduled",
-          created_by: userId,
+      execute: async ({ provider_id, date, time, procedure_id, title, notes }) => {
+        const formData = new FormData();
+        formData.set("provider_id", provider_id);
+        formData.set("date", date);
+        formData.set("time", time);
+        if (procedure_id) formData.set("procedure_id", procedure_id);
+        if (title) formData.set("title", title);
+        if (notes) formData.set("notes", notes);
+
+        const { error } = await createAppointmentValidado(tenantId, formData, {
+          timeZone,
+          createdBy: userId,
+          forcarUserId: userId,
         });
-        if (error) return "Não consegui criar o agendamento agora. Peça pro cliente tentar de novo ou falar com a equipe.";
-        return `Agendamento criado: "${title}" em ${date.toLocaleString("pt-BR")}.`;
+        if (error) return `Não deu pra marcar: ${error}`;
+        return `Agendamento confirmado para ${formatarDataLonga(date)} às ${time}.`;
       },
     }),
 

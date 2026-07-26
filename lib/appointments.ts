@@ -184,6 +184,124 @@ export async function diasComVaga(
   return resultados.filter((r) => r.livres.length > 0).map((r) => r.dateISO);
 }
 
+export interface OpcaoDeHorario {
+  dateISO: string;
+  time: string;
+  providerId: string;
+  providerName: string;
+  procedureId: string | null;
+  procedureName: string | null;
+  duracao: number;
+}
+
+/**
+ * Próximas vagas reais para um procedimento, varrendo dia a dia a partir de
+ * `deISO` — é o que o assistente oferece ao cliente em vez de perguntar
+ * "que dia você prefere?" (ver lib/ai/tools.ts).
+ *
+ * Considera só profissionais ativos que atendem o procedimento (sem vínculo
+ * em provider_procedures = atende todos) e para assim que junta `limite`
+ * opções, no máximo `porDia` de cada dia para não devolver só um período.
+ */
+export async function proximasVagas(
+  tenantId: string,
+  {
+    procedureId,
+    providerId,
+    deISO,
+    dias = 14,
+    limite = 6,
+    porDia = 2,
+    timeZone = DEFAULT_TIMEZONE,
+    agora = new Date(),
+  }: {
+    procedureId?: string | null;
+    providerId?: string | null;
+    deISO: string;
+    dias?: number;
+    limite?: number;
+    porDia?: number;
+    timeZone?: string;
+    agora?: Date;
+  },
+): Promise<OpcaoDeHorario[]> {
+  const db = createAdminClient();
+
+  const procedimento = await resolveProcedimento(tenantId, procedureId ?? null);
+  const duracao = procedimento?.duration_min ?? 30;
+
+  let queryProviders = db
+    .from("providers")
+    .select("id, name")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .order("display_order", { ascending: true });
+  if (providerId) queryProviders = queryProviders.eq("id", providerId);
+
+  const [{ data: providers }, { data: vinculos }] = await Promise.all([
+    queryProviders.returns<Pick<Provider, "id" | "name">[]>(),
+    db
+      .from("provider_procedures")
+      .select("provider_id, procedure_id")
+      .eq("tenant_id", tenantId)
+      .returns<{ provider_id: string; procedure_id: string }[]>(),
+  ]);
+
+  const elegiveis = (providers ?? []).filter((p) => {
+    if (!procedimento) return true;
+    const meus = (vinculos ?? []).filter((v) => v.provider_id === p.id);
+    return meus.length === 0 || meus.some((v) => v.procedure_id === procedimento.id);
+  });
+  if (elegiveis.length === 0) return [];
+
+  const opcoes: OpcaoDeHorario[] = [];
+
+  for (let i = 0; i < dias && opcoes.length < limite; i++) {
+    const dateISO = somarDias(deISO, i);
+
+    const porProvider = await Promise.all(
+      elegiveis.map(async (p) => ({
+        provider: p,
+        livres: await horariosDisponiveis({
+          tenantId,
+          dateISO,
+          providerId: p.id,
+          duracao,
+          timeZone,
+          agora,
+        }),
+      })),
+    );
+
+    for (const { provider, livres } of porProvider) {
+      // Espalha as opções do dia (primeiro horário, meio da agenda…) em vez de
+      // oferecer 11:00 e 11:15, que na prática é uma opção só.
+      const espacados =
+        livres.length <= porDia
+          ? livres
+          : Array.from(
+              { length: porDia },
+              (_, k) => livres[Math.round((k * (livres.length - 1)) / (porDia - 1 || 1))],
+            );
+
+      for (const time of espacados) {
+        if (opcoes.length >= limite) break;
+        opcoes.push({
+          dateISO,
+          time,
+          providerId: provider.id,
+          providerName: provider.name,
+          procedureId: procedimento?.id ?? null,
+          procedureName: procedimento?.name ?? null,
+          duracao,
+        });
+      }
+    }
+  }
+
+  return opcoes;
+}
+
 // ---------- Criação / alteração ----------
 
 interface DadosAgendamento {

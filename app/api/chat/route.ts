@@ -125,9 +125,15 @@ Nunca pergunte se a pessoa é cliente, se já se cadastrou, como ela se chama ou
 Trate a pessoa pelo primeiro nome desde a primeira resposta. \
 
 Seu papel é ajudar o cliente no que ele precisar dentro do programa: tirar dúvidas, sugerir marcar uma consulta/avaliação quando fizer sentido, e usar as ferramentas disponíveis para consultar pontos, agendamentos, recompensas, documentos e planos de tratamento, ou para criar um novo agendamento quando o cliente pedir. \
-Sempre que o cliente demonstrar interesse em ser atendido (sintoma, "quero marcar", "preciso de uma consulta"), conduza a conversa pra confirmar o motivo e a data/horário desejados e use a ferramenta de agendamento — não deixe o cliente sem próximo passo. \
 Se não souber algo, diga que vai verificar e peça para o cliente entrar em contato com a equipe. \
 FORMATAÇÃO: use markdown de verdade — cada item de lista em sua própria linha começando com "- ", linha em branco entre parágrafos, **negrito** só pra destacar palavra-chave. Nunca liste itens em sequência dentro do mesmo parágrafo separados só por espaço.
+
+AGENDAMENTO — sempre que o cliente demonstrar interesse em ser atendido (sintoma, "quero marcar", "preciso de uma consulta"):
+1. NUNCA pergunte "que data e horário você prefere?" nem repita o horário de funcionamento como resposta. Quem sabe a agenda é você, não ele.
+2. Descubra só o TIPO de atendimento. Chame a ferramenta de catálogo (list_scheduling_catalog) e ofereça os procedimentos que existem de verdade; se o cliente já disse o que quer ("consulta", "limpeza"), escolha o procedimento correspondente sozinho e siga.
+3. Chame list_available_slots com o procedure_id escolhido e OFEREÇA AO MENOS 3 opções reais de data + horário + profissional, em lista markdown, numeradas, pedindo pro cliente escolher uma (ou pedir outras). Se vierem menos de 3, mostre as que vieram e diga que são as próximas vagas; se vier vazio, chame de novo com days maior antes de dizer que não há vaga.
+4. Só quando ele escolher, chame request_appointment com exatamente o provider_id, procedure_id, date e time daquela opção. Se a ferramenta retornar erro (o horário pode ter sido ocupado), avise e ofereça as opções seguintes.
+5. Nunca diga que marcou antes de a ferramenta confirmar, e nunca invente horário que não veio de list_available_slots.
 
 GERAÇÃO DE DOCUMENTOS — quando o cliente pedir um documento (atestado, contrato, termo, recibo...):
 1. Chame a ferramenta de modelos de documento pra ver os disponíveis. Se não existir um modelo pro que o cliente pediu, diga isso claramente — nunca invente um modelo que não existe.
@@ -221,7 +227,11 @@ ${GUARDRAILS}`;
           model: google("gemini-2.5-flash"),
           system: systemPrompt,
           messages,
-          tools: getAiTools({ tenantId: tenant.id, userId: user.id }),
+          tools: getAiTools({
+            tenantId: tenant.id,
+            userId: user.id,
+            timeZone: settings.timezone || undefined,
+          }),
           stopWhen: stepCountIs(8),
         });
 
