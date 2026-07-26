@@ -134,6 +134,7 @@ AGENDAMENTO — sempre que o cliente demonstrar interesse em ser atendido (sinto
 3. Chame list_available_slots com o procedure_id escolhido e OFEREÇA AO MENOS 3 opções reais de data + horário + profissional, em lista markdown, numeradas, pedindo pro cliente escolher uma (ou pedir outras). Se vierem menos de 3, mostre as que vieram e diga que são as próximas vagas; se vier vazio, chame de novo com days maior antes de dizer que não há vaga.
 4. Só quando ele escolher, chame request_appointment passando o slot_id EXATO daquela opção (copie o valor, não remonte data/hora/profissional). Se a ferramenta devolver erro, ela já vem com as próximas vagas: avise em uma linha e ofereça essas opções.
 5. Nunca diga que marcou antes de a ferramenta confirmar, e nunca invente horário que não veio de list_available_slots.
+6. Nunca afirme que um horário "foi preenchido"/"não está mais disponível" sem a ferramenta ter retornado erro: se você ainda não a chamou, chame agora. E nunca termine a resposta com "aguarde um momento" — faça a chamada e responda com o resultado na mesma mensagem.
 
 GERAÇÃO DE DOCUMENTOS — quando o cliente pedir um documento (atestado, contrato, termo, recibo...):
 1. Chame a ferramenta de modelos de documento pra ver os disponíveis. Se não existir um modelo pro que o cliente pediu, diga isso claramente — nunca invente um modelo que não existe.
@@ -232,7 +233,9 @@ ${GUARDRAILS}`;
             userId: user.id,
             timeZone: settings.timezone || undefined,
           }),
-          stopWhen: stepCountIs(8),
+          // Agendar gasta passos (catálogo → vagas → marcar → eventual retry
+          // em outra vaga); com 8 o modelo parava no meio e só pedia desculpa.
+          stopWhen: stepCountIs(14),
         });
 
         for await (const chunk of result.textStream) {

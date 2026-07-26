@@ -32,30 +32,48 @@ interface SlotDecodificado {
   t: string;
 }
 
+// Formato binário (44 chars) em vez de JSON em base64 (155): quanto mais
+// curto o token, menor a chance de o modelo truncar ou "corrigir" o valor.
+// 16 bytes do provider + 16 do procedimento (zeros = nenhum) + "AAAAMMDDHHMM".
+const UUID_ZERO = "0".repeat(32);
+
+function uuidParaBytes(uuid: string): Buffer {
+  return Buffer.from(uuid.replace(/-/g, ""), "hex");
+}
+
+function bytesParaUuid(buf: Buffer): string {
+  const hex = buf.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function encodeSlot(o: OpcaoDeHorario): string {
-  const payload: SlotDecodificado = {
-    p: o.providerId,
-    c: o.procedureId,
-    d: o.dateISO,
-    t: o.time,
-  };
-  return Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return Buffer.concat([
+    uuidParaBytes(o.providerId),
+    uuidParaBytes(o.procedureId ?? UUID_ZERO),
+    Buffer.from(o.dateISO.replace(/-/g, "") + o.time.replace(":", ""), "utf8"),
+  ]).toString("base64url");
 }
 
 function decodeSlot(slotId: string): SlotDecodificado | null {
   try {
-    const raw = JSON.parse(Buffer.from(slotId, "base64url").toString("utf8"));
-    if (
-      typeof raw?.p === "string" &&
-      typeof raw?.d === "string" &&
-      typeof raw?.t === "string"
-    ) {
-      return { p: raw.p, c: typeof raw.c === "string" ? raw.c : null, d: raw.d, t: raw.t };
-    }
+    const buf = Buffer.from(slotId, "base64url");
+    if (buf.length !== 44) return null;
+
+    const procedimento = buf.subarray(16, 32);
+    const carimbo = buf.subarray(32).toString("utf8");
+    const m = carimbo.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+    if (!m) return null;
+
+    return {
+      p: bytesParaUuid(buf.subarray(0, 16)),
+      c: procedimento.every((b) => b === 0) ? null : bytesParaUuid(procedimento),
+      d: `${m[1]}-${m[2]}-${m[3]}`,
+      t: `${m[4]}:${m[5]}`,
+    };
   } catch {
-    // token inventado pelo modelo — cai no caminho dos campos soltos
+    // token inventado ou cortado pelo modelo — cai nos campos soltos
+    return null;
   }
-  return null;
 }
 
 // Ferramentas do assistente — uma por consulta de dados do membro. `getAiTools`
@@ -237,17 +255,41 @@ export function getAiTools(ctx: ToolContext) {
       inputSchema: z.object({
         slot_id: z
           .string()
+          .optional()
           .describe("Campo slot_id da opção escolhida em list_available_slots, copiado igual."),
+        provider_id: z
+          .string()
+          .optional()
+          .describe("Alternativa ao slot_id: id do profissional da opção escolhida."),
+        date: z.string().optional().describe("Alternativa ao slot_id: data YYYY-MM-DD."),
+        time: z.string().optional().describe("Alternativa ao slot_id: hora HH:MM em 24h."),
+        procedure_id: z
+          .string()
+          .optional()
+          .describe("Alternativa ao slot_id: id do procedimento."),
         title: z
           .string()
           .optional()
           .describe("Motivo, ex: 'Avaliação — dor de dente'. Padrão: nome do procedimento."),
         notes: z.string().optional().describe("Observações do cliente."),
       }),
-      execute: async ({ slot_id, title, notes }) => {
-        const slot = decodeSlot(slot_id);
+      execute: async (args) => {
+        const { slot_id, title, notes } = args;
+        // O slot_id é o caminho preferido, mas modelo trunca token longo —
+        // os campos soltos ficam como plano B em vez de virar erro seco.
+        const slot =
+          (slot_id ? decodeSlot(slot_id) : null) ??
+          (args.provider_id && args.date && args.time
+            ? {
+                p: args.provider_id,
+                c: args.procedure_id ?? null,
+                d: args.date,
+                t: args.time,
+              }
+            : null);
+
         if (!slot) {
-          return "slot_id inválido. Chame list_available_slots de novo e use o slot_id exato da opção que o cliente escolheu.";
+          return "Faltou identificar a vaga. Chame list_available_slots e passe o slot_id da opção escolhida (ou provider_id + date + time dela).";
         }
 
         const formData = new FormData();
