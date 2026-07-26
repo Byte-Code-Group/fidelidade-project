@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { traduzirErro } from "@/lib/error-messages";
 import { minutosDoHorario } from "@/lib/scheduling";
+import { setProviderProcedures } from "@/lib/procedures";
 import type { Provider, ProviderSchedule, ScheduleException } from "@/lib/types";
 
 // Profissionais que atendem (doutor, dentista, cabeleireiro… conforme o
@@ -21,6 +22,16 @@ function camposDoProfissional(formData: FormData) {
   };
 }
 
+// Os procedimentos que o profissional atende vêm do mesmo form (checkboxes
+// `procedure_ids`). Ausência do campo = nada marcado = atende todos, que é o
+// contrato de provider_procedures (ver setProviderProcedures).
+function procedimentosDoForm(formData: FormData): string[] {
+  return formData
+    .getAll("procedure_ids")
+    .map(String)
+    .filter((id) => id !== "");
+}
+
 export async function insertProvider(
   tenantId: string,
   formData: FormData,
@@ -34,10 +45,14 @@ export async function insertProvider(
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId);
 
-  const { error } = await db
+  const { data, error } = await db
     .from("providers")
-    .insert({ tenant_id: tenantId, ...campos, display_order: count ?? 0 });
-  return { error: error ? traduzirErro(error.message) : undefined };
+    .insert({ tenant_id: tenantId, ...campos, display_order: count ?? 0 })
+    .select("id")
+    .single<{ id: string }>();
+  if (error) return { error: traduzirErro(error.message) };
+
+  return setProviderProcedures(tenantId, data.id, procedimentosDoForm(formData));
 }
 
 export async function applyProviderUpdate(
@@ -54,7 +69,9 @@ export async function applyProviderUpdate(
     .update(campos)
     .eq("id", providerId)
     .eq("tenant_id", tenantId);
-  return { error: error ? traduzirErro(error.message) : undefined };
+  if (error) return { error: traduzirErro(error.message) };
+
+  return setProviderProcedures(tenantId, providerId, procedimentosDoForm(formData));
 }
 
 export async function removeProvider(

@@ -21,7 +21,6 @@ import {
   ownerCopyProviderScheduleDay,
   ownerCreateScheduleException,
   ownerDeleteScheduleException,
-  ownerSetProviderProcedures,
   ownerCreateProcedure,
   ownerUpdateProcedure,
   ownerDeleteProcedure,
@@ -74,7 +73,6 @@ export default async function ConfiguracoesAgendaPage() {
           copyDayAction={ownerCopyProviderScheduleDay}
           createExceptionAction={ownerCreateScheduleException}
           deleteExceptionAction={ownerDeleteScheduleException}
-          setProceduresAction={ownerSetProviderProcedures}
         />
       </Section>
 

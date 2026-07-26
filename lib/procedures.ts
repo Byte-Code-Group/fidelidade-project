@@ -129,6 +129,21 @@ export async function setProviderProcedures(
 ): Promise<{ error?: string }> {
   const db = createAdminClient();
 
+  // Os ids chegam do form do painel — descarta o que não for uuid (senão o
+  // Postgres erra no cast) e depois o que não for deste tenant.
+  const uuids = procedureIds.filter((id) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id),
+  );
+  const { data: doTenant } = uuids.length
+    ? await db
+        .from("procedures")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .in("id", uuids)
+        .returns<{ id: string }[]>()
+    : { data: [] as { id: string }[] };
+  const validos = (doTenant ?? []).map((p) => p.id);
+
   const { error: delErr } = await db
     .from("provider_procedures")
     .delete()
@@ -136,10 +151,10 @@ export async function setProviderProcedures(
     .eq("provider_id", providerId);
   if (delErr) return { error: traduzirErro(delErr.message) };
 
-  if (procedureIds.length === 0) return {};
+  if (validos.length === 0) return {};
 
   const { error } = await db.from("provider_procedures").insert(
-    procedureIds.map((procedure_id) => ({
+    validos.map((procedure_id) => ({
       tenant_id: tenantId,
       provider_id: providerId,
       procedure_id,

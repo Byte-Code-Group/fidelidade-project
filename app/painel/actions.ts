@@ -53,7 +53,6 @@ import {
   applyProcedureUpdate,
   removeProcedure,
   reorderProcedures,
-  setProviderProcedures,
   listProcedures,
 } from "@/lib/procedures";
 import {
@@ -587,16 +586,6 @@ export async function ownerDeleteProcedure(procedureId: string): Promise<{ error
 export async function ownerReorderProcedures(orderedIds: string[]): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
   const { error } = await reorderProcedures(tenantId, orderedIds);
-  revalidateAgenda();
-  return { error };
-}
-
-export async function ownerSetProviderProcedures(
-  providerId: string,
-  procedureIds: string[],
-): Promise<{ error?: string }> {
-  const { tenantId } = await requireTenantOwner();
-  const { error } = await setProviderProcedures(tenantId, providerId, procedureIds);
   revalidateAgenda();
   return { error };
 }

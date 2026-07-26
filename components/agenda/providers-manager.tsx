@@ -48,7 +48,6 @@ interface ProvidersManagerProps {
   copyDayAction: (providerId: string, origem: number, destinos: number[]) => Resultado;
   createExceptionAction: (formData: FormData) => Resultado;
   deleteExceptionAction: (exceptionId: string) => Resultado;
-  setProceduresAction: (providerId: string, procedureIds: string[]) => Resultado;
 }
 
 // Profissionais + horário de trabalho semanal + folgas + procedimentos que
@@ -72,6 +71,8 @@ export function ProvidersManager(props: ProvidersManagerProps) {
 
       {novo ? (
         <ProviderForm
+          procedures={props.procedures}
+          procedimentosSelecionados={[]}
           onCancelar={() => setNovo(false)}
           onSalvar={async (formData) => {
             const { error } = await props.createAction(formData);
@@ -106,7 +107,6 @@ function ProviderCard({
   copyDayAction,
   createExceptionAction,
   deleteExceptionAction,
-  setProceduresAction,
 }: { provider: Provider } & ProvidersManagerProps) {
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState(false);
@@ -121,6 +121,17 @@ function ProviderCard({
     .map((v) => v.procedure_id);
 
   const totalBlocos = meusHorarios.length;
+
+  // Sem vínculo = atende todos (contrato de provider_procedures).
+  const nomesProcedimentos = procedures
+    .filter((p) => meusProcedimentos.includes(p.id))
+    .map((p) => p.name);
+  const resumoProcedimentos =
+    nomesProcedimentos.length === 0
+      ? "todos os procedimentos"
+      : nomesProcedimentos.length <= 3
+        ? nomesProcedimentos.join(", ")
+        : `${nomesProcedimentos.slice(0, 3).join(", ")} +${nomesProcedimentos.length - 3}`;
 
   return (
     <div className="rounded-xl border border-black/10 dark:border-white/10">
@@ -148,6 +159,8 @@ function ProviderCard({
             {totalBlocos === 0
               ? "sem horário de trabalho"
               : `${totalBlocos} bloco(s) de horário`}
+            {" · "}
+            {resumoProcedimentos}
           </p>
         </button>
 
@@ -188,6 +201,8 @@ function ProviderCard({
         <div className="border-t border-black/5 p-3 dark:border-white/10">
           <ProviderForm
             provider={provider}
+            procedures={procedures}
+            procedimentosSelecionados={meusProcedimentos}
             onCancelar={() => setEditando(false)}
             onSalvar={async (formData) => {
               const { error } = await updateAction(provider.id, formData);
@@ -219,15 +234,6 @@ function ProviderCard({
             createAction={createExceptionAction}
             deleteAction={deleteExceptionAction}
           />
-
-          {procedures.length > 0 && (
-            <ProceduresPicker
-              provider={provider}
-              procedures={procedures}
-              selecionados={meusProcedimentos}
-              setProceduresAction={setProceduresAction}
-            />
-          )}
         </div>
       )}
     </div>
@@ -236,20 +242,29 @@ function ProviderCard({
 
 function ProviderForm({
   provider,
+  procedures,
+  procedimentosSelecionados,
   onSalvar,
   onCancelar,
 }: {
   provider?: Provider;
+  procedures: Procedure[];
+  procedimentosSelecionados: string[];
   onSalvar: (formData: FormData) => Promise<boolean>;
   onCancelar: () => void;
 }) {
   const [cor, setCor] = useState(provider?.color ?? CORES[0]);
+  const [marcados, setMarcados] = useState<string[]>(procedimentosSelecionados);
   const [salvando, iniciar] = useTransition();
 
   return (
     <form
       action={(formData) => {
         formData.set("color", cor);
+        // Um valor por procedimento marcado — o servidor lê com getAll
+        // (ver procedimentosDoForm em lib/providers.ts).
+        formData.delete("procedure_ids");
+        for (const id of marcados) formData.append("procedure_ids", id);
         iniciar(async () => {
           await onSalvar(formData);
         });
@@ -289,6 +304,54 @@ function ProviderForm({
             />
           ))}
         </div>
+      </div>
+
+      <div>
+        <p className="mb-1 text-sm font-medium">Procedimentos que atende</p>
+        {procedures.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-black/10 px-3 py-2 text-xs opacity-60 dark:border-white/15">
+            Nenhum procedimento cadastrado ainda. Cadastre em “Procedimentos”,
+            logo abaixo, e depois edite este profissional para marcar quais ele
+            atende.
+          </p>
+        ) : (
+          <>
+            <p className="mb-1.5 text-xs opacity-55">
+              Só os marcados são oferecidos ao cliente quando ele escolhe este
+              profissional. Nenhum marcado = atende todos.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {procedures.map((p) => {
+                const ativo = marcados.includes(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={ativo}
+                    onClick={() =>
+                      setMarcados((atual) =>
+                        atual.includes(p.id)
+                          ? atual.filter((x) => x !== p.id)
+                          : [...atual, p.id],
+                      )
+                    }
+                    className={cn(
+                      "rounded-lg border px-2.5 py-1 text-xs transition",
+                      ativo
+                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                        : "border-black/10 opacity-70 hover:opacity-100 dark:border-white/15",
+                      !p.is_active && "line-through",
+                    )}
+                  >
+                    {ativo ? "✓ " : "+ "}
+                    {p.name}
+                    <span className="ml-1 opacity-60">{p.duration_min}min</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       <label className="flex items-center gap-2 text-sm">
@@ -539,72 +602,6 @@ function ExceptionsBlock({
           Adicionar
         </Button>
       </form>
-    </div>
-  );
-}
-
-function ProceduresPicker({
-  provider,
-  procedures,
-  selecionados,
-  setProceduresAction,
-}: {
-  provider: Provider;
-  procedures: Procedure[];
-  selecionados: string[];
-  setProceduresAction: (providerId: string, procedureIds: string[]) => Resultado;
-}) {
-  const [marcados, setMarcados] = useState<string[]>(selecionados);
-  const [pendente, iniciar] = useTransition();
-
-  function alternar(id: string) {
-    setMarcados((atual) =>
-      atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id],
-    );
-  }
-
-  return (
-    <div>
-      <p className="mb-1 text-sm font-semibold">Procedimentos que atende</p>
-      <p className="mb-2 text-xs opacity-55">
-        Nenhum marcado = atende todos os procedimentos.
-      </p>
-
-      <div className="flex flex-wrap gap-1.5">
-        {procedures.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => alternar(p.id)}
-            aria-pressed={marcados.includes(p.id)}
-            className={cn(
-              "rounded-lg border px-2.5 py-1 text-xs transition",
-              marcados.includes(p.id)
-                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                : "border-black/10 opacity-70 hover:opacity-100 dark:border-white/15",
-            )}
-          >
-            {p.name}
-          </button>
-        ))}
-      </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="mt-2 px-2.5 py-1.5 text-xs"
-        disabled={pendente}
-        onClick={() =>
-          iniciar(async () => {
-            const { error } = await setProceduresAction(provider.id, marcados);
-            if (error) toast.error(error);
-            else toast.success("Procedimentos atualizados.");
-          })
-        }
-      >
-        {pendente && <Spinner className="mr-1.5 h-3.5 w-3.5" />}
-        Salvar procedimentos
-      </Button>
     </div>
   );
 }
