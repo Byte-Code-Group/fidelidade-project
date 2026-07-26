@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
@@ -249,8 +250,11 @@ export async function subscribeToPlan(planId: string) {
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
+  // O retorno depois do pagamento é pro portal DESTE negócio (domínio próprio
+  // ou subdomínio), não pro endereço da plataforma.
+  const host = (await headers()).get("host");
   const resultado = await assinarPlanoComCobranca(ctx.tenant.id, user.id, planId, {
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    siteUrl: host ? `https://${host}` : process.env.NEXT_PUBLIC_SITE_URL,
   });
 
   if (resultado.tipo === "erro") {

@@ -22,12 +22,25 @@ export default async function OwnerConexoesPage() {
       .returns<Mission[]>(),
     db
       .from("tenants")
-      .select("asaas_customer_id, asaas_subscription_id")
+      .select("asaas_customer_id, asaas_subscription_id, slug, custom_domain")
       .eq("id", tenantId)
-      .maybeSingle<{ asaas_customer_id: string | null; asaas_subscription_id: string | null }>(),
+      .maybeSingle<{
+        asaas_customer_id: string | null;
+        asaas_subscription_id: string | null;
+        slug: string;
+        custom_domain: string | null;
+      }>(),
   ]);
 
   const contaDeRecebimento = await getContaDePagamento(tenantId);
+
+  // O site que o Asaas pede é o portal DESTE negócio (domínio próprio, se
+  // houver), não o endereço da plataforma.
+  const portalUrl = tenant?.custom_domain
+    ? `https://${tenant.custom_domain}`
+    : tenant
+      ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000"}/p/${tenant.slug}`
+      : undefined;
 
   let subscription: { status: string; nextDueDate: string; value: number } | null = null;
   if (tenant?.asaas_subscription_id && process.env.ASAAS_API_KEY) {
@@ -105,7 +118,7 @@ export default async function OwnerConexoesPage() {
       {/* Recebimento dos clientes do negócio */}
       <AsaasAccountCard
         conta={contaDeRecebimento}
-        portalUrl={process.env.NEXT_PUBLIC_SITE_URL}
+        portalUrl={portalUrl}
         conectarAction={ownerConnectAsaas}
         desconectarAction={ownerDisconnectAsaas}
       />

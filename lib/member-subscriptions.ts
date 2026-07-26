@@ -127,6 +127,9 @@ export async function assinarPlanoComCobranca(
 
     const dadosDaAssinatura = {
       customer: customerId,
+      // Só cartão de crédito: assinatura recorrente cobrada sozinha todo mês.
+      // Boleto/pix exigiriam o cliente pagar manualmente a cada ciclo.
+      billingType: "CREDIT_CARD" as const,
       value: Number(plano.price_month),
       description: `Plano ${plano.name}`,
       externalReference: membership.id,
