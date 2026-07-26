@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentTenant } from "@/lib/tenant";
 import { getAuthUser } from "@/lib/supabase/server";
 import { PortalSidebar } from "@/components/portal-sidebar";
+import { Icon, type IconKey } from "@/components/icons";
 import { buildPortalNav } from "@/lib/portal-nav";
 import { signOut } from "./actions";
 import type { Metadata } from "next";
@@ -83,29 +84,88 @@ export default async function PortalLayout({
     }
   `;
 
-  // Sem usuário (login/apresentação) → layout simples e centrado, sem nav.
+  // Sem usuário (login/apresentação) → duas colunas no desktop (painel de marca
+  // + formulário) e uma coluna no mobile (faixa compacta da marca + conteúdo).
   if (!user) {
+    const modules = settings.modules_enabled ?? {};
+    const perks: { icon: IconKey; label: string }[] = [
+      { icon: "card" as IconKey, label: "Carteirinha digital com QR Code" },
+      { icon: "award" as IconKey, label: settings.reward_name ?? "Pontos e recompensas" },
+      ...(modules.appointments
+        ? [{ icon: "calendar" as IconKey, label: "Agendamentos online" }]
+        : []),
+      { icon: "chat" as IconKey, label: "Atendimento com IA 24h" },
+    ].slice(0, 4);
+
     return (
-      <div data-theme={settings.theme_mode} className="flex min-h-dvh flex-col">
+      <div
+        data-theme={settings.theme_mode}
+        className="min-h-dvh bg-[var(--background)] md:grid md:grid-cols-2 lg:grid-cols-[1.1fr_1fr]"
+      >
         <style dangerouslySetInnerHTML={{ __html: themeVars }} />
-        <header className="px-5 py-4">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            {settings.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={settings.logo_url} alt="" className="h-8 w-8 rounded-lg object-cover" />
-            ) : (
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-[var(--primary-foreground)]"
-                style={{ background: "var(--primary)" }}
-              >
-                {tenant.name.charAt(0)}
-              </div>
-            )}
-            <span className="font-semibold">{tenant.name}</span>
-          </Link>
-        </header>
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-10">
-          {children}
+
+        {/* Painel de marca do tenant */}
+        <aside
+          className="relative overflow-hidden text-white"
+          style={{
+            background:
+              "linear-gradient(140deg, var(--primary), var(--secondary))",
+          }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-white/15 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-black/15 blur-3xl"
+          />
+
+          <div className="relative flex h-full flex-col gap-10 px-6 py-6 md:justify-between md:px-12 md:py-14">
+            <Link href="/" className="inline-flex items-center gap-3">
+              {settings.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={settings.logo_url}
+                  alt=""
+                  className="h-10 w-10 rounded-xl bg-white/90 object-cover p-0.5"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-base font-bold">
+                  {tenant.name.charAt(0)}
+                </div>
+              )}
+              <span className="text-lg font-semibold tracking-tight">
+                {tenant.name}
+              </span>
+            </Link>
+
+            {/* Argumento de valor: só no desktop, pra não empurrar o form no mobile */}
+            <div className="hidden md:block">
+              <h2 className="max-w-sm text-3xl font-bold leading-tight tracking-tight lg:text-4xl">
+                Seu programa de fidelidade, sempre à mão.
+              </h2>
+              <ul className="mt-8 space-y-4">
+                {perks.map((p) => (
+                  <li key={p.label} className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                      <Icon name={p.icon} className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm text-white/90">{p.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="hidden text-xs text-white/60 md:block">
+              © {new Date().getFullYear()} {tenant.name}
+            </p>
+          </div>
+        </aside>
+
+        {/* Conteúdo (login, cadastro, boas-vindas…) */}
+        <main className="flex flex-1 items-center justify-center px-5 py-10 md:px-8 md:py-14">
+          <div className="w-full max-w-sm">{children}</div>
         </main>
       </div>
     );

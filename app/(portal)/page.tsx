@@ -280,17 +280,40 @@ export default async function HomePage({
 
   // Estado deslogado → CTA de login.
   if (!user) {
+    const highlights = [
+      { icon: "card" as const, label: "Carteirinha digital" },
+      { icon: "award" as const, label: settings.reward_name ?? "Pontos e recompensas" },
+      { icon: "store" as const, label: "Loja de resgate" },
+    ];
+
     return (
-      <Card>
-        <CardContent className="text-center">
-          <h1 className="text-xl font-semibold">
+      <Card className="shadow-md">
+        <CardContent className="p-6 md:p-7">
+          <h1 className="text-2xl font-bold tracking-tight">
             Bem-vindo à {ctx.tenant.name}
           </h1>
           <p className="mt-2 text-sm opacity-70">
-            Entre para acessar sua carteirinha e recompensas.
+            Entre para acessar sua carteirinha, seus pontos e suas recompensas.
           </p>
-          <Link href="/login" className="mt-5 block">
-            <Button className="w-full">Entrar</Button>
+
+          <ul className="mt-5 space-y-2.5">
+            {highlights.map((h) => (
+              <li key={h.label} className="flex items-center gap-2.5 text-sm">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
+                  <Icon name={h.icon} className="h-4 w-4" />
+                </span>
+                <span className="opacity-80">{h.label}</span>
+              </li>
+            ))}
+          </ul>
+
+          <Link href="/login" className="mt-6 block">
+            <Button className="h-12 w-full text-base">Entrar</Button>
+          </Link>
+          <Link href="/cadastro" className="mt-2.5 block">
+            <Button variant="outline" className="h-12 w-full text-base">
+              Criar minha conta
+            </Button>
           </Link>
         </CardContent>
       </Card>
