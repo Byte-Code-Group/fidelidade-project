@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { AI_BEHAVIOR_MAX_LENGTH } from "@/lib/ai/behavior-presets";
 import { clampModulesToTemplate, MODULES } from "@/lib/segment-templates";
 import { BUCKETS, brandingPath } from "@/lib/storage";
 import { traduzirErro } from "@/lib/error-messages";
@@ -54,7 +55,9 @@ export async function applyTenantSettingsUpdate(
       ai_name: String(formData.get("ai_name") ?? "Assistente"),
       ai_welcome_message: text("ai_welcome_message"),
       ai_tone: String(formData.get("ai_tone") ?? "amigavel"),
-      ai_behavior: text("ai_behavior"),
+      // Entra inteiro no system prompt de cada mensagem — corta no teto do
+      // campo (ver AI_BEHAVIOR_MAX_LENGTH) pra não estourar o prompt.
+      ai_behavior: text("ai_behavior")?.slice(0, AI_BEHAVIOR_MAX_LENGTH) ?? null,
       // Rodapé
       footer_address: text("footer_address"),
       footer_phone: text("footer_phone"),

@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
-import type { TextareaHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 export function Textarea({
   className,
   ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: ComponentPropsWithRef<"textarea">) {
   return (
     <textarea
       className={cn(
