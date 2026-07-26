@@ -13,12 +13,12 @@ import { FormError } from "@/components/ui/form-alert";
 export default async function SuperLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; expirado?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const admin = await getPlatformAdmin();
   if (admin) redirect("/superadmin");
 
-  const { error, expirado } = await searchParams;
+  const { error } = await searchParams;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-sm items-center px-5">
@@ -37,7 +37,7 @@ export default async function SuperLoginPage({
               required
               placeholder="Senha"
             />
-            <FormError error={error} expirado={expirado} />
+            <FormError error={error} />
             <Button type="submit" className="w-full" pendingLabel="Entrando…">
               Entrar
             </Button>

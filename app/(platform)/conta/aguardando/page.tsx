@@ -30,7 +30,7 @@ function AguardandoContent() {
       const res = await fetch("/api/conta/status", { cache: "no-store" });
 
       // 401 = sessão expirada por tempo (middleware). O reload cai no
-      // middleware de novo, que redireciona pro login com o motivo.
+      // middleware de novo, que redireciona pro login.
       if (res.status === 401) {
         window.location.reload();
         return true;

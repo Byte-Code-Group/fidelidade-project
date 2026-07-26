@@ -93,9 +93,10 @@ function respostaDeExpiracao(
       { status: 401 },
     );
   } else {
+    // Sem `?expirado=`: a tela de login não avisa o motivo, só pede login.
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
-    url.search = `expirado=${reason}`;
+    url.search = "";
     out = NextResponse.redirect(url);
   }
 

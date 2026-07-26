@@ -31,6 +31,7 @@ export type SessionExpiryReason = "inatividade" | "duracao";
 
 const horas = (ms: number) => Math.round(ms / 3_600_000);
 
+/** Só o corpo do 401 das rotas /api — a tela de login não mostra motivo. */
 export const SESSION_EXPIRY_MESSAGES: Record<SessionExpiryReason, string> = {
   inatividade: `Sua sessão foi encerrada após ${horas(IDLE_TIMEOUT_MS)} horas sem atividade. Entre novamente.`,
   duracao: `Sua sessão expirou após ${horas(ABSOLUTE_TIMEOUT_MS)} horas. Entre novamente.`,
@@ -59,9 +60,3 @@ export function decidirExpiracao({
   return null;
 }
 
-export function mensagemDeExpiracao(reason?: string | null): string | undefined {
-  if (reason === "inatividade" || reason === "duracao") {
-    return SESSION_EXPIRY_MESSAGES[reason];
-  }
-  return undefined;
-}

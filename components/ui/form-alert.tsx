@@ -1,5 +1,4 @@
 import { traduzirErro } from "@/lib/error-messages";
-import { mensagemDeExpiracao } from "@/lib/session-limits";
 
 // Alerta inline das telas de autenticação (login, cadastro, senha).
 // Fora do fluxo de auth o padrão é toast — ver `components/flash-toast.tsx`.
@@ -24,17 +23,10 @@ export function FormAlert({
   );
 }
 
-// Versão para a query string: `?expirado=` (sessão encerrada por tempo) tem
-// prioridade sobre `?error=`, que é decodificado e traduzido.
-export function FormError({
-  error,
-  expirado,
-}: {
-  error?: string;
-  expirado?: string;
-}) {
-  const expiracao = mensagemDeExpiracao(expirado);
-  if (expiracao) return <FormAlert>{expiracao}</FormAlert>;
+// Versão para a query string: `?error=`, decodificado e traduzido.
+// Sessão encerrada por tempo não exibe aviso — o middleware só manda pro
+// login (ver lib/supabase/middleware.ts).
+export function FormError({ error }: { error?: string }) {
   if (!error) return null;
   return <FormAlert>{traduzirErro(decodeURIComponent(error))}</FormAlert>;
 }
