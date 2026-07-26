@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant";
 import { getAiTools } from "@/lib/ai/tools";
+import { DEFAULT_TIMEZONE } from "@/lib/scheduling";
 
 const MAX_MSG_LENGTH = 2000;
 const MAX_HISTORY = 20;
@@ -104,7 +105,11 @@ export async function POST(req: NextRequest) {
   };
   const toneLabel = toneMap[settings.ai_tone] ?? "amigável";
 
+  // No fuso do negócio — o servidor roda em UTC e à noite já estaria no dia
+  // seguinte, fazendo a IA errar "hoje"/"amanhã".
+  const timeZone = settings.timezone || DEFAULT_TIMEZONE;
   const today = new Date().toLocaleDateString("pt-BR", {
+    timeZone,
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -231,7 +236,7 @@ ${GUARDRAILS}`;
           tools: getAiTools({
             tenantId: tenant.id,
             userId: user.id,
-            timeZone: settings.timezone || undefined,
+            timeZone,
           }),
           // Agendar gasta passos (catálogo → vagas → marcar → eventual retry
           // em outra vaga); com 8 o modelo parava no meio e só pedia desculpa.

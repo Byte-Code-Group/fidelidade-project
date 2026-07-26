@@ -11,6 +11,7 @@ import {
 } from "@/lib/appointments";
 import {
   DEFAULT_TIMEZONE,
+  formatarDataHora,
   formatarDataLonga,
   hojeNoFuso,
 } from "@/lib/scheduling";
@@ -355,7 +356,9 @@ export function getAiTools(ctx: ToolContext) {
         return JSON.stringify(
           data.map((a) => ({
             titulo: a.title,
-            data: new Date(a.scheduled_at).toLocaleString("pt-BR"),
+            // Sempre no fuso do negócio: o servidor roda em UTC e sem isso
+            // um horário de 11:00 é mostrado como 14:00.
+            data: formatarDataHora(a.scheduled_at, timeZone),
             status: a.status,
           })),
         );
@@ -405,7 +408,7 @@ export function getAiTools(ctx: ToolContext) {
             titulo: d.title,
             tipo: d.category,
             origem: d.source === "ia" ? "gerado por você" : "enviado pela equipe",
-            data: new Date(d.created_at).toLocaleDateString("pt-BR"),
+            data: formatarDataHora(d.created_at, timeZone),
           })),
         );
       },
