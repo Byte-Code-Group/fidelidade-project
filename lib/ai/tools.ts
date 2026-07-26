@@ -22,6 +22,42 @@ interface ToolContext {
   timeZone?: string;
 }
 
+// Uma vaga vira um token único que o modelo devolve inteiro na hora de marcar.
+// Sem isso ele remonta provider_id/data/hora na mão e erra a combinação — o
+// agendamento falha mesmo com a vaga existindo.
+interface SlotDecodificado {
+  p: string;
+  c: string | null;
+  d: string;
+  t: string;
+}
+
+function encodeSlot(o: OpcaoDeHorario): string {
+  const payload: SlotDecodificado = {
+    p: o.providerId,
+    c: o.procedureId,
+    d: o.dateISO,
+    t: o.time,
+  };
+  return Buffer.from(JSON.stringify(payload)).toString("base64url");
+}
+
+function decodeSlot(slotId: string): SlotDecodificado | null {
+  try {
+    const raw = JSON.parse(Buffer.from(slotId, "base64url").toString("utf8"));
+    if (
+      typeof raw?.p === "string" &&
+      typeof raw?.d === "string" &&
+      typeof raw?.t === "string"
+    ) {
+      return { p: raw.p, c: typeof raw.c === "string" ? raw.c : null, d: raw.d, t: raw.t };
+    }
+  } catch {
+    // token inventado pelo modelo — cai no caminho dos campos soltos
+  }
+  return null;
+}
+
 // Ferramentas do assistente — uma por consulta de dados do membro. `getAiTools`
 // fecha sobre tenantId/userId da request atual (streamText não passa contexto
 // arbitrário pro execute, só o input validado pelo schema).
@@ -30,6 +66,7 @@ export function getAiTools(ctx: ToolContext) {
   const { tenantId, userId, timeZone = DEFAULT_TIMEZONE } = ctx;
 
   const formatarOpcao = (o: OpcaoDeHorario) => ({
+    slot_id: encodeSlot(o),
     data: formatarDataLonga(o.dateISO),
     date: o.dateISO,
     hora: o.time,
@@ -196,27 +233,28 @@ export function getAiTools(ctx: ToolContext) {
 
     request_appointment: tool({
       description:
-        "Marca o agendamento DEPOIS que o cliente escolheu uma das opções devolvidas por list_available_slots. Passe exatamente o provider_id, procedure_id, date e hora daquela opção — o horário é validado de novo, e se tiver sido ocupado nesse meio tempo a ferramenta avisa e você deve oferecer outro.",
+        "Marca o agendamento DEPOIS que o cliente escolheu uma das opções devolvidas por list_available_slots. Passe o slot_id EXATO daquela opção, copiado sem alterar nada — não remonte data/hora/profissional na mão. O horário é validado de novo; se tiver sido ocupado nesse meio tempo, a ferramenta já devolve as próximas vagas pra você oferecer.",
       inputSchema: z.object({
-        provider_id: z.string().describe("Id do profissional da opção escolhida."),
-        date: z.string().describe("Data da opção escolhida, YYYY-MM-DD."),
-        time: z.string().describe("Horário da opção escolhida, HH:MM em 24h."),
-        procedure_id: z
+        slot_id: z
           .string()
-          .optional()
-          .describe("Id do procedimento da opção escolhida."),
+          .describe("Campo slot_id da opção escolhida em list_available_slots, copiado igual."),
         title: z
           .string()
           .optional()
           .describe("Motivo, ex: 'Avaliação — dor de dente'. Padrão: nome do procedimento."),
         notes: z.string().optional().describe("Observações do cliente."),
       }),
-      execute: async ({ provider_id, date, time, procedure_id, title, notes }) => {
+      execute: async ({ slot_id, title, notes }) => {
+        const slot = decodeSlot(slot_id);
+        if (!slot) {
+          return "slot_id inválido. Chame list_available_slots de novo e use o slot_id exato da opção que o cliente escolheu.";
+        }
+
         const formData = new FormData();
-        formData.set("provider_id", provider_id);
-        formData.set("date", date);
-        formData.set("time", time);
-        if (procedure_id) formData.set("procedure_id", procedure_id);
+        formData.set("provider_id", slot.p);
+        formData.set("date", slot.d);
+        formData.set("time", slot.t);
+        if (slot.c) formData.set("procedure_id", slot.c);
         if (title) formData.set("title", title);
         if (notes) formData.set("notes", notes);
 
@@ -225,8 +263,23 @@ export function getAiTools(ctx: ToolContext) {
           createdBy: userId,
           forcarUserId: userId,
         });
-        if (error) return `Não deu pra marcar: ${error}`;
-        return `Agendamento confirmado para ${formatarDataLonga(date)} às ${time}.`;
+
+        if (error) {
+          // Sem isso o modelo só sabe dizer "não consegui" — e some o motivo.
+          console.error("[request_appointment] falhou", { tenantId, slot, error });
+          const alternativas = await proximasVagas(tenantId, {
+            procedureId: slot.c,
+            deISO: slot.d,
+            dias: 14,
+            timeZone,
+          });
+          return JSON.stringify({
+            erro: error,
+            proximas_vagas: alternativas.map(formatarOpcao),
+          });
+        }
+
+        return `Agendamento confirmado para ${formatarDataLonga(slot.d)} às ${slot.t}.`;
       },
     }),
 
