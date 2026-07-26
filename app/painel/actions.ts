@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { conectarAsaas, desconectarAsaas } from "@/lib/tenant-asaas";
 import { requireTenantOwner, ACTIVE_TENANT_COOKIE } from "@/lib/owner";
 import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-settings";
 import {
@@ -678,4 +679,27 @@ export async function ownerDeleteAppointment(
   const { error } = await removeAppointment(tenantId, appointmentId);
   revalidateAgenda();
   return { error };
+}
+
+// ---------- Conta Asaas do próprio negócio ----------
+// Recebe as assinaturas dos clientes finais. A chave chega aqui do form e vai
+// cifrada pro banco — nunca volta pro browser (ver lib/tenant-asaas.ts).
+
+export async function ownerConnectAsaas(
+  apiKey: string,
+  environment: "sandbox" | "production",
+): Promise<{ error?: string; accountName?: string; aviso?: string }> {
+  const { tenantId, user } = await requireTenantOwner();
+  const resultado = await conectarAsaas(tenantId, apiKey, environment, {
+    ownerEmail: user.email,
+  });
+  revalidatePath("/painel/conexoes");
+  return resultado;
+}
+
+export async function ownerDisconnectAsaas(): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await desconectarAsaas(tenantId);
+  revalidatePath("/painel/conexoes");
+  return resultado;
 }

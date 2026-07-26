@@ -22,9 +22,21 @@ function formatDate(iso: string) {
 type MembershipRow = Pick<
   Membership,
   "id" | "plan_id" | "valid_until" | "pending_plan_id" | "pending_plan_effective_at"
->;
+> & { subscription_status?: string | null };
 
-export default async function PlanosPage() {
+const STATUS_ASSINATURA: Record<string, string> = {
+  pending: "Aguardando pagamento",
+  active: "Pagamento em dia",
+  overdue: "Pagamento atrasado",
+  canceled: "Assinatura cancelada",
+};
+
+export default async function PlanosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const ctx = await getCurrentTenant();
   if (!ctx) notFound();
   const { tenant } = ctx;
@@ -41,7 +53,9 @@ export default async function PlanosPage() {
       .returns<BusinessPlan[]>(),
     supabase
       .from("memberships")
-      .select("id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at")
+      .select(
+        "id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at, subscription_status",
+      )
       .eq("tenant_id", tenant.id)
       .eq("user_id", user.id)
       .order("created_at", { ascending: true })
@@ -58,7 +72,9 @@ export default async function PlanosPage() {
     await applyScheduledMembershipChange(membership.id);
     const { data: refreshed } = await supabase
       .from("memberships")
-      .select("id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at")
+      .select(
+        "id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at, subscription_status",
+      )
       .eq("id", membership.id)
       .maybeSingle<MembershipRow>();
     membership = refreshed;
@@ -70,6 +86,22 @@ export default async function PlanosPage() {
         title="Planos"
         subtitle="Escolha o plano ideal para você e sua família."
       />
+
+      {error && (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
+        >
+          {error}
+        </p>
+      )}
+
+      {membership?.subscription_status &&
+        STATUS_ASSINATURA[membership.subscription_status] && (
+          <p className="mb-4 rounded-lg bg-black/5 px-3 py-2 text-sm dark:bg-white/10">
+            {STATUS_ASSINATURA[membership.subscription_status]}
+          </p>
+        )}
 
       {!plans || plans.length === 0 ? (
         <EmptyState

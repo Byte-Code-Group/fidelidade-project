@@ -11,6 +11,7 @@ import { welcomeEmail } from "@/lib/emails/welcome";
 import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
 import { validateProfileFieldValues } from "@/lib/profile-fields";
+import { assinarPlanoComCobranca } from "@/lib/member-subscriptions";
 import { changeMembershipPlan } from "@/lib/memberships";
 import { traduzirErro } from "@/lib/error-messages";
 import { listProcedures } from "@/lib/procedures";
@@ -235,14 +236,30 @@ export async function saveProfile(formData: FormData) {
   redirect("/perfil?saved=1");
 }
 
-// Assina ou troca de plano. Upgrade vale na hora; downgrade agenda pro fim
-// do período vigente — ver lib/memberships.ts.
+// Assina ou troca de plano.
+//
+// Com a conta Asaas do negócio conectada e plano pago, gera a cobrança na
+// conta DELE e manda o cliente pra fatura (ver lib/member-subscriptions.ts).
+// Sem conta conectada ou plano grátis, segue como antes: upgrade vale na
+// hora, downgrade agenda pro fim do período vigente (ver lib/memberships.ts).
 export async function subscribeToPlan(planId: string) {
   const ctx = await getCurrentTenant();
   if (!ctx) redirect("/");
 
   const user = await getAuthUser();
   if (!user) redirect("/login");
+
+  const resultado = await assinarPlanoComCobranca(ctx.tenant.id, user.id, planId, {
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+  });
+
+  if (resultado.tipo === "erro") {
+    redirect(`/planos?error=${encodeURIComponent(resultado.error)}`);
+  }
+  if (resultado.tipo === "cobranca") {
+    revalidatePath("/planos");
+    redirect(resultado.invoiceUrl);
+  }
 
   await changeMembershipPlan(ctx.tenant.id, user.id, planId);
   revalidatePath("/planos");

@@ -4,6 +4,9 @@ import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MissionTypeIcon } from "@/components/mission-fields";
 import { getSubscription } from "@/lib/asaas";
+import { getContaDePagamento } from "@/lib/tenant-asaas";
+import { AsaasAccountCard } from "@/components/asaas-account-card";
+import { ownerConnectAsaas, ownerDisconnectAsaas } from "../actions";
 import type { Mission } from "@/lib/types";
 
 export default async function OwnerConexoesPage() {
@@ -23,6 +26,8 @@ export default async function OwnerConexoesPage() {
       .eq("id", tenantId)
       .maybeSingle<{ asaas_customer_id: string | null; asaas_subscription_id: string | null }>(),
   ]);
+
+  const contaDeRecebimento = await getContaDePagamento(tenantId);
 
   let subscription: { status: string; nextDueDate: string; value: number } | null = null;
   if (tenant?.asaas_subscription_id && process.env.ASAAS_API_KEY) {
@@ -97,10 +102,17 @@ export default async function OwnerConexoesPage() {
         </CardContent>
       </Card>
 
-      {/* Pagamento (Asaas) */}
+      {/* Recebimento dos clientes do negócio */}
+      <AsaasAccountCard
+        conta={contaDeRecebimento}
+        conectarAction={ownerConnectAsaas}
+        desconectarAction={ownerDisconnectAsaas}
+      />
+
+      {/* Assinatura do negócio COM a plataforma */}
       <Card>
         <CardContent className="space-y-2">
-          <h2 className="font-semibold">Pagamento</h2>
+          <h2 className="font-semibold">Sua assinatura da plataforma</h2>
           {tenant?.asaas_customer_id ? (
             <>
               <p className="text-sm text-green-600">Conectado ao Asaas</p>
