@@ -62,6 +62,53 @@ export function isValidDate(value: string): boolean {
   );
 }
 
+// HH:MM em 24h. <input type="time"> segue o idioma do NAVEGADOR (vira AM/PM
+// em quem usa inglês, mesmo com lang="pt-BR" na página), por isso a hora é
+// digitada como texto mascarado — ver components/ui/time-input.tsx.
+export function formatTime24(value: string): string {
+  const digits = onlyDigits(value).slice(0, 4);
+  if (digits.length <= 1) return digits;
+
+  // Começou com 3–9: não existe hora assim, quem digitou 8-3-0 quis 08:30 —
+  // o 1º dígito vira a hora e o ":" entra mais cedo. Um "24"/"25" digitado
+  // por engano fica como está e o campo acusa inválido.
+  if (Number(digits[0]) > 2) {
+    return `0${digits[0]}:${digits.slice(1, 3)}`;
+  }
+  if (digits.length === 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+/**
+ * Completa o que o usuário digitou pela metade: "8" → 08:00, "830" → 08:30,
+ * "1 30" → 01:30. Devolve "" quando não dá pra montar uma hora válida.
+ */
+export function normalizeTime24(value: string): string {
+  // "09:30", o "08:3" ainda pela metade (minuto conta como dezena) e o
+  // "09:30:00" que vem do `time` do Postgres.
+  const comSeparador = value.trim().match(/^(\d{1,2}):(\d{1,2})(?::\d{2})?$/);
+  const digits = comSeparador
+    ? comSeparador[1].padStart(2, "0") + comSeparador[2].padEnd(2, "0")
+    : onlyDigits(value);
+  if (digits.length === 0) return "";
+
+  const [h, m] =
+    digits.length <= 2
+      ? [digits, "0"]
+      : [digits.slice(0, digits.length - 2), digits.slice(-2)];
+
+  const hora = Number(h);
+  const minuto = Number(m);
+  if (!Number.isInteger(hora) || hora > 23) return "";
+  if (!Number.isInteger(minuto) || minuto > 59) return "";
+
+  return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
+}
+
+export function isValidTime24(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 export function formatCpf(value: string): string {
   const digits = onlyDigits(value).slice(0, 11);
   return digits

@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { traduzirErro } from "@/lib/error-messages";
+import { normalizeTime24 } from "@/lib/masks";
 import { minutosDoHorario } from "@/lib/scheduling";
 import { setProviderProcedures } from "@/lib/procedures";
 import type { Provider, ProviderSchedule, ScheduleException } from "@/lib/types";
@@ -130,14 +131,16 @@ export async function insertProviderSchedule(
 ): Promise<{ error?: string }> {
   const providerId = String(formData.get("provider_id") ?? "");
   const weekday = Number(formData.get("weekday"));
-  const start = String(formData.get("start_time") ?? "");
-  const end = String(formData.get("end_time") ?? "");
+  // O campo é texto mascarado (ver components/ui/time-input.tsx): pode chegar
+  // "8" se enviarem com Enter sem sair do campo.
+  const start = normalizeTime24(String(formData.get("start_time") ?? ""));
+  const end = normalizeTime24(String(formData.get("end_time") ?? ""));
 
   if (!providerId) return { error: "Selecione o profissional." };
   if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
     return { error: "Selecione o dia da semana." };
   }
-  if (!start || !end) return { error: "Informe o horário de início e de fim." };
+  if (!start || !end) return { error: "Informe o horário de início e de fim no formato 24h (ex.: 14:30)." };
   if (minutosDoHorario(end) <= minutosDoHorario(start)) {
     return { error: "O horário de fim precisa ser depois do início." };
   }
@@ -244,8 +247,8 @@ export async function insertScheduleException(
 ): Promise<{ error?: string }> {
   const providerRaw = String(formData.get("provider_id") ?? "");
   const date = String(formData.get("exception_date") ?? "");
-  const inicio = String(formData.get("start_time") ?? "").trim();
-  const fim = String(formData.get("end_time") ?? "").trim();
+  const inicio = normalizeTime24(String(formData.get("start_time") ?? ""));
+  const fim = normalizeTime24(String(formData.get("end_time") ?? ""));
   const diaInteiro = formData.get("all_day") === "on" || (!inicio && !fim);
 
   if (!date) return { error: "Informe a data da folga." };

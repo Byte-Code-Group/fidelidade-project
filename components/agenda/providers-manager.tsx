@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TimeInput } from "@/components/ui/time-input";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Icon } from "@/components/icons";
@@ -450,18 +451,16 @@ function WeekSchedule({
                 }}
                 className="ml-auto flex items-center gap-1"
               >
-                <Input
+                <TimeInput
                   name="start_time"
-                  type="time"
                   required
-                  className="w-[104px] px-2 py-1 text-xs"
+                  className="w-[76px] px-2 py-1 text-center text-xs tabular-nums"
                   aria-label={`Início em ${label}`}
                 />
-                <Input
+                <TimeInput
                   name="end_time"
-                  type="time"
                   required
-                  className="w-[104px] px-2 py-1 text-xs"
+                  className="w-[76px] px-2 py-1 text-center text-xs tabular-nums"
                   aria-label={`Fim em ${label}`}
                 />
                 <Button type="submit" variant="outline" className="px-2 py-1 text-xs">
@@ -584,11 +583,17 @@ function ExceptionsBlock({
           <>
             <label className="text-xs">
               <span className="mb-1 block font-medium opacity-70">De</span>
-              <Input name="start_time" type="time" className="w-[104px] px-2 py-1 text-xs" />
+              <TimeInput
+                name="start_time"
+                className="w-[76px] px-2 py-1 text-center text-xs tabular-nums"
+              />
             </label>
             <label className="text-xs">
               <span className="mb-1 block font-medium opacity-70">Até</span>
-              <Input name="end_time" type="time" className="w-[104px] px-2 py-1 text-xs" />
+              <TimeInput
+                name="end_time"
+                className="w-[76px] px-2 py-1 text-center text-xs tabular-nums"
+              />
             </label>
           </>
         )}
