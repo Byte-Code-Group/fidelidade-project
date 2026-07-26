@@ -24,8 +24,11 @@ export type ResultadoAssinatura =
 
 interface MembershipRow {
   id: string;
+  plan_id: string | null;
   asaas_customer_id: string | null;
   asaas_subscription_id: string | null;
+  asaas_invoice_url: string | null;
+  subscription_status: string | null;
 }
 
 /** CPF/CNPJ do cliente vindo dos campos de cadastro configuráveis do tenant. */
@@ -76,7 +79,9 @@ export async function assinarPlanoComCobranca(
       .maybeSingle<{ id: string; name: string; price_month: number }>(),
     db
       .from("memberships")
-      .select("id, asaas_customer_id, asaas_subscription_id")
+      .select(
+        "id, plan_id, asaas_customer_id, asaas_subscription_id, asaas_invoice_url, subscription_status",
+      )
       .eq("tenant_id", tenantId)
       .eq("user_id", userId)
       .order("created_at", { ascending: true })
@@ -95,6 +100,17 @@ export async function assinarPlanoComCobranca(
 
   const conta = await getCredenciais(tenantId);
   if (!conta) return { tipo: "sem_cobranca" };
+
+  // Já tem cobrança em aberto deste mesmo plano: manda pra ELA em vez de
+  // criar outra. Sem isso, cada clique em "Assinar" gerava uma assinatura
+  // nova e o cliente que já tinha pago caía num loop de faturas.
+  if (
+    membership.plan_id === planId &&
+    membership.subscription_status === "pending" &&
+    membership.asaas_invoice_url
+  ) {
+    return { tipo: "cobranca", invoiceUrl: membership.asaas_invoice_url };
+  }
 
   const cpf = await cpfDoCliente(tenantId, userId);
   if (!cpf) {
@@ -141,12 +157,16 @@ export async function assinarPlanoComCobranca(
     // segunda tentativa vai sem ele: o cliente paga e volta pelo portal.
     const assinatura = await (async () => {
       try {
-        return await createSubscriptionNaConta(conta, {
+        const criada = await createSubscriptionNaConta(conta, {
           ...dadosDaAssinatura,
           successUrl: siteUrl ? `${siteUrl}/planos` : undefined,
         });
+        await marcarCallbackBloqueado(tenantId, false);
+        return criada;
       } catch (err) {
         if (err instanceof AsaasError && /dom[íi]nio/i.test(err.descricao ?? "")) {
+          // Fica registrado pro painel cobrar o dono a cadastrar o site.
+          await marcarCallbackBloqueado(tenantId, true);
           return createSubscriptionNaConta(conta, dadosDaAssinatura);
         }
         throw err;
@@ -163,6 +183,7 @@ export async function assinarPlanoComCobranca(
         pending_plan_effective_at: null,
         asaas_customer_id: customerId,
         asaas_subscription_id: assinatura.id,
+        asaas_invoice_url: cobranca?.invoiceUrl ?? null,
         subscription_status: "pending",
         subscription_updated_at: new Date().toISOString(),
       })
@@ -232,9 +253,18 @@ export async function cancelarAssinaturaDoCliente(
     .from("memberships")
     .update({
       asaas_subscription_id: null,
+      asaas_invoice_url: null,
       subscription_status: "canceled",
       subscription_updated_at: new Date().toISOString(),
     })
     .eq("id", membership.id);
   return {};
+}
+
+async function marcarCallbackBloqueado(tenantId: string, bloqueado: boolean) {
+  const db = createAdminClient();
+  await db
+    .from("tenant_payment_accounts")
+    .update({ callback_bloqueado: bloqueado })
+    .eq("tenant_id", tenantId);
 }

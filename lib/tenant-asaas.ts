@@ -24,6 +24,8 @@ export interface ContaDePagamento {
   accountEmail: string | null;
   webhookId: string | null;
   connectedAt: string;
+  /** O Asaas recusou o retorno pro portal: falta cadastrar o site na conta. */
+  callbackBloqueado: boolean;
 }
 
 interface LinhaConta {
@@ -35,6 +37,7 @@ interface LinhaConta {
   webhook_id: string | null;
   webhook_token: string | null;
   connected_at: string;
+  callback_bloqueado: boolean;
 }
 
 /** Dados mostráveis no painel — nunca inclui a chave. */
@@ -44,7 +47,9 @@ export async function getContaDePagamento(
   const db = createAdminClient();
   const { data } = await db
     .from("tenant_payment_accounts")
-    .select("tenant_id, environment, account_name, account_email, webhook_id, connected_at")
+    .select(
+      "tenant_id, environment, account_name, account_email, webhook_id, connected_at, callback_bloqueado",
+    )
     .eq("tenant_id", tenantId)
     .maybeSingle<Omit<LinhaConta, "api_key_enc" | "webhook_token">>();
 
@@ -56,6 +61,7 @@ export async function getContaDePagamento(
     accountEmail: data.account_email,
     webhookId: data.webhook_id,
     connectedAt: data.connected_at,
+    callbackBloqueado: data.callback_bloqueado,
   };
 }
 

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface Conta {
   environment: "sandbox" | "production";
+  callbackBloqueado: boolean;
   accountName: string | null;
   accountEmail: string | null;
   webhookId: string | null;
@@ -100,15 +101,24 @@ export function AsaasAccountCard({
               )}
             </div>
 
-            <details className="rounded-xl border border-black/10 px-3 py-2 dark:border-white/10">
+            <details
+              open={conta.callbackBloqueado}
+              className={
+                conta.callbackBloqueado
+                  ? "rounded-xl border border-amber-400 bg-amber-50 px-3 py-2 dark:bg-amber-900/20"
+                  : "rounded-xl border border-black/10 px-3 py-2 dark:border-white/10"
+              }
+            >
               <summary className="cursor-pointer text-sm font-medium">
-                Opcional: fazer o cliente voltar ao portal depois de pagar
+                {conta.callbackBloqueado
+                  ? "Ação necessária: cadastre o site na sua conta Asaas"
+                  : "Retorno do cliente pro portal depois de pagar"}
               </summary>
               <div className="mt-2 space-y-2">
                 <p className="text-xs text-gray-500">
-                  O Asaas só devolve o cliente pro portal se a sua conta tiver
-                  um site cadastrado. Sem isso a cobrança funciona igual — ele
-                  só não é redirecionado no fim.
+                  {conta.callbackBloqueado
+                    ? "O Asaas recusou o retorno automático porque sua conta não tem site cadastrado. Sem isso, quem paga continua vendo a tela de cobrança em vez de voltar pro portal."
+                    : "É o que devolve o cliente pro portal assim que ele conclui o pagamento."}
                 </p>
                 <Passos>
                   <li>

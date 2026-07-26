@@ -57,7 +57,12 @@ export async function POST(
   const db = createAdminClient();
   const { data, error } = await db
     .from("memberships")
-    .update({ subscription_status: status, subscription_updated_at: new Date().toISOString() })
+    .update({
+      subscription_status: status,
+      subscription_updated_at: new Date().toISOString(),
+      // Fatura paga/cancelada não deve ser reaberta pelo botão do portal.
+      ...(status !== "overdue" && { asaas_invoice_url: null }),
+    })
     .eq("tenant_id", tenantId)
     .eq("asaas_subscription_id", subscriptionId)
     .select("id");

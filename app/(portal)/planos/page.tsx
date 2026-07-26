@@ -22,7 +22,7 @@ function formatDate(iso: string) {
 type MembershipRow = Pick<
   Membership,
   "id" | "plan_id" | "valid_until" | "pending_plan_id" | "pending_plan_effective_at"
-> & { subscription_status?: string | null };
+> & { subscription_status?: string | null; asaas_invoice_url?: string | null };
 
 const STATUS_ASSINATURA: Record<string, string> = {
   pending: "Aguardando pagamento",
@@ -54,7 +54,7 @@ export default async function PlanosPage({
     supabase
       .from("memberships")
       .select(
-        "id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at, subscription_status",
+        "id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at, subscription_status, asaas_invoice_url",
       )
       .eq("tenant_id", tenant.id)
       .eq("user_id", user.id)
@@ -73,7 +73,7 @@ export default async function PlanosPage({
     const { data: refreshed } = await supabase
       .from("memberships")
       .select(
-        "id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at, subscription_status",
+        "id, plan_id, valid_until, pending_plan_id, pending_plan_effective_at, subscription_status, asaas_invoice_url",
       )
       .eq("id", membership.id)
       .maybeSingle<MembershipRow>();
@@ -118,6 +118,7 @@ export default async function PlanosPage({
               const isPendingTarget = membership?.pending_plan_id === plan.id;
               const currentPlan = plans.find((p) => p.id === membership?.plan_id);
               const isDowngrade = currentPlan ? plan.price_month < currentPlan.price_month : false;
+              const aguardandoPagamento = membership?.subscription_status === "pending";
 
               return (
                 <div
@@ -160,7 +161,19 @@ export default async function PlanosPage({
                   </ul>
 
                   <div className="mt-6">
-                    {isCurrent ? (
+                    {isCurrent && aguardandoPagamento && membership?.asaas_invoice_url ? (
+                      <>
+                        <a
+                          href={membership.asaas_invoice_url}
+                          className="block w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-center text-sm font-medium text-[var(--primary-foreground)] transition hover:opacity-90"
+                        >
+                          Pagar fatura
+                        </a>
+                        <p className="mt-2 text-center text-xs opacity-60">
+                          Assinatura criada — falta concluir o pagamento.
+                        </p>
+                      </>
+                    ) : isCurrent ? (
                       <>
                         <Button variant="outline" className="w-full" disabled>
                           Plano atual
