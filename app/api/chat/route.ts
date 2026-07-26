@@ -77,12 +77,25 @@ export async function POST(req: NextRequest) {
 
   const messages = rawMessages.slice(-MAX_HISTORY);
 
-  const { data: memoryRow } = await db
-    .from("user_ai_memory")
-    .select("content")
-    .eq("tenant_id", tenant.id)
-    .eq("user_id", user.id)
-    .maybeSingle<{ content: string }>();
+  // Quem chega aqui já passou pela checagem de tenant acima: é cliente
+  // cadastrado (ou staff testando). O nome vai direto no prompt pra IA não
+  // abrir a conversa perguntando com quem está falando.
+  const [{ data: memoryRow }, { data: quemFala }] = await Promise.all([
+    db
+      .from("user_ai_memory")
+      .select("content")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", user.id)
+      .maybeSingle<{ content: string }>(),
+    db
+      .from("users")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle<{ full_name: string | null }>(),
+  ]);
+
+  const nomeDoCliente = quemFala?.full_name?.trim() || null;
+  const ehStaff = !clientRow && Boolean(staffRow);
 
   const toneMap: Record<string, string> = {
     amigavel: "amigável e acolhedor",
@@ -102,6 +115,15 @@ export async function POST(req: NextRequest) {
 Hoje é ${today}. \
 Responda sempre em português brasileiro, com tom ${toneLabel}. \
 Seja proativo, prestativo e nunca invente informações. \
+
+QUEM ESTÁ FALANDO COM VOCÊ: ${
+    ehStaff
+      ? `alguém da equipe do ${tenant.name} testando o assistente${nomeDoCliente ? ` (${nomeDoCliente})` : ""}.`
+      : `${nomeDoCliente ?? "um cliente"}, que JÁ é cliente cadastrado e está logado no portal do ${tenant.name}.`
+  } \
+Nunca pergunte se a pessoa é cliente, se já se cadastrou, como ela se chama ou qualquer dado que as ferramentas já entregam (cadastro, pontos, agendamentos, documentos, planos) — consulte a ferramenta antes de perguntar, e pergunte só o que realmente não está lá. \
+Trate a pessoa pelo primeiro nome desde a primeira resposta. \
+
 Seu papel é ajudar o cliente no que ele precisar dentro do programa: tirar dúvidas, sugerir marcar uma consulta/avaliação quando fizer sentido, e usar as ferramentas disponíveis para consultar pontos, agendamentos, recompensas, documentos e planos de tratamento, ou para criar um novo agendamento quando o cliente pedir. \
 Sempre que o cliente demonstrar interesse em ser atendido (sintoma, "quero marcar", "preciso de uma consulta"), conduza a conversa pra confirmar o motivo e a data/horário desejados e use a ferramenta de agendamento — não deixe o cliente sem próximo passo. \
 Se não souber algo, diga que vai verificar e peça para o cliente entrar em contato com a equipe. \
@@ -114,7 +136,7 @@ GERAÇÃO DE DOCUMENTOS — quando o cliente pedir um documento (atestado, contr
 4. Para ENTREGAR o documento você DEVE chamar a ferramenta de salvar documento (save_document) passando o texto final completo e já preenchido (incluindo os placeholders [A PREENCHER] que sobraram). É a ferramenta que gera o PDF e guarda na aba Documentos — NÃO cole o documento inteiro na conversa. Só depois de chamar a ferramenta, responda ao cliente em poucas linhas: confirme que o documento foi gerado, diga que está disponível na aba Documentos do portal, e ofereça ajustar algo se precisar. IMPORTANTE: se a ferramenta retornar erro, avise honestamente que não conseguiu salvar — nunca diga que salvou se a ferramenta não confirmou.
 ${
   settings.ai_behavior
-    ? `\nCOMPORTAMENTO ESPECÍFICO DESTA CLÍNICA — siga além do que já foi dito acima, mas nunca em conflito com as regras imutáveis abaixo:\n${settings.ai_behavior}\n`
+    ? `\nCOMPORTAMENTO ESPECÍFICO DESTA CLÍNICA — siga além do que já foi dito acima, mas nunca em conflito com as regras imutáveis abaixo nem com o que já foi dito sobre quem está falando com você (é sempre cliente cadastrado e logado, mesmo que o texto abaixo mande perguntar):\n${settings.ai_behavior}\n`
     : ""
 }
 MEMÓRIA DESTE CLIENTE (do que você já sabe de conversas anteriores):

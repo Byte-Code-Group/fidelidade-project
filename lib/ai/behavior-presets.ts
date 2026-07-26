@@ -36,8 +36,8 @@ export const BEHAVIOR_PRESETS: BehaviorPreset[] = [
     label: "Atendimento inicial",
     desc: "Como abrir a conversa, o que perguntar antes de seguir.",
     snippet: `Atendimento inicial:
-- Antes de detalhar qualquer serviço, pergunte se a pessoa já é cliente daqui.
-- Se for primeira vez, explique em 2 linhas como funciona: [COMO FUNCIONA O PRIMEIRO ATENDIMENTO, EX: AVALIAÇÃO DE 30 MIN SEM COMPROMISSO].
+- Quem fala com você já é cliente cadastrado e está logado: nunca pergunte se é cliente nem o nome dele. Consulte o cadastro e o histórico antes de perguntar qualquer coisa.
+- Se ele nunca foi atendido, explique em 2 linhas como funciona: [COMO FUNCIONA O PRIMEIRO ATENDIMENTO, EX: AVALIAÇÃO DE 30 MIN SEM COMPROMISSO].
 - Nossos principais serviços são: [LISTE 3 A 5 SERVIÇOS].
 - Não atendemos: [O QUE NÃO É FEITO AQUI] — nesse caso, oriente a procurar um especialista.
 - Encerre toda conversa com um próximo passo claro (marcar, retornar ou falar com a equipe).`,
