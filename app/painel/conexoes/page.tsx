@@ -105,6 +105,7 @@ export default async function OwnerConexoesPage() {
       {/* Recebimento dos clientes do negócio */}
       <AsaasAccountCard
         conta={contaDeRecebimento}
+        portalUrl={process.env.NEXT_PUBLIC_SITE_URL}
         conectarAction={ownerConnectAsaas}
         desconectarAction={ownerDisconnectAsaas}
       />
