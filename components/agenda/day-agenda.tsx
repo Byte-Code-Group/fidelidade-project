@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Icon } from "@/components/icons";
@@ -271,11 +271,10 @@ function RescheduleForm({
         </label>
         <label className="block text-xs">
           <span className="mb-1 block font-medium opacity-70">Nova data</span>
-          <Input
-            type="date"
+          <DatePicker
             value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
+            onChange={(dia) => {
+              setDate(dia);
               setSlots(null);
             }}
           />

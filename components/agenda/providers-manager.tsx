@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { TimeInput } from "@/components/ui/time-input";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
@@ -505,6 +506,7 @@ function ExceptionsBlock({
 }) {
   const [pendente, iniciar] = useTransition();
   const [diaInteiro, setDiaInteiro] = useState(true);
+  const [dataFolga, setDataFolga] = useState("");
 
   return (
     <div>
@@ -549,16 +551,28 @@ function ExceptionsBlock({
           formData.set("provider_id", String(formData.get("escopo")) === "all" ? "all" : provider.id);
           iniciar(async () => {
             const { error } = await createAction(formData);
-            if (error) toast.error(error);
-            else toast.success("Folga cadastrada.");
+            if (error) {
+              toast.error(error);
+              return;
+            }
+            toast.success("Folga cadastrada.");
+            // O reset do form não alcança o DatePicker (é estado, não input).
+            setDataFolga("");
           });
         }}
         className="flex flex-wrap items-end gap-2 rounded-lg bg-black/[0.03] p-2.5 dark:bg-white/[0.04]"
       >
-        <label className="text-xs">
+        <div className="text-xs">
           <span className="mb-1 block font-medium opacity-70">Data</span>
-          <Input name="exception_date" type="date" required className="px-2 py-1 text-xs" />
-        </label>
+          <DatePicker
+            name="exception_date"
+            required
+            aria-label="Data da folga"
+            className="w-[210px]"
+            value={dataFolga}
+            onChange={setDataFolga}
+          />
+        </div>
 
         <label className="text-xs">
           <span className="mb-1 block font-medium opacity-70">Vale para</span>

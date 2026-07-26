@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -186,12 +186,11 @@ export function BookingForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
           <span className="mb-1.5 block font-medium">Quando?</span>
-          <Input
-            type="date"
+          <DatePicker
             value={date}
             min={dataInicial}
-            onChange={(e) => {
-              setDate(e.target.value);
+            onChange={(dia) => {
+              setDate(dia);
               reiniciar();
             }}
           />

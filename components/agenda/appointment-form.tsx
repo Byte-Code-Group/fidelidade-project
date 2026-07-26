@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
@@ -202,11 +202,10 @@ export function AppointmentForm({
 
         <label className="block text-sm">
           <span className="mb-1 block font-medium">Data</span>
-          <Input
-            type="date"
+          <DatePicker
             value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
+            onChange={(dia) => {
+              setDate(dia);
               reiniciarBusca();
             }}
           />
