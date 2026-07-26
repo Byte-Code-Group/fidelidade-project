@@ -18,6 +18,15 @@ export const LAST_ACTIVITY_COOKIE = "fz-last-activity";
 /** Timestamp do login legível no browser (o watcher precisa dele). */
 export const SESSION_START_PUBLIC_COOKIE = "fz-session-start-at";
 
+/**
+ * Validade dos cookies de rastreio. Tem que ser MUITO maior que os limites:
+ * quem decide a expiração é a comparação de timestamps, e um cookie que
+ * expira sozinho antes disso zera o contador em vez de deslogar (era o bug
+ * de voltar ao site depois de 10h+ e continuar logado, já que o refresh
+ * token do Supabase sobrevive bem mais que os cookies de rastreio).
+ */
+export const TRACKING_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+
 export type SessionExpiryReason = "inatividade" | "duracao";
 
 const horas = (ms: number) => Math.round(ms / 3_600_000);
@@ -32,25 +41,21 @@ export const SESSION_EXPIRY_MESSAGES: Record<SessionExpiryReason, string> = {
  * cookies e delega aqui (ver lib/supabase/middleware.ts).
  *
  * @param start         quando a sessão começou (ms)
- * @param lastActivity  última atividade registrada (ms), ou null se não há cookie
- * @param rastreioEmCurso  já existia cookie de rastreio nesta sessão — se sim,
- *   a ausência do cookie de atividade significa que ele expirou/foi descartado,
- *   o que só acontece depois do limite de inatividade.
+ * @param lastActivity  última atividade registrada (ms), ou null se não há
+ *   cookie — nesse caso vale o início da sessão, que é o último instante
+ *   comprovado de atividade (sem cookie não existe prova de nada mais novo).
  */
 export function decidirExpiracao({
   now,
   start,
   lastActivity,
-  rastreioEmCurso,
 }: {
   now: number;
   start: number;
   lastActivity: number | null;
-  rastreioEmCurso: boolean;
 }): SessionExpiryReason | null {
   if (now - start >= ABSOLUTE_TIMEOUT_MS) return "duracao";
-  if (lastActivity === null) return rastreioEmCurso ? "inatividade" : null;
-  if (now - lastActivity >= IDLE_TIMEOUT_MS) return "inatividade";
+  if (now - (lastActivity ?? start) >= IDLE_TIMEOUT_MS) return "inatividade";
   return null;
 }
 

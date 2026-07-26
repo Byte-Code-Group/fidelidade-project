@@ -1,12 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
-  ABSOLUTE_TIMEOUT_MS,
   decidirExpiracao,
   LAST_ACTIVITY_COOKIE,
   SESSION_EXPIRY_MESSAGES,
   SESSION_START_COOKIE,
   SESSION_START_PUBLIC_COOKIE,
+  TRACKING_COOKIE_MAX_AGE_MS,
   type SessionExpiryReason,
 } from "@/lib/session-limits";
 
@@ -55,6 +55,25 @@ function lerInicioDaSessao(request: NextRequest, sessionId: string): number | nu
   if (raw.slice(0, sep) !== sessionId) return null;
   const n = Number(raw.slice(sep + 1));
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Início da sessão segundo o próprio JWT: o claim `amr` traz o instante
+// (em segundos) em que cada método de autenticação foi usado, e ele não muda
+// nos refreshes do token. É a fonte mais confiável do limite de 10h — não
+// depende de cookie nosso, então apagar cookies não zera o contador.
+// Quando o projeto emite `amr` como string[] (sem timestamp), não há o que ler.
+function lerInicioDoClaim(claims: Record<string, unknown>): number | null {
+  const amr = claims.amr;
+  if (!Array.isArray(amr)) return null;
+  const timestamps = amr
+    .map((entrada) =>
+      entrada && typeof entrada === "object" && "timestamp" in entrada
+        ? Number((entrada as { timestamp: unknown }).timestamp)
+        : NaN,
+    )
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (timestamps.length === 0) return null;
+  return Math.min(...timestamps) * 1000;
 }
 
 // Sessão estourada: apaga os cookies de auth e manda pro login (ou 401 nas
@@ -133,15 +152,12 @@ export async function updateSession(
   const sessionId =
     typeof claims.session_id === "string" ? claims.session_id : String(claims.sub);
   const now = Date.now();
-  const start = lerInicioDaSessao(request, sessionId) ?? now;
+  // Ordem de confiança: claim do JWT > cookie > agora (primeira request).
+  const start =
+    lerInicioDoClaim(claims) ?? lerInicioDaSessao(request, sessionId) ?? now;
   const lastActivity = lerNumero(request, LAST_ACTIVITY_COOKIE);
 
-  const reason = decidirExpiracao({
-    now,
-    start,
-    lastActivity,
-    rastreioEmCurso: Boolean(request.cookies.get(SESSION_START_COOKIE)),
-  });
+  const reason = decidirExpiracao({ now, start, lastActivity });
 
   if (reason) {
     // scope local: encerra só esta sessão (outros dispositivos seguem logados).
@@ -149,20 +165,20 @@ export async function updateSession(
     return respostaDeExpiracao(request, response, loginPath, reason);
   }
 
-  // O maxAge das 10h garante que o cookie de início nunca sobreviva ao limite.
+  // Cookies de rastreio vivem bem além dos limites (ver
+  // TRACKING_COOKIE_MAX_AGE_MS): eles carregam os timestamps que decidem a
+  // expiração, então precisam estar lá quando o usuário voltar depois de dias.
   response.cookies.set(
     SESSION_START_COOKIE,
     `${sessionId}.${start}`,
-    cookieOptions(ABSOLUTE_TIMEOUT_MS),
+    cookieOptions(TRACKING_COOKIE_MAX_AGE_MS),
   );
   // Versão legível no browser — o watcher precisa saber quando a sessão começou.
   response.cookies.set(
     SESSION_START_PUBLIC_COOKIE,
     String(start),
-    cookieOptions(ABSOLUTE_TIMEOUT_MS, false),
+    cookieOptions(TRACKING_COOKIE_MAX_AGE_MS, false),
   );
-  // maxAge das 10h (não das 3h): a comparação de timestamp é que decide a
-  // inatividade — o cookie não pode sumir antes disso.
   const ehPolling = CAMINHOS_DE_POLLING.some((p) =>
     request.nextUrl.pathname.startsWith(p),
   );
@@ -170,7 +186,7 @@ export async function updateSession(
     response.cookies.set(
       LAST_ACTIVITY_COOKIE,
       String(now),
-      cookieOptions(ABSOLUTE_TIMEOUT_MS),
+      cookieOptions(TRACKING_COOKIE_MAX_AGE_MS),
     );
   }
 
