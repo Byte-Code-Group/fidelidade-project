@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCredenciais } from "@/lib/tenant-asaas";
 import {
+  AsaasError,
   cancelSubscriptionNaConta,
   createCustomerNaConta,
   createSubscriptionNaConta,
@@ -124,13 +125,30 @@ export async function assinarPlanoComCobranca(
       customerId = customer.id;
     }
 
-    const assinatura = await createSubscriptionNaConta(conta, {
+    const dadosDaAssinatura = {
       customer: customerId,
       value: Number(plano.price_month),
       description: `Plano ${plano.name}`,
       externalReference: membership.id,
-      successUrl: siteUrl ? `${siteUrl}/planos` : undefined,
-    });
+    };
+
+    // O callback de retorno só é aceito por conta Asaas que tenha um site
+    // cadastrado em Minha Conta → Informações. Sem isso o Asaas recusa a
+    // assinatura inteira ("Não há nenhum domínio configurado"), então a
+    // segunda tentativa vai sem ele: o cliente paga e volta pelo portal.
+    const assinatura = await (async () => {
+      try {
+        return await createSubscriptionNaConta(conta, {
+          ...dadosDaAssinatura,
+          successUrl: siteUrl ? `${siteUrl}/planos` : undefined,
+        });
+      } catch (err) {
+        if (err instanceof AsaasError && /dom[íi]nio/i.test(err.descricao ?? "")) {
+          return createSubscriptionNaConta(conta, dadosDaAssinatura);
+        }
+        throw err;
+      }
+    })();
 
     const cobranca = await primeiraCobranca(conta, assinatura.id);
 
@@ -155,10 +173,19 @@ export async function assinarPlanoComCobranca(
     }
     return { tipo: "cobranca", invoiceUrl: cobranca.invoiceUrl };
   } catch (err) {
-    console.error("[assinarPlanoComCobranca]", { tenantId, planId, err });
+    console.error("[assinarPlanoComCobranca]", {
+      tenantId,
+      planId,
+      erro: err instanceof Error ? err.message : err,
+    });
+    // A descrição do Asaas é escrita pra usuário final ("O CPF informado é
+    // inválido") — muito mais útil que uma mensagem genérica nossa.
+    const descricao = err instanceof AsaasError ? err.descricao : null;
     return {
       tipo: "erro",
-      error: "Não consegui gerar a cobrança agora. Tente de novo ou fale com a equipe.",
+      error: descricao
+        ? `${descricao} (retorno do Asaas)`
+        : "Não consegui gerar a cobrança agora. Tente de novo ou fale com a equipe.",
     };
   }
 }

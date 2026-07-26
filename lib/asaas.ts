@@ -41,9 +41,43 @@ async function request<T>(
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Asaas ${res.status}: ${text}`);
+    throw new AsaasError(res.status, text);
   }
   return res.json() as Promise<T>;
+}
+
+/**
+ * Erro do Asaas com a descrição legível separada. O corpo vem como
+ * `{"errors":[{"code":"invalid_cpfCnpj","description":"O CPF informado é
+ * inválido."}]}` — essa descrição é escrita pra usuário final e é muito mais
+ * útil que "não consegui gerar a cobrança".
+ */
+export class AsaasError extends Error {
+  readonly status: number;
+  /** Descrição pt-BR devolvida pelo Asaas, quando existe. */
+  readonly descricao: string | null;
+
+  constructor(status: number, corpo: string) {
+    const descricao = AsaasError.extrairDescricao(corpo);
+    super(`Asaas ${status}: ${descricao ?? corpo}`);
+    this.name = "AsaasError";
+    this.status = status;
+    this.descricao = descricao;
+  }
+
+  private static extrairDescricao(corpo: string): string | null {
+    try {
+      const json = JSON.parse(corpo) as {
+        errors?: { description?: string }[];
+      };
+      const descricoes = (json.errors ?? [])
+        .map((e) => e.description)
+        .filter((d): d is string => Boolean(d));
+      return descricoes.length > 0 ? descricoes.join(" ") : null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export interface AsaasCustomer {
