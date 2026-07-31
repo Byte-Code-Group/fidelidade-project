@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import { getAuthUser } from "@/lib/supabase/server";
 import { getTenantOwner } from "@/lib/owner";
 import { PLAN_CATALOG } from "@/lib/plan-catalog";
@@ -68,12 +67,8 @@ export default async function PlanosPage({
                 ))}
               </ul>
 
-              <form action={initiatePayment} className="mt-6 space-y-2">
+              <form action={initiatePayment} className="mt-6">
                 <input type="hidden" name="plan" value={plan.key} />
-                <Select name="billing_type" defaultValue="CREDIT_CARD" className="w-full text-sm">
-                  <option value="CREDIT_CARD">Cartão de crédito</option>
-                  <option value="PIX">PIX</option>
-                </Select>
                 <Button
                   type="submit"
                   className="w-full"

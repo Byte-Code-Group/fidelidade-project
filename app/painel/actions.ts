@@ -375,8 +375,8 @@ export async function ownerToggleMemberStatus(membershipId: string, nextStatus: 
 
 // ---------- Assinatura ----------
 
-function redirectToPlanSelection(plan: string, billing: string, error?: string) {
-  const params = new URLSearchParams({ select_plan: plan, billing });
+function redirectToPlanSelection(plan: string, error?: string) {
+  const params = new URLSearchParams({ select_plan: plan });
   if (error) params.set("error", error);
   redirect(`/painel/assinatura?${params.toString()}`);
 }
@@ -384,7 +384,8 @@ function redirectToPlanSelection(plan: string, billing: string, error?: string) 
 export async function ownerChangePlan(formData: FormData) {
   const { tenantId } = await requireTenantOwner();
   const plan = String(formData.get("plan") ?? "");
-  const billingType = String(formData.get("billing_type") ?? "PIX").toUpperCase() as BillingType;
+  // Assinatura do SaaS é só no cartão — PIX não permite cobrança recorrente automática.
+  const billingType: BillingType = "CREDIT_CARD";
   const isConfirmStep = formData.get("confirm") === "1";
   const keepTenantIds = formData
     .getAll("keep_tenant_id")
@@ -404,7 +405,6 @@ export async function ownerChangePlan(formData: FormData) {
     if (keepTenantIds.length !== requiredExtra) {
       redirectToPlanSelection(
         plan,
-        billingType,
         isConfirmStep
           ? `Selecione exatamente ${requiredExtra} negócio(s) pra manter ativo(s) além deste.`
           : undefined,

@@ -234,7 +234,8 @@ export async function initiatePayment(formData: FormData) {
   const { user, tenantId } = await requireTenantOwner();
 
   const plan = String(formData.get("plan") ?? "starter");
-  const billingType = (String(formData.get("billing_type") ?? "PIX").toUpperCase()) as BillingType;
+  // Assinatura do SaaS é só no cartão — PIX não permite cobrança recorrente automática.
+  const billingType: BillingType = "CREDIT_CARD";
 
   if (!process.env.ASAAS_API_KEY) {
     redirect("/conta/aguardando?modo=sem_asaas");

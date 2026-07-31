@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, PLAN_PRICES } from "@/lib/asaas";
@@ -43,11 +42,10 @@ export default async function OwnerAssinaturaPage({
     error?: string;
     saved?: string;
     select_plan?: string;
-    billing?: string;
   }>;
 }) {
   const { tenantId } = await requireTenantOwner();
-  const { error, saved, select_plan, billing } = await searchParams;
+  const { error, saved, select_plan } = await searchParams;
 
   // Reconcilia com o Asaas antes de ler o status — cobre o caso do webhook
   // não ter confirmado o pagamento, e aplica downgrade/cancelamento
@@ -123,7 +121,6 @@ export default async function OwnerAssinaturaPage({
 
               <form action={ownerChangePlan} className="space-y-4">
                 <input type="hidden" name="plan" value={select_plan} />
-                <input type="hidden" name="billing_type" value={billing ?? "PIX"} />
                 <input type="hidden" name="confirm" value="1" />
 
                 {requiredExtra > 0 && (
@@ -311,16 +308,6 @@ export default async function OwnerAssinaturaPage({
                     return (
                       <form action={ownerChangePlan} className="space-y-2">
                         <input type="hidden" name="plan" value={plan.key} />
-                        {needsBillingType && (
-                          <Select
-                            name="billing_type"
-                            defaultValue="CREDIT_CARD"
-                            className="w-full text-sm"
-                          >
-                            <option value="CREDIT_CARD">Cartão de crédito</option>
-                            <option value="PIX">PIX</option>
-                          </Select>
-                        )}
                         {!needsBillingType && !isUpgrade && (
                           <p className="text-[11px] text-gray-500">
                             Na próxima renovação{renewalDate ? ` (${renewalDate})` : ""} passa a cobrar
