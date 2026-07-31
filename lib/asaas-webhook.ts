@@ -87,11 +87,19 @@ function problemasDe(webhook: WebhookAsaas, authToken: string): string[] {
   const eventosFaltando = EVENTOS_NECESSARIOS.filter(
     (e) => !webhook.events.includes(e),
   );
+  // O Asaas não devolve o authToken na consulta — vem null mesmo logo depois
+  // de gravar. Só dá pra comparar quando ele por acaso vier preenchido;
+  // tratar null como "divergente" acusava erro para sempre.
+  const tokenDivergente =
+    typeof webhook.authToken === "string" &&
+    webhook.authToken.length > 0 &&
+    webhook.authToken !== authToken;
+
   return [
     !webhook.enabled && "Está desabilitado no Asaas.",
     webhook.interrupted &&
       "Está interrompido — a fila travou depois de erros seguidos e o Asaas parou de entregar.",
-    webhook.authToken !== authToken &&
+    tokenDivergente &&
       "O token cadastrado é diferente do ASAAS_WEBHOOK_TOKEN — nossa rota rejeita com 401.",
     eventosFaltando.length > 0 &&
       `Faltam eventos: ${eventosFaltando.join(", ")}.`,
@@ -156,8 +164,17 @@ export async function diagnosticarWebhookDaPlataforma(): Promise<DiagnosticoWebh
   }
 }
 
-/** Cria o webhook se faltar; se existir, corrige o que estiver divergente. */
-export async function garantirWebhookDaPlataforma(): Promise<{
+/**
+ * Cria o webhook se faltar; se existir, corrige o que estiver divergente.
+ *
+ * `forcar` reenvia a configuração mesmo com o webhook aparentemente saudável —
+ * é a saída quando a rota está rejeitando com 401: o token não é verificável
+ * pela consulta (o Asaas devolve null), então regravá-lo é o único jeito de
+ * garantir que os dois lados batem.
+ */
+export async function garantirWebhookDaPlataforma(
+  { forcar = false }: { forcar?: boolean } = {},
+): Promise<{
   acao: "criado" | "corrigido" | "nada";
   erro?: string;
 }> {
@@ -170,7 +187,7 @@ export async function garantirWebhookDaPlataforma(): Promise<{
     };
   }
   if (diag.erro) return { acao: "nada", erro: diag.erro };
-  if (!diag.problemas.length) return { acao: "nada" };
+  if (!diag.problemas.length && !forcar) return { acao: "nada" };
 
   // A URL já veio pronta no diagnóstico (diag.urlEsperada).
   const { apiKey, authToken, sandbox } = lerAmbiente();

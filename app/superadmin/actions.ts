@@ -743,10 +743,14 @@ export async function cancelTenantBilling(tenantId: string) {
 // Cria (ou conserta) o webhook que ativa o portal do dono quando a mensalidade
 // é paga. Roda no servidor porque é lá que a ASAAS_API_KEY existe — as env
 // vars são "sensitive" na Vercel e não saem de lá nem pelo CLI.
-export async function repararWebhookDaPlataforma() {
+export async function repararWebhookDaPlataforma(formData?: FormData) {
   await requirePlatformAdmin();
 
-  const { acao, erro } = await garantirWebhookDaPlataforma();
+  // "forcar" regrava a configuração mesmo com o webhook saudável — o token não
+  // é verificável pela consulta (o Asaas devolve null), então é assim que se
+  // sincroniza o ASAAS_WEBHOOK_TOKEN quando a rota está rejeitando com 401.
+  const forcar = formData?.get("forcar") === "1";
+  const { acao, erro } = await garantirWebhookDaPlataforma({ forcar });
 
   const destino = "/superadmin/faturamento";
   if (erro) redirect(`${destino}?error=${encodeURIComponent(erro)}`);
@@ -756,7 +760,7 @@ export async function repararWebhookDaPlataforma() {
     acao === "criado"
       ? "Webhook criado no Asaas."
       : acao === "corrigido"
-        ? "Webhook corrigido no Asaas."
+        ? "Webhook atualizado no Asaas."
         : "Webhook já estava correto.";
   redirect(`${destino}?ok=${encodeURIComponent(mensagem)}`);
 }

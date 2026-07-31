@@ -152,12 +152,31 @@ export default async function FaturamentoPage({
             </ul>
           )}
 
-          {!webhookSaudavel && !diagnostico.configuracaoFaltando.length && !diagnostico.erro && (
-            <form action={repararWebhookDaPlataforma}>
-              <Button type="submit" pendingLabel="Configurando…">
-                {diagnostico.webhook ? "Corrigir webhook" : "Criar webhook"}
-              </Button>
-            </form>
+          {!diagnostico.configuracaoFaltando.length && !diagnostico.erro && (
+            <div className="space-y-2">
+              <form action={repararWebhookDaPlataforma}>
+                <input type="hidden" name="forcar" value="1" />
+                <Button
+                  type="submit"
+                  variant={webhookSaudavel ? "outline" : "primary"}
+                  pendingLabel="Configurando…"
+                >
+                  {!diagnostico.webhook
+                    ? "Criar webhook"
+                    : webhookSaudavel
+                      ? "Reenviar configuração"
+                      : "Corrigir webhook"}
+                </Button>
+              </form>
+              {diagnostico.webhook && (
+                <p className="text-xs opacity-50">
+                  O Asaas não mostra o token cadastrado, então não dá para
+                  conferir daqui se ele bate com o ASAAS_WEBHOOK_TOKEN. Se o
+                  portal não ativar depois de um pagamento, reenvie a
+                  configuração — é o que regrava o token nos dois lados.
+                </p>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
