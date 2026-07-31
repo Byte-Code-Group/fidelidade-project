@@ -36,14 +36,17 @@ function AguardandoContent() {
         return true;
       }
 
-      const data: { authenticated: boolean; tenantStatus: string | null } =
-        await res.json();
+      const data: {
+        authenticated: boolean;
+        tenantStatus: string | null;
+        anyActive?: boolean;
+      } = await res.json();
 
       if (!data.authenticated) {
         router.replace("/conta/login");
         return true;
       }
-      if (data.tenantStatus === "active") {
+      if (data.tenantStatus === "active" || data.anyActive) {
         router.replace("/painel");
         return true;
       }

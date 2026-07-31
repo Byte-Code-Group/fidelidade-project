@@ -322,11 +322,45 @@ export interface AsaasPayment {
   dueDate: string;
 }
 
+/** Status do Asaas que contam como fatura já paga. */
+export const PAID_PAYMENT_STATUSES = new Set([
+  "RECEIVED",
+  "CONFIRMED",
+  "RECEIVED_IN_CASH",
+]);
+
+/** Status do Asaas que contam como fatura ainda pagável. */
+const PAYABLE_PAYMENT_STATUSES = new Set([
+  "PENDING",
+  "OVERDUE",
+  "AWAITING_RISK_ANALYSIS",
+]);
+
+// Uma assinatura acumula cobranças: a de cada ciclo, mais as que venceram
+// sem pagamento. Olhar só a primeira da lista faz o app decidir pela fatura
+// errada — daí a listagem sempre vir com folga.
+export async function getSubscriptionPayments(
+  subscriptionId: string,
+  limit = 20,
+): Promise<AsaasPayment[]> {
+  const res = await request<{ data: AsaasPayment[] }>(
+    `/subscriptions/${subscriptionId}/payments?limit=${limit}&offset=0`,
+  );
+  return res.data ?? [];
+}
+
+/** Fatura que o dono precisa pagar — a pagável mais recente. */
+export async function getSubscriptionPayablePayment(
+  subscriptionId: string,
+): Promise<AsaasPayment | null> {
+  const payments = await getSubscriptionPayments(subscriptionId);
+  const payable = payments.filter((p) => PAYABLE_PAYMENT_STATUSES.has(p.status));
+  if (!payable.length) return payments[0] ?? null;
+  return payable.sort((a, b) => b.dueDate.localeCompare(a.dueDate))[0];
+}
+
 export async function getSubscriptionFirstPayment(
   subscriptionId: string,
 ): Promise<AsaasPayment | null> {
-  const res = await request<{ data: AsaasPayment[] }>(
-    `/subscriptions/${subscriptionId}/payments?limit=1&offset=0`,
-  );
-  return res.data?.[0] ?? null;
+  return getSubscriptionPayablePayment(subscriptionId);
 }

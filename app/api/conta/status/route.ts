@@ -23,7 +23,17 @@ export async function GET() {
     return NextResponse.json({ authenticated: true, tenantStatus: null });
   }
 
-  const tenantStatus = await syncTenantStatusWithAsaas(owner.tenantId);
+  // Sincroniza todos os negócios do dono, não só o ativo: o negócio que
+  // acabou de ser pago nem sempre é o do cookie (dono com mais de um), e
+  // reconciliar só o ativo deixava o recém-pago preso em "pending".
+  const statuses = await Promise.all(
+    owner.tenants.map(async (t) => [t.id, await syncTenantStatusWithAsaas(t.id)] as const),
+  );
+  const byId = new Map(statuses);
 
-  return NextResponse.json({ authenticated: true, tenantStatus });
+  return NextResponse.json({
+    authenticated: true,
+    tenantStatus: byId.get(owner.tenantId) ?? null,
+    anyActive: statuses.some(([, s]) => s === "active"),
+  });
 }

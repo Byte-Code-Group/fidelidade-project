@@ -8,6 +8,8 @@ import {
   cancelSubscription,
   getSubscription,
   getSubscriptionFirstPayment,
+  getSubscriptionPayments,
+  PAID_PAYMENT_STATUSES,
   updateSubscriptionValue,
   isRemovedCustomerError,
   PLAN_PRICES,
@@ -16,7 +18,7 @@ import {
 } from "@/lib/asaas";
 
 // Status de pagamento do Asaas que consideramos "pago" — libera o tenant.
-const CONFIRMED_PAYMENT_STATUSES = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
+const CONFIRMED_PAYMENT_STATUSES = PAID_PAYMENT_STATUSES;
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin quanto pelo painel do dono.
@@ -400,13 +402,26 @@ export async function syncTenantStatusWithAsaas(tenantId: string): Promise<strin
   if (!tenant.asaas_subscription_id || !process.env.ASAAS_API_KEY) return tenant.status;
 
   try {
-    const payment = await getSubscriptionFirstPayment(tenant.asaas_subscription_id);
-    if (payment && CONFIRMED_PAYMENT_STATUSES.has(payment.status)) {
+    // Qualquer cobrança paga da assinatura libera o tenant — olhar só a
+    // primeira da lista deixava o dono preso em "pending" quando a
+    // assinatura já tinha outra cobrança (tentativa vencida, ciclo novo).
+    const payments = await getSubscriptionPayments(tenant.asaas_subscription_id);
+    const pago = payments.find((p) => CONFIRMED_PAYMENT_STATUSES.has(p.status));
+    if (pago) {
       await db.from("tenants").update({ status: "active" }).eq("id", tenantId);
       return "active";
     }
-  } catch {
-    // Asaas offline ou subscription inválida — mantém status atual, não bloqueia.
+    console.log(
+      `[asaas sync] tenant=${tenantId} sub=${tenant.asaas_subscription_id} sem cobrança paga — statuses=${payments.map((p) => p.status).join(",") || "nenhuma"}`,
+    );
+  } catch (err) {
+    // Asaas offline, chave errada ou subscription inválida — mantém o status
+    // atual pra não bloquear, mas registra: silenciar aqui já escondeu o
+    // motivo real de assinatura paga que nunca ativava.
+    console.error(
+      `[asaas sync] falha ao consultar tenant=${tenantId} sub=${tenant.asaas_subscription_id}:`,
+      err,
+    );
   }
 
   return tenant.status;
