@@ -10,7 +10,8 @@
     "db:reset": "supabase db reset",
     "seed:auth": "tsx scripts/seed-auth.ts",
     "seed:superadmin": "tsx scripts/seed-superadmin.ts",
-    "test:scheduling": "tsx scripts/test-scheduling.mts"
+    "test:scheduling": "tsx scripts/test-scheduling.mts",
+    "asaas:webhook": "tsx scripts/setup-asaas-webhook.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.12",
