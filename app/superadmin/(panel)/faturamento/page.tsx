@@ -1,6 +1,9 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { diagnosticarWebhookDaPlataforma } from "@/lib/asaas-webhook";
+import { repararWebhookDaPlataforma } from "@/app/superadmin/actions";
 
 const PLAN_PRICES: Record<string, number> = {
   starter: 97,
@@ -20,7 +23,13 @@ const STATUS_COLOR: Record<string, string> = {
   suspended: "bg-red-100 text-red-600 dark:bg-red-900/25 dark:text-red-400",
 };
 
-export default async function FaturamentoPage() {
+export default async function FaturamentoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; ok?: string }>;
+}) {
+  const { error, ok } = await searchParams;
+  const diagnostico = await diagnosticarWebhookDaPlataforma();
   const db = createAdminClient();
   const { data: tenants } = await db
     .from("tenants")
@@ -28,6 +37,10 @@ export default async function FaturamentoPage() {
     .order("created_at", { ascending: false });
 
   const rows = tenants ?? [];
+  const webhookSaudavel =
+    !diagnostico.configuracaoFaltando.length &&
+    !diagnostico.erro &&
+    !diagnostico.problemas.length;
   const activeRows = rows.filter((t) => t.status === "active");
   const mrr = activeRows.reduce(
     (sum, t) => sum + (PLAN_PRICES[t.saas_plan] ?? 0),
@@ -71,6 +84,83 @@ export default async function FaturamentoPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Saúde do webhook da plataforma — quando ele não entrega, assinatura
+          paga só ativa quando o dono abre a tela (fallback de reconciliação). */}
+      <Card>
+        <CardContent className="space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-semibold">Webhook do Asaas</h2>
+              <p className="text-xs opacity-50">
+                É o que ativa o portal do dono assim que a mensalidade é paga.
+              </p>
+            </div>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                webhookSaudavel
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/25 dark:text-green-400"
+                  : "bg-red-100 text-red-600 dark:bg-red-900/25 dark:text-red-400"
+              }`}
+            >
+              {webhookSaudavel ? "Ativo" : "Precisa de atenção"}
+            </span>
+          </div>
+
+          {ok && <p className="text-sm text-green-600 dark:text-green-400">{ok}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+          <dl className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
+            <div className="flex gap-2">
+              <dt className="opacity-50">Ambiente:</dt>
+              <dd>{diagnostico.ambiente}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="opacity-50">Conta:</dt>
+              <dd>{diagnostico.contaNome ?? "—"}</dd>
+            </div>
+            <div className="flex gap-2 sm:col-span-2">
+              <dt className="opacity-50">URL:</dt>
+              <dd className="truncate">{diagnostico.urlEsperada || "—"}</dd>
+            </div>
+          </dl>
+
+          {diagnostico.configuracaoFaltando.length > 0 && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              Faltam variáveis de ambiente:{" "}
+              {diagnostico.configuracaoFaltando.join(", ")}.
+            </p>
+          )}
+
+          {diagnostico.erro && (
+            <div className="text-sm text-red-600 dark:text-red-400">
+              <p>Não consegui falar com o Asaas:</p>
+              <p className="mt-1 break-words font-mono text-xs opacity-80">
+                {diagnostico.erro}
+              </p>
+              <p className="mt-1 text-xs opacity-70">
+                Normalmente é ASAAS_SANDBOX invertido em relação à chave usada.
+              </p>
+            </div>
+          )}
+
+          {diagnostico.problemas.length > 0 && (
+            <ul className="list-inside list-disc text-sm text-red-600 dark:text-red-400">
+              {diagnostico.problemas.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          )}
+
+          {!webhookSaudavel && !diagnostico.configuracaoFaltando.length && !diagnostico.erro && (
+            <form action={repararWebhookDaPlataforma}>
+              <Button type="submit" pendingLabel="Configurando…">
+                {diagnostico.webhook ? "Corrigir webhook" : "Criar webhook"}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tabela de tenants */}
       <Card>

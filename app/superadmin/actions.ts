@@ -20,6 +20,7 @@ import {
   removeProfileField,
 } from "@/lib/profile-fields";
 import { cancelTenantSubscription } from "@/lib/tenant-billing";
+import { garantirWebhookDaPlataforma } from "@/lib/asaas-webhook";
 import { approveCompletion, rejectCompletion } from "@/lib/mission-validations";
 import { createCustomer, createSubscription } from "@/lib/asaas";
 import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
@@ -735,4 +736,27 @@ export async function cancelTenantBilling(tenantId: string) {
   revalidatePath(`/superadmin/tenants/${tenantId}`);
   revalidatePath("/superadmin");
   redirect(`/superadmin/tenants/${tenantId}?saved=1`);
+}
+
+// ---------- Integração Asaas (conta da plataforma) ----------
+
+// Cria (ou conserta) o webhook que ativa o portal do dono quando a mensalidade
+// é paga. Roda no servidor porque é lá que a ASAAS_API_KEY existe — as env
+// vars são "sensitive" na Vercel e não saem de lá nem pelo CLI.
+export async function repararWebhookDaPlataforma() {
+  await requirePlatformAdmin();
+
+  const { acao, erro } = await garantirWebhookDaPlataforma();
+
+  const destino = "/superadmin/faturamento";
+  if (erro) redirect(`${destino}?error=${encodeURIComponent(erro)}`);
+
+  revalidatePath(destino);
+  const mensagem =
+    acao === "criado"
+      ? "Webhook criado no Asaas."
+      : acao === "corrigido"
+        ? "Webhook corrigido no Asaas."
+        : "Webhook já estava correto.";
+  redirect(`${destino}?ok=${encodeURIComponent(mensagem)}`);
 }
