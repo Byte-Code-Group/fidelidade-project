@@ -170,10 +170,10 @@ async function subscribeFresh(
     })
     .eq("id", tenantId);
 
+  // Sem ?autoRedirect=true: ele joga o dono de volta assim que a fatura abre,
+  // pago ou não. Quem redireciona é o callback da assinatura.
   const payment = await getSubscriptionFirstPayment(subscription.id);
-  const invoiceUrl = payment?.invoiceUrl
-    ? `${payment.invoiceUrl}?autoRedirect=true`
-    : undefined;
+  const invoiceUrl = payment?.invoiceUrl;
 
   return { subscription, invoiceUrl };
 }
