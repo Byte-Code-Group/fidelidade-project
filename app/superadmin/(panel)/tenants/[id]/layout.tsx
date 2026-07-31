@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Tenant } from "@/lib/types";
 import { TenantTabs } from "./tenant-tabs";
+import { portalUrl } from "@/lib/urls";
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
 
@@ -31,7 +32,7 @@ export default async function TenantLayout({
         </Link>
         <h1 className="mt-1 text-xl font-semibold">{tenant.name}</h1>
         <a
-          href={`http://${tenant.slug}.${ROOT_DOMAIN}`}
+          href={portalUrl(tenant.slug)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm opacity-60 hover:opacity-100"

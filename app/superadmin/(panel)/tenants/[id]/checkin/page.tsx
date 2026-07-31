@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Tenant } from "@/lib/types";
 import { rotateCheckinToken } from "../../../../actions";
+import { portalUrl } from "@/lib/urls";
 
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000";
 
 export default async function CheckinTabPage({
   params,
@@ -22,7 +22,7 @@ export default async function CheckinTabPage({
     .maybeSingle<Pick<Tenant, "slug" | "checkin_token">>();
   if (!tenant) notFound();
 
-  const url = `http://${tenant.slug}.${ROOT_DOMAIN}/checkin?token=${tenant.checkin_token}`;
+  const url = portalUrl(tenant.slug, `/checkin?token=${tenant.checkin_token}`);
   const qrDataUrl = await QRCode.toDataURL(url, { width: 256, margin: 1 });
 
   return (

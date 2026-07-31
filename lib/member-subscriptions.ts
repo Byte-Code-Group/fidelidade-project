@@ -7,6 +7,8 @@ import {
   createCustomerNaConta,
   createSubscriptionNaConta,
   getSubscriptionFirstPaymentNaConta,
+  getSubscriptionPaymentsNaConta,
+  PAID_PAYMENT_STATUSES,
 } from "@/lib/asaas";
 import type { AsaasConta } from "@/lib/asaas";
 
@@ -223,6 +225,54 @@ async function primeiraCobranca(conta: AsaasConta, subscriptionId: string) {
     await new Promise((r) => setTimeout(r, 600));
   }
   return null;
+}
+
+// Fallback do webhook do negócio (app/api/webhooks/asaas/tenant/[tenantId]).
+// Ele é a fonte primária, mas depende do webhook estar criado e de o Asaas
+// entregar o evento — quando falha, o cliente pagava e ficava "pending" pra
+// sempre. Chamada quando o portal abre a tela de planos.
+export async function sincronizarAssinaturaDoCliente(
+  tenantId: string,
+  userId: string,
+): Promise<void> {
+  const db = createAdminClient();
+  const { data: membership } = await db
+    .from("memberships")
+    .select("id, asaas_subscription_id, subscription_status")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<Pick<MembershipRow, "id" | "asaas_subscription_id" | "subscription_status">>();
+
+  if (!membership?.asaas_subscription_id) return;
+  if (membership.subscription_status === "active") return;
+
+  const conta = await getCredenciais(tenantId);
+  if (!conta) return;
+
+  try {
+    const cobrancas = await getSubscriptionPaymentsNaConta(
+      conta,
+      membership.asaas_subscription_id,
+    );
+    if (!cobrancas.some((c) => PAID_PAYMENT_STATUSES.has(c.status))) return;
+
+    await db
+      .from("memberships")
+      .update({
+        subscription_status: "active",
+        asaas_invoice_url: null,
+        subscription_updated_at: new Date().toISOString(),
+      })
+      .eq("id", membership.id);
+  } catch (err) {
+    console.error("[sincronizarAssinaturaDoCliente]", {
+      tenantId,
+      membershipId: membership.id,
+      erro: err instanceof Error ? err.message : err,
+    });
+  }
 }
 
 /** Cancela a cobrança recorrente do cliente (ele deixa de ser cobrado). */

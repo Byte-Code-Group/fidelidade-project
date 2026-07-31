@@ -210,16 +210,29 @@ export async function cancelSubscriptionNaConta(
   await request(`/subscriptions/${subscriptionId}`, { method: "DELETE" }, conta);
 }
 
+export async function getSubscriptionPaymentsNaConta(
+  conta: AsaasConta,
+  subscriptionId: string,
+  limit = 20,
+): Promise<AsaasPayment[]> {
+  const res = await request<{ data: AsaasPayment[] }>(
+    `/subscriptions/${subscriptionId}/payments?limit=${limit}&offset=0`,
+    {},
+    conta,
+  );
+  return res.data ?? [];
+}
+
+// Mesma regra do lado da plataforma: a fatura que interessa é a pagável mais
+// recente, não a primeira que o Asaas devolve.
 export async function getSubscriptionFirstPaymentNaConta(
   conta: AsaasConta,
   subscriptionId: string,
 ): Promise<AsaasPayment | null> {
-  const res = await request<{ data: AsaasPayment[] }>(
-    `/subscriptions/${subscriptionId}/payments?limit=1&offset=0`,
-    {},
-    conta,
-  );
-  return res.data?.[0] ?? null;
+  const payments = await getSubscriptionPaymentsNaConta(conta, subscriptionId);
+  const pagavel = payments.filter((p) => PAYABLE_PAYMENT_STATUSES.has(p.status));
+  if (!pagavel.length) return payments[0] ?? null;
+  return pagavel.sort((a, b) => b.dueDate.localeCompare(a.dueDate))[0];
 }
 
 export interface AsaasWebhook {

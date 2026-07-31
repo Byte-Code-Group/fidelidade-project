@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -15,6 +16,7 @@ import { validateProfileFieldValues } from "@/lib/profile-fields";
 import { assinarPlanoComCobranca } from "@/lib/member-subscriptions";
 import { changeMembershipPlan } from "@/lib/memberships";
 import { traduzirErro } from "@/lib/error-messages";
+import { portalUrl, siteUrl } from "@/lib/urls";
 import { listProcedures } from "@/lib/procedures";
 import {
   horariosDisponiveis,
@@ -51,10 +53,7 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   // Monta a URL de retorno respeitando o domínio do tenant.
-  const origin =
-    ctx
-      ? `http://${ctx.tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000"}`
-      : (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000");
+  const origin = ctx ? portalUrl(ctx.tenant.slug) : siteUrl();
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -112,21 +111,39 @@ export async function signUp(formData: FormData) {
     redirect("/cadastro?error=" + encodeURIComponent("Erro ao salvar cadastro."));
   }
 
-  // Gera código único da carteirinha: SLUG-XXXXX (6 hex aleatórios).
-  const suffix = Math.random().toString(16).slice(2, 8).toUpperCase();
-  const memberCode = `${tenant.slug.toUpperCase().slice(0, 6)}-${suffix}`;
+  // Gera código único da carteirinha: SLUG-XXXXX (6 hex aleatórios). O código
+  // é unique no banco, então uma colisão derrubava o insert em silêncio e o
+  // cliente ficava sem carteirinha — tenta de novo com outro sufixo.
+  let memberCode = "";
+  let membershipErr: { code?: string } | null = null;
+  for (let tentativa = 0; tentativa < 5; tentativa++) {
+    const suffix = randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+    memberCode = `${tenant.slug.toUpperCase().slice(0, 6)}-${suffix}`;
 
-  await db.from("memberships").insert({
-    tenant_id: tenant.id,
-    user_id: authData.user.id,
-    modality: "titular",
-    status: "active",
-    member_code: memberCode,
-    points_total: 0,
-  });
+    const { error } = await db.from("memberships").insert({
+      tenant_id: tenant.id,
+      user_id: authData.user.id,
+      modality: "titular",
+      status: "active",
+      member_code: memberCode,
+      points_total: 0,
+    });
+    membershipErr = error;
+    if (!error) break;
+    if (error.code !== "23505") break;
+  }
+
+  if (membershipErr) {
+    console.error("[signUp] carteirinha não criada", {
+      tenantId: tenant.id,
+      userId: authData.user.id,
+      erro: membershipErr,
+    });
+    redirect("/cadastro?error=" + encodeURIComponent("Erro ao criar sua carteirinha. Fale com a equipe."));
+  }
 
   const { settings } = ctx;
-  const origin = `http://${tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000"}`;
+  const origin = portalUrl(tenant.slug);
   const { subject, html } = welcomeEmail({
     tenantName: tenant.name,
     primaryColor: settings.primary_color,
@@ -159,7 +176,10 @@ export async function completeMission(missionId: string) {
     >();
   if (!mission || !mission.is_active) return;
 
-  // Evita conclusão duplicada (não há unique no schema p/ esse par).
+  // Evita conclusão duplicada. Quem barra de verdade é o unique
+  // (mission_id, user_id) — ver 0037; esta consulta só evita ida ao banco no
+  // caso comum. Dois cliques simultâneos passam os dois por aqui, e aí o
+  // 23505 do insert derruba o segundo.
   const { data: existing } = await supabase
     .from("mission_completions")
     .select("id")
@@ -168,13 +188,14 @@ export async function completeMission(missionId: string) {
     .maybeSingle<Pick<MissionCompletion, "id">>();
   if (existing) return;
 
-  await supabase.from("mission_completions").insert({
+  const { error: insErr } = await supabase.from("mission_completions").insert({
     tenant_id: mission.tenant_id,
     user_id: user.id,
     mission_id: missionId,
     status: mission.requires_validation ? "pending_validation" : "completed",
     completed_at: mission.requires_validation ? null : new Date().toISOString(),
   });
+  if (insErr && insErr.code !== "23505") return;
 
   revalidatePath("/engajamento");
 }
@@ -195,7 +216,16 @@ export async function saveProfile(formData: FormData) {
     await db.from("users").update({ full_name: fullName }).eq("id", user.id);
   }
 
-  // Campos dinâmicos: chegam como field_<uuid> no form.
+  const { data: fieldDefs } = await db
+    .from("profile_fields")
+    .select("*")
+    .eq("tenant_id", ctx.tenant.id)
+    .returns<ProfileField[]>();
+
+  // Campos dinâmicos: chegam como field_<uuid> no form. O id vem do cliente,
+  // então só vale se for campo DESTE negócio — senão dava pra gravar valor
+  // preso a um campo de outro tenant só editando o HTML.
+  const camposDoTenant = new Set((fieldDefs ?? []).map((f) => f.id));
   const rows: {
     tenant_id: string;
     user_id: string;
@@ -206,6 +236,7 @@ export async function saveProfile(formData: FormData) {
   for (const [key, raw] of formData.entries()) {
     if (!key.startsWith("field_")) continue;
     const fieldId = key.slice("field_".length);
+    if (!camposDoTenant.has(fieldId)) continue;
     const value = String(raw);
     valuesByField.set(fieldId, value);
     rows.push({
@@ -215,12 +246,6 @@ export async function saveProfile(formData: FormData) {
       value,
     });
   }
-
-  const { data: fieldDefs } = await db
-    .from("profile_fields")
-    .select("*")
-    .eq("tenant_id", ctx.tenant.id)
-    .returns<ProfileField[]>();
 
   const validationError = validateProfileFieldValues(fieldDefs ?? [], valuesByField);
   if (validationError) {
@@ -309,10 +334,17 @@ export async function redeemReward(rewardId: string) {
 
   const pointsRemaining = membership.points_total - reward.points_cost;
 
-  await db
+  // Debita com compare-and-swap: o update só passa se os pontos ainda forem
+  // os mesmos que acabamos de ler. Sem isso, dois cliques simultâneos liam o
+  // mesmo saldo e saíam com dois resgates pelo preço de um.
+  const { data: debitado } = await db
     .from("memberships")
     .update({ points_total: pointsRemaining })
-    .eq("id", membership.id);
+    .eq("id", membership.id)
+    .eq("points_total", membership.points_total)
+    .select("id");
+
+  if (!debitado?.length) redirect("/loja?error=pontos");
 
   await db.from("reward_redemptions").insert({
     tenant_id: ctx.tenant.id,
@@ -324,11 +356,17 @@ export async function redeemReward(rewardId: string) {
   });
 
   if (reward.stock !== null) {
-    await db.from("rewards").update({ stock: reward.stock - 1 }).eq("id", reward.id);
+    // Mesmo cuidado do saldo: sem o filtro pelo estoque lido, resgates
+    // simultâneos deixavam o estoque negativo.
+    await db
+      .from("rewards")
+      .update({ stock: reward.stock - 1 })
+      .eq("id", reward.id)
+      .eq("stock", reward.stock);
   }
 
   if (profile?.email) {
-    const origin = `http://${ctx.tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "lvh.me:3000"}`;
+    const origin = portalUrl(ctx.tenant.slug);
     const { subject, html } = redemptionEmail({
       tenantName: ctx.tenant.name,
       primaryColor: ctx.settings.primary_color,

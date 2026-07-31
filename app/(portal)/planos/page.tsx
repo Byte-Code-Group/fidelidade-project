@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getCurrentTenant } from "@/lib/tenant";
 import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { applyScheduledMembershipChange } from "@/lib/memberships";
+import { sincronizarAssinaturaDoCliente } from "@/lib/member-subscriptions";
 import { subscribeToPlan } from "../actions";
 import type { BusinessPlan, Membership } from "@/lib/types";
 
@@ -44,6 +45,11 @@ export default async function PlanosPage({
   const supabase = await createClient();
   const user = await getAuthUser();
   if (!user) redirect("/login");
+
+  // Reconcilia com o Asaas antes de ler a carteirinha: o webhook do negócio é
+  // a fonte primária do "pagou", mas pode não chegar — sem isso o cliente que
+  // já pagou continuava vendo "Aguardando pagamento".
+  await sincronizarAssinaturaDoCliente(tenant.id, user.id);
 
   const [{ data: plans }, { data: membershipBefore }] = await Promise.all([
     supabase
