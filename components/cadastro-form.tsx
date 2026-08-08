@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { platformSignUp } from "@/app/(platform)/conta/actions";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { Modal } from "@/components/ui/modal";
+import { PoliticaDePrivacidade, TermosDeUso } from "@/components/legal-text";
 
 // Regex simples de e-mail (suficiente p/ feedback ao usuário; o Supabase
 // valida de forma definitiva no servidor).
@@ -15,6 +17,7 @@ export function CadastroForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [terms, setTerms] = useState(false);
+  const [legal, setLegal] = useState<"termos" | "privacidade" | null>(null);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -111,25 +114,38 @@ export function CadastroForm() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="flex items-start gap-2 text-[13px] leading-relaxed text-gray-500">
+        {/* Sem <label> envolvendo tudo: os links abrem modais e um clique neles
+            dentro do label alternaria o checkbox sem querer. */}
+        <div className="flex items-start gap-2 text-[13px] leading-relaxed text-gray-500">
           <input
+            id="terms"
             type="checkbox"
             checked={terms}
             onChange={(e) => setTerms(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           <span>
-            Concordo com os{" "}
-            <a href="#" className="font-medium text-blue-600 hover:underline">
+            <label htmlFor="terms" className="cursor-pointer">
+              Concordo com os
+            </label>{" "}
+            <button
+              type="button"
+              onClick={() => setLegal("termos")}
+              className="font-medium text-blue-600 hover:underline"
+            >
               Termos de Uso
-            </a>{" "}
+            </button>{" "}
             e a{" "}
-            <a href="#" className="font-medium text-blue-600 hover:underline">
+            <button
+              type="button"
+              onClick={() => setLegal("privacidade")}
+              className="font-medium text-blue-600 hover:underline"
+            >
               Política de Privacidade
-            </a>
+            </button>
             .
           </span>
-        </label>
+        </div>
         {errors.terms && <p className="text-[13px] text-red-600">{errors.terms}</p>}
       </div>
 
@@ -139,6 +155,17 @@ export function CadastroForm() {
       >
         Criar conta e continuar
       </SubmitButton>
+
+      <Modal open={legal === "termos"} title="Termos de Uso" onClose={() => setLegal(null)}>
+        <TermosDeUso />
+      </Modal>
+      <Modal
+        open={legal === "privacidade"}
+        title="Política de Privacidade"
+        onClose={() => setLegal(null)}
+      >
+        <PoliticaDePrivacidade />
+      </Modal>
     </form>
   );
 }
