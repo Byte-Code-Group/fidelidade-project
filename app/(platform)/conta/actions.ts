@@ -145,7 +145,14 @@ export async function requestPlatformPasswordReset(formData: FormData) {
   const nome = data?.user?.user_metadata?.full_name as string | undefined;
 
   const { subject, html } = resetPasswordEmail({ resetLink, userName: nome });
-  await sendEmail({ to: email, subject, html });
+  const envio = await sendEmail({ to: email, subject, html });
+
+  // Aqui a conta existe (o generateLink passou), então falha de envio é
+  // problema nosso — dizer "enviado" deixaria a pessoa esperando um e-mail
+  // que nunca chega.
+  if (!envio.ok) {
+    redirect(`/conta/esqueci-senha?error=${encodeURIComponent(traduzirErro(envio.error))}`);
+  }
 
   redirect("/conta/esqueci-senha?enviado=1");
 }
