@@ -16,11 +16,28 @@ import {
 // redirect é o do next/navigation, não um NextResponse próprio: os cookies de
 // sessão que o client da Supabase grava saem pelo cookie store da request, e
 // uma resposta montada à mão não os carrega.
+// Cada área tem sua tela de nova senha (portal, /conta, superadmin) e o
+// destino vem no link. Só path relativo: "//host" e URL absoluta viram open
+// redirect.
+function destinoSeguro(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+    return "/conta/redefinir-senha";
+  }
+  return raw;
+}
+
+// Link vencido volta pra tela de "esqueci minha senha" da mesma área, não pra
+// da plataforma — quem veio do portal de um negócio continua lá.
+function voltarParaPedido(destino: string): string {
+  return `${destino.replace("redefinir-senha", "esqueci-senha")}?error=link_invalido`;
+}
+
 export async function GET(req: NextRequest) {
   const tokenHash = req.nextUrl.searchParams.get("token_hash");
+  const destino = destinoSeguro(req.nextUrl.searchParams.get("next"));
 
   if (!tokenHash) {
-    redirect("/conta/esqueci-senha?error=link_invalido");
+    redirect(voltarParaPedido(destino));
   }
 
   const supabase = await createClient();
@@ -31,7 +48,7 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     console.error("[recuperar]", error.message);
-    redirect("/conta/esqueci-senha?error=link_invalido");
+    redirect(voltarParaPedido(destino));
   }
 
   // A sessão criada aqui é nova, mas os timestamps de rastreio da anterior
@@ -46,5 +63,5 @@ export async function GET(req: NextRequest) {
     cookieStore.delete(name);
   }
 
-  redirect("/conta/redefinir-senha");
+  redirect(destino);
 }

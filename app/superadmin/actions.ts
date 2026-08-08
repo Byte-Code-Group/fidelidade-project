@@ -26,6 +26,8 @@ import { createCustomer, createSubscription } from "@/lib/asaas";
 import { addVercelDomain, removeVercelDomain } from "@/lib/vercel-domains";
 import { BUCKETS, documentPath } from "@/lib/storage";
 import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
+import { enviarLinkDeRecuperacao } from "@/lib/password-reset";
+import { siteUrl } from "@/lib/urls";
 
 // ---------- Auth ----------
 
@@ -56,17 +58,16 @@ export async function requestSuperadminPasswordReset(formData: FormData) {
     redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent("Informe o e-mail."));
   }
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:3000"}`;
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/superadmin/redefinir-senha`,
+  // Pelo Resend, com o template da plataforma — não pelo e-mail padrão da
+  // Supabase (ver lib/password-reset.ts).
+  const resultado = await enviarLinkDeRecuperacao({
+    email,
+    origin: siteUrl(),
+    destino: "/superadmin/redefinir-senha",
   });
 
-  if (error) {
-    redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent(traduzirErro(error.message)));
+  if (!resultado.ok && "error" in resultado) {
+    redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent(traduzirErro(resultado.error)));
   }
   redirect("/superadmin/esqueci-senha?sent=1");
 }

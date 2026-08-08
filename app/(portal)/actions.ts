@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentTenant } from "@/lib/tenant";
 import { currentPeriodRef, type LoyaltyFrequency } from "@/lib/loyalty";
 import { sendEmail } from "@/lib/email";
+import { enviarLinkDeRecuperacao } from "@/lib/password-reset";
 import { welcomeEmail } from "@/lib/emails/welcome";
 import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
@@ -43,8 +44,9 @@ export async function signOut() {
   redirect("/login");
 }
 
-// Envia e-mail de recuperação de senha. O link redireciona para /redefinir-senha
-// onde o usuário (já autenticado via magic link) atualiza a senha no client.
+// Envia e-mail de recuperação de senha pelo Resend, com o branding do negócio
+// (ver lib/password-reset.ts). O link passa por /auth/recuperar, que valida o
+// token e abre /redefinir-senha já com sessão.
 export async function requestPasswordReset(formData: FormData) {
   const ctx = await getCurrentTenant();
   const email = String(formData.get("email") ?? "").trim();
@@ -55,13 +57,18 @@ export async function requestPasswordReset(formData: FormData) {
   // Monta a URL de retorno respeitando o domínio do tenant.
   const origin = ctx ? portalUrl(ctx.tenant.slug) : siteUrl();
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/redefinir-senha`,
+  const resultado = await enviarLinkDeRecuperacao({
+    email,
+    origin,
+    destino: "/redefinir-senha",
+    brandName: ctx?.tenant.name,
+    primaryColor: ctx?.settings.primary_color,
   });
 
-  if (error) {
-    redirect("/esqueci-senha?error=" + encodeURIComponent(traduzirErro(error.message)));
+  // E-mail sem conta responde igual a um cadastrado — senão a tela vira um
+  // oráculo de quem é cliente do negócio.
+  if (!resultado.ok && "error" in resultado) {
+    redirect("/esqueci-senha?error=" + encodeURIComponent(traduzirErro(resultado.error)));
   }
   redirect("/esqueci-senha?sent=1");
 }

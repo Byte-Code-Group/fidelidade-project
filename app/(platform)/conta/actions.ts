@@ -20,8 +20,7 @@ import {
   type BillingType,
 } from "@/lib/asaas";
 import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
-import { sendEmail } from "@/lib/email";
-import { resetPasswordEmail } from "@/lib/emails/reset-password";
+import { enviarLinkDeRecuperacao } from "@/lib/password-reset";
 import { siteUrl } from "@/lib/urls";
 
 function slugify(s: string) {
@@ -118,40 +117,17 @@ export async function requestPlatformPasswordReset(formData: FormData) {
     redirect("/conta/esqueci-senha?error=campos");
   }
 
-  const db = createAdminClient();
-  const { data, error } = await db.auth.admin.generateLink({
-    type: "recovery",
+  const resultado = await enviarLinkDeRecuperacao({
     email,
+    origin: siteUrl(),
+    destino: "/conta/redefinir-senha",
   });
 
-  // E-mail inexistente responde igual a um existente — senão a tela vira um
-  // oráculo de quem tem conta na plataforma.
-  if (error) {
-    const msg = error.message ?? "";
-    if (/user not found|not found/i.test(msg)) {
-      redirect("/conta/esqueci-senha?enviado=1");
-    }
-    redirect(`/conta/esqueci-senha?error=${encodeURIComponent(traduzirErro(msg))}`);
-  }
-
-  const hashedToken = data?.properties?.hashed_token;
-  if (!hashedToken) {
-    redirect("/conta/esqueci-senha?enviado=1");
-  }
-
-  const resetLink = siteUrl(
-    `/auth/recuperar?token_hash=${encodeURIComponent(hashedToken)}`,
-  );
-  const nome = data?.user?.user_metadata?.full_name as string | undefined;
-
-  const { subject, html } = resetPasswordEmail({ resetLink, userName: nome });
-  const envio = await sendEmail({ to: email, subject, html });
-
-  // Aqui a conta existe (o generateLink passou), então falha de envio é
-  // problema nosso — dizer "enviado" deixaria a pessoa esperando um e-mail
-  // que nunca chega.
-  if (!envio.ok) {
-    redirect(`/conta/esqueci-senha?error=${encodeURIComponent(traduzirErro(envio.error))}`);
+  // E-mail sem conta responde igual a um cadastrado — senão a tela vira um
+  // oráculo de quem tem conta na plataforma. Já falha de envio é problema
+  // nosso, e dizer "enviado" deixaria a pessoa esperando pra sempre.
+  if (!resultado.ok && "error" in resultado) {
+    redirect(`/conta/esqueci-senha?error=${encodeURIComponent(traduzirErro(resultado.error))}`);
   }
 
   redirect("/conta/esqueci-senha?enviado=1");

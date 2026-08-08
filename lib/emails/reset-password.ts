@@ -4,12 +4,15 @@ export interface ResetPasswordEmailData {
   userName?: string;
   /** Tempo de validade exibido no corpo do e-mail. */
   validade?: string;
+  /** Marca do remetente. No portal é o nome do negócio; senão, a Fideliza. */
+  brandName?: string;
+  primaryColor?: string;
 }
 
 // Azul da plataforma (blue-600 do Tailwind) — mesmo do painel e das telas de
-// autenticação. Templates de tenant usam a cor do próprio negócio; este e-mail
-// é da Fideliza, então a marca é fixa.
-const BRAND = "#2563eb";
+// autenticação. Vale quando o e-mail sai da própria Fideliza; no portal de um
+// negócio, a cor vem de tenant_settings.
+const BRAND_COLOR = "#2563eb";
 
 export function resetPasswordEmail(d: ResetPasswordEmailData): {
   subject: string;
@@ -17,9 +20,11 @@ export function resetPasswordEmail(d: ResetPasswordEmailData): {
 } {
   const year = new Date().getFullYear();
   const validade = d.validade ?? "1 hora";
+  const marca = d.brandName ?? "Fideliza";
+  const BRAND = d.primaryColor || BRAND_COLOR;
 
   return {
-    subject: "Redefinir sua senha · Fideliza",
+    subject: `Redefinir sua senha · ${marca}`,
     html: `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -30,7 +35,7 @@ export function resetPasswordEmail(d: ResetPasswordEmailData): {
         <!-- Header -->
         <tr>
           <td style="background:${BRAND};padding:36px 40px;text-align:center">
-            <p style="margin:0;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase">Fideliza</p>
+            <p style="margin:0;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase">${marca}</p>
             <h1 style="margin:8px 0 0;color:#fff;font-size:26px;font-weight:700">Redefinir senha</h1>
           </td>
         </tr>
@@ -67,7 +72,7 @@ export function resetPasswordEmail(d: ResetPasswordEmailData): {
         <!-- Footer -->
         <tr>
           <td style="padding:24px 40px;border-top:1px solid #eee;text-align:center;background:#fafafa">
-            <p style="margin:0;font-size:12px;color:#999">© ${year} Fideliza</p>
+            <p style="margin:0;font-size:12px;color:#999">© ${year} ${marca}</p>
           </td>
         </tr>
       </table>
