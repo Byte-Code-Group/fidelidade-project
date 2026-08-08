@@ -1,7 +1,8 @@
 import { traduzirErro } from "@/lib/error-messages";
 
-// Alerta inline das telas de autenticação (login, cadastro, senha).
-// Fora do fluxo de auth o padrão é toast — ver `components/flash-toast.tsx`.
+// Alerta inline das telas de autenticação do portal e do superadmin.
+// As telas de /conta e o resto do app usam toast — ver
+// `components/flash-toast.tsx`.
 export function FormAlert({
   children,
   variant = "error",

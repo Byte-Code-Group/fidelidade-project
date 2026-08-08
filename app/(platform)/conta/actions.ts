@@ -20,6 +20,9 @@ import {
   type BillingType,
 } from "@/lib/asaas";
 import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
+import { sendEmail } from "@/lib/email";
+import { resetPasswordEmail } from "@/lib/emails/reset-password";
+import { siteUrl } from "@/lib/urls";
 
 function slugify(s: string) {
   return s
@@ -101,6 +104,77 @@ export async function platformSignIn(formData: FormData) {
   }
 
   redirect("/painel");
+}
+
+// ---------- Recuperação de senha ----------
+
+// O e-mail de recuperação é nosso (Resend + template da marca), não o padrão
+// da Supabase: `generateLink` só gera o token, sem disparar mensagem. O link
+// aponta pra /auth/recuperar, que troca o token por sessão e leva pra tela de
+// nova senha.
+export async function requestPlatformPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    redirect("/conta/esqueci-senha?error=campos");
+  }
+
+  const db = createAdminClient();
+  const { data, error } = await db.auth.admin.generateLink({
+    type: "recovery",
+    email,
+  });
+
+  // E-mail inexistente responde igual a um existente — senão a tela vira um
+  // oráculo de quem tem conta na plataforma.
+  if (error) {
+    const msg = error.message ?? "";
+    if (/user not found|not found/i.test(msg)) {
+      redirect("/conta/esqueci-senha?enviado=1");
+    }
+    redirect(`/conta/esqueci-senha?error=${encodeURIComponent(traduzirErro(msg))}`);
+  }
+
+  const hashedToken = data?.properties?.hashed_token;
+  if (!hashedToken) {
+    redirect("/conta/esqueci-senha?enviado=1");
+  }
+
+  const resetLink = siteUrl(
+    `/auth/recuperar?token_hash=${encodeURIComponent(hashedToken)}`,
+  );
+  const nome = data?.user?.user_metadata?.full_name as string | undefined;
+
+  const { subject, html } = resetPasswordEmail({ resetLink, userName: nome });
+  await sendEmail({ to: email, subject, html });
+
+  redirect("/conta/esqueci-senha?enviado=1");
+}
+
+// Só roda com a sessão criada por /auth/recuperar (ou pelo usuário logado).
+export async function updatePlatformPassword(formData: FormData) {
+  const user = await getAuthUser();
+  if (!user) {
+    redirect("/conta/esqueci-senha?error=link_invalido");
+  }
+
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (password.length < 6) {
+    redirect("/conta/redefinir-senha?error=senha_curta");
+  }
+  if (password !== confirm) {
+    redirect("/conta/redefinir-senha?error=senhas_diferentes");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    redirect(`/conta/redefinir-senha?error=${encodeURIComponent(traduzirErro(error.message))}`);
+  }
+
+  redirect("/conta/redefinir-senha?ok=1");
 }
 
 export async function platformSignOut() {

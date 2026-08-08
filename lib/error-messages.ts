@@ -11,6 +11,9 @@ const CODIGOS: Record<string, string> = {
   esgotado: "Esse prêmio está esgotado.",
   indisponivel: "Esse prêmio não está mais disponível.",
   sem_carteirinha: "Você ainda não tem uma carteirinha ativa.",
+  link_invalido: "Link expirado ou inválido. Solicite um novo.",
+  senha_curta: "A senha precisa ter pelo menos 6 caracteres.",
+  senhas_diferentes: "As senhas não coincidem.",
 };
 
 // Casadas em ordem — a primeira regex que casar vence. Grupos de captura

@@ -84,6 +84,9 @@ export async function proxy(request: NextRequest) {
       !pathname.startsWith("/superadmin") &&
       !pathname.startsWith("/conta") &&
       !pathname.startsWith("/painel") &&
+      // /auth/* são links de e-mail da plataforma (recuperação de senha) —
+      // nunca pertencem ao portal de um tenant.
+      !pathname.startsWith("/auth/") &&
       !pathname.startsWith("/api/")
     ) {
       // Redireciona para URL canônica /p/[slug]/... para manter slug visível
