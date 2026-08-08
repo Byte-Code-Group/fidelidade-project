@@ -13,6 +13,15 @@ import { FlashToast } from "@/components/flash-toast";
 import type { Membership, ProfileField } from "@/lib/types";
 import { saveProfile } from "../actions";
 
+// O telefone é guardado em E.164 ("5531999998888") porque é o que a Meta
+// exige no disparo; no formulário ele volta pro formato local que a máscara
+// entende.
+function telefoneLocal(e164: string | null | undefined): string {
+  if (!e164) return "";
+  const digitos = e164.replace(/\D/g, "");
+  return digitos.startsWith("55") && digitos.length >= 12 ? digitos.slice(2) : digitos;
+}
+
 // Grade de 2 colunas: campo "texto longo" sempre ocupa a linha inteira, e
 // isso empurra o campo anterior/seguinte pra uma linha sozinho — nesse caso
 // ele também estica pra linha inteira em vez de deixar buraco ao lado.
@@ -69,9 +78,14 @@ export default async function PerfilPage({
     await Promise.all([
       supabase
         .from("users")
-        .select("full_name, email")
+        .select("full_name, email, phone, whatsapp_opt_out")
         .eq("id", user.id)
-        .maybeSingle<{ full_name: string | null; email: string | null }>(),
+        .maybeSingle<{
+          full_name: string | null;
+          email: string | null;
+          phone: string | null;
+          whatsapp_opt_out: boolean | null;
+        }>(),
       supabase
         .from("memberships")
         .select("modality")
@@ -147,6 +161,29 @@ export default async function PerfilPage({
 
               <FieldWrapper label="E-mail">
                 <Input defaultValue={profile?.email ?? ""} disabled />
+              </FieldWrapper>
+
+              <FieldWrapper label="WhatsApp">
+                <MaskedInput
+                  mask="phone"
+                  name="phone"
+                  type="tel"
+                  defaultValue={telefoneLocal(profile?.phone)}
+                  placeholder="(00) 00000-0000"
+                />
+              </FieldWrapper>
+
+              <FieldWrapper label="Avisos no WhatsApp" full>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="whatsapp_optin"
+                    defaultChecked={!profile?.whatsapp_opt_out}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  Quero receber novidades e lembretes de {ctx.tenant.name} no
+                  WhatsApp.
+                </label>
               </FieldWrapper>
 
               {layoutFields(fields ?? []).map(({ field, full }) => {

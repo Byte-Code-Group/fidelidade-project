@@ -102,11 +102,14 @@ export default async function OwnerConexoesPage() {
         <CardContent className="space-y-2">
           <h2 className="font-semibold">WhatsApp Business API</h2>
           <p className="text-sm text-gray-500">
-            Disparo automático de mensagens via WhatsApp Business API está no
-            roadmap da plataforma — ainda não disponível.
+            Conecte o número do seu negócio e dispare campanhas em{" "}
+            <Link href="/painel/campanhas" className="text-[var(--primary)] hover:underline">
+              Campanhas
+            </Link>
+            .
           </p>
           <p className="text-xs text-gray-400">
-            Hoje você já pode exibir um link de WhatsApp clicável no portal em{" "}
+            Para só exibir um link de WhatsApp clicável no portal, use{" "}
             <Link href="/painel/customizacao" className="text-[var(--primary)] hover:underline">
               Customização → Rodapé/contato
             </Link>

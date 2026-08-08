@@ -4,6 +4,19 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { conectarAsaas, desconectarAsaas } from "@/lib/tenant-asaas";
+import { conectarWhatsApp, desconectarWhatsApp } from "@/lib/tenant-whatsapp";
+import {
+  insertCampaign,
+  applyCampaignUpdate,
+  removeCampaign,
+  resolverPublico,
+  estimarCusto,
+  montarFila,
+  dispararLote,
+  cancelarCampanha,
+  type CampaignAudience,
+} from "@/lib/campaigns";
+import type { TemplateCategory } from "@/lib/whatsapp";
 import { requireTenantOwner, ACTIVE_TENANT_COOKIE } from "@/lib/owner";
 import { applyTenantSettingsUpdate, applyTenantLogoUpload } from "@/lib/tenant-settings";
 import {
@@ -701,5 +714,100 @@ export async function ownerDisconnectAsaas(): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
   const resultado = await desconectarAsaas(tenantId);
   revalidatePath("/painel/conexoes");
+  return resultado;
+}
+
+// ---------- WhatsApp Cloud API + campanhas ----------
+// O token do WhatsApp chega aqui do form e vai cifrado pro banco — nunca volta
+// pro browser (ver lib/tenant-whatsapp.ts).
+
+export async function ownerConnectWhatsApp(entrada: {
+  accessToken: string;
+  phoneNumberId: string;
+  wabaId: string;
+}): Promise<{ error?: string; displayPhone?: string; aviso?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await conectarWhatsApp(tenantId, entrada);
+  revalidatePath("/painel/campanhas");
+  revalidatePath("/painel/conexoes");
+  return resultado;
+}
+
+export async function ownerDisconnectWhatsApp(): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await desconectarWhatsApp(tenantId);
+  revalidatePath("/painel/campanhas");
+  revalidatePath("/painel/conexoes");
+  return resultado;
+}
+
+export async function ownerCreateCampaign(
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await insertCampaign(tenantId, formData);
+  revalidatePath("/painel/campanhas");
+  return { error };
+}
+
+export async function ownerUpdateCampaign(
+  campaignId: string,
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await applyCampaignUpdate(tenantId, campaignId, formData);
+  revalidatePath("/painel/campanhas");
+  return { error };
+}
+
+export async function ownerDeleteCampaign(
+  campaignId: string,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await removeCampaign(tenantId, campaignId);
+  revalidatePath("/painel/campanhas");
+  return { error };
+}
+
+// Prévia do público antes de gastar: quantos clientes entram e quanto a Meta
+// deve cobrar por esse disparo.
+export async function ownerPreviewCampaignAudience(
+  audience: CampaignAudience,
+  categoria: TemplateCategory,
+): Promise<{ total: number; cobradas: number; gratuitas: number; totalBrl: number }> {
+  const { tenantId } = await requireTenantOwner();
+  const publico = await resolverPublico(tenantId, audience);
+  return { total: publico.length, ...estimarCusto(categoria, publico) };
+}
+
+/** Congela o público na fila. Não envia nada — ver ownerSendCampaignBatch. */
+export async function ownerStartCampaign(
+  campaignId: string,
+): Promise<{ error?: string; total?: number }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await montarFila(tenantId, campaignId);
+  revalidatePath("/painel/campanhas");
+  return resultado;
+}
+
+/**
+ * Envia um lote e devolve quanto falta. O painel chama em sequência até
+ * restantes = 0 — assim uma lista grande não estoura o tempo da função.
+ */
+export async function ownerSendCampaignBatch(
+  campaignId: string,
+): Promise<{ error?: string; enviadas?: number; falhas?: number; restantes?: number }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await dispararLote(tenantId, campaignId);
+  if (resultado.restantes === 0) revalidatePath("/painel/campanhas");
+  return resultado;
+}
+
+export async function ownerCancelCampaign(
+  campaignId: string,
+): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await cancelarCampanha(tenantId, campaignId);
+  revalidatePath("/painel/campanhas");
   return resultado;
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getCurrentTenant } from "@/lib/tenant";
 import { signUp } from "../actions";
@@ -39,6 +40,15 @@ export default async function CadastroPage({
             required
             placeholder="E-mail"
             autoComplete="email"
+          />
+          {/* Opcional: é o número que recebe as campanhas do negócio. Sem ele
+              o cliente simplesmente não entra em nenhuma lista de disparo. */}
+          <MaskedInput
+            mask="phone"
+            name="phone"
+            type="tel"
+            placeholder="WhatsApp (opcional)"
+            autoComplete="tel"
           />
           <PasswordInput
             name="password"

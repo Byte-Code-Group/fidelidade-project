@@ -18,6 +18,7 @@ import { assinarPlanoComCobranca } from "@/lib/member-subscriptions";
 import { changeMembershipPlan } from "@/lib/memberships";
 import { traduzirErro } from "@/lib/error-messages";
 import { portalUrl, siteUrl } from "@/lib/urls";
+import { normalizarE164 } from "@/lib/whatsapp";
 import { listProcedures } from "@/lib/procedures";
 import {
   horariosDisponiveis,
@@ -84,6 +85,10 @@ export async function signUp(formData: FormData) {
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // Opcional: é por ele que o cliente entra (ou não) nas campanhas de
+  // WhatsApp do negócio. Guardamos em E.164 porque é o formato que a Meta
+  // exige — normalizar só na hora do disparo esconderia número inválido.
+  const phone = normalizarE164(String(formData.get("phone") ?? "").trim());
 
   if (!fullName || !email || !password) {
     redirect("/cadastro?error=" + encodeURIComponent("Preencha todos os campos."));
@@ -113,6 +118,7 @@ export async function signUp(formData: FormData) {
     role: "client",
     full_name: fullName,
     email,
+    phone,
   });
   if (uErr) {
     redirect("/cadastro?error=" + encodeURIComponent("Erro ao salvar cadastro."));
@@ -222,6 +228,20 @@ export async function saveProfile(formData: FormData) {
   if (fullName) {
     await db.from("users").update({ full_name: fullName }).eq("id", user.id);
   }
+
+  // Telefone: é o canal das campanhas do negócio. Apagar o campo tira o
+  // cliente das listas de disparo — por isso null quando vem vazio, e não
+  // "manter o que estava".
+  const phoneBruto = String(formData.get("phone") ?? "").trim();
+  await db
+    .from("users")
+    .update({
+      phone: phoneBruto ? normalizarE164(phoneBruto) : null,
+      // Desmarcar aqui vale como pedido de descadastro, igual a responder
+      // "SAIR" no WhatsApp (ver o webhook em api/webhooks/whatsapp).
+      whatsapp_opt_out: formData.get("whatsapp_optin") !== "on",
+    })
+    .eq("id", user.id);
 
   const { data: fieldDefs } = await db
     .from("profile_fields")
