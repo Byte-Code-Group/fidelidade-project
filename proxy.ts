@@ -50,6 +50,14 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const parts = pathname.split("/");
 
+  // Links de e-mail da plataforma (/auth/*) criam a sessão do zero — passam
+  // longe de updateSession. Senão uma sessão antiga expirada no browser é
+  // detectada antes da rota rodar, e o clique no link do e-mail vira um
+  // redirect pro login em vez de redefinir a senha.
+  if (pathname.startsWith("/auth/")) {
+    return NextResponse.next();
+  }
+
   // Path-based portal: /p/[slug]/... → rewrite to /... + grava cookie
   if (parts[1] === "p" && parts[2]) {
     const slug = parts[2];
@@ -84,9 +92,6 @@ export async function proxy(request: NextRequest) {
       !pathname.startsWith("/superadmin") &&
       !pathname.startsWith("/conta") &&
       !pathname.startsWith("/painel") &&
-      // /auth/* são links de e-mail da plataforma (recuperação de senha) —
-      // nunca pertencem ao portal de um tenant.
-      !pathname.startsWith("/auth/") &&
       !pathname.startsWith("/api/")
     ) {
       // Redireciona para URL canônica /p/[slug]/... para manter slug visível
