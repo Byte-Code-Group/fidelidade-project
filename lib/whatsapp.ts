@@ -132,6 +132,25 @@ function traduzirErroMeta(payload: ErroDaMeta, httpStatus: number): string {
   if (code === 131031) {
     return "A conta do WhatsApp está bloqueada pela Meta.";
   }
+  // ---- Registro do número (Embedded Signup) ----
+  if (code === 133005) {
+    return "PIN de 6 dígitos incorreto — é o da verificação em duas etapas definida no cadastro do número.";
+  }
+  if (code === 133006) {
+    return "O número ainda não foi verificado. Conclua a verificação por SMS antes de conectar.";
+  }
+  if (code === 133008) {
+    return "Muitas tentativas de PIN. A Meta bloqueia novas tentativas por algumas horas.";
+  }
+  if (code === 133016) {
+    return "Limite de registros desse número atingido (10 a cada 72h). Tente mais tarde.";
+  }
+  if (code === 133010) {
+    return "Número não registrado no Cloud API. Refaça a conexão.";
+  }
+  if (code === 133000 || code === 133004) {
+    return "Esse número já está registrado em outra conta. Remova de lá antes de conectar aqui.";
+  }
   if (err?.error_user_msg) return err.error_user_msg;
   return "O WhatsApp recusou a operação. Confira a conexão do número.";
 }
@@ -168,6 +187,88 @@ async function chamarGraph<T>(
     return { error: traduzirErroMeta(corpo as ErroDaMeta, resposta.status) };
   }
   return { data: corpo as T };
+}
+
+// ------------------------------------------------------------
+// Embedded Signup (onboarding em 1 clique)
+// ------------------------------------------------------------
+
+/** Versão da Graph API usada quando ainda não existe conexão salva. */
+export const API_VERSION_PADRAO = "v22.0";
+
+/**
+ * Troca o `code` que o popup do Embedded Signup devolve por um
+ * "business token" — token de sistema com escopo no negócio do cliente.
+ *
+ * Diferente do resto do arquivo, aqui não existe Bearer: quem autentica é o
+ * par client_id/client_secret do NOSSO app, na query string.
+ */
+export async function trocarCodePorToken(
+  code: string,
+): Promise<{ error?: string; accessToken?: string }> {
+  const appId = process.env.NEXT_PUBLIC_FB_APP_ID;
+  // Mesmo segredo que valida a assinatura do webhook — é o app secret da
+  // plataforma, um só.
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appId || !appSecret) {
+    return { error: "Conexão em 1 clique não está configurada nesta instalação." };
+  }
+
+  const url =
+    `${GRAPH}/${API_VERSION_PADRAO}/oauth/access_token` +
+    `?client_id=${encodeURIComponent(appId)}` +
+    `&client_secret=${encodeURIComponent(appSecret)}` +
+    `&code=${encodeURIComponent(code)}`;
+
+  let resposta: Response;
+  try {
+    resposta = await fetch(url, { cache: "no-store" });
+  } catch {
+    return { error: "Não foi possível falar com o WhatsApp agora. Tente de novo." };
+  }
+
+  const texto = await resposta.text();
+  let corpo: unknown = {};
+  try {
+    corpo = texto ? JSON.parse(texto) : {};
+  } catch {
+    return { error: "Resposta inesperada do WhatsApp." };
+  }
+
+  if (!resposta.ok) {
+    return { error: traduzirErroMeta(corpo as ErroDaMeta, resposta.status) };
+  }
+
+  const accessToken = (corpo as { access_token?: string }).access_token;
+  if (!accessToken) {
+    return { error: "O WhatsApp não devolveu o token da conta. Tente conectar de novo." };
+  }
+  return { accessToken };
+}
+
+/**
+ * Registra o número no Cloud API. Sem isso o número aparece na conta mas
+ * recusa envio.
+ *
+ * O PIN é o da verificação em duas etapas que o cliente definiu dentro do
+ * popup. A Meta limita a 10 tentativas por número a cada 72h — por isso o
+ * erro de PIN errado é devolvido explicado, não como falha genérica.
+ */
+export async function registrarNumero(
+  cred: Omit<CredenciaisWhatsApp, "wabaId">,
+  pin: string,
+): Promise<{ error?: string; jaRegistrado?: boolean }> {
+  const url = `${GRAPH}/${cred.apiVersion}/${cred.phoneNumberId}/register`;
+  const { error } = await chamarGraph<{ success?: boolean }>(url, cred.accessToken, {
+    method: "POST",
+    body: JSON.stringify({ messaging_product: "whatsapp", pin }),
+  });
+
+  if (!error) return {};
+  // Número já registrado numa conexão anterior não é problema: o disparo
+  // funciona igual. Só não pode passar por erro e travar o onboarding.
+  if (/já registrado|already/i.test(error)) return { jaRegistrado: true };
+  return { error };
 }
 
 // ------------------------------------------------------------

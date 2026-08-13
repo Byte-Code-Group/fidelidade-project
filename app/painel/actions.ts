@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { conectarAsaas, desconectarAsaas } from "@/lib/tenant-asaas";
-import { conectarWhatsApp, desconectarWhatsApp } from "@/lib/tenant-whatsapp";
+import {
+  conectarWhatsApp,
+  conectarWhatsAppPorOnboarding,
+  desconectarWhatsApp,
+} from "@/lib/tenant-whatsapp";
 import {
   insertCampaign,
   applyCampaignUpdate,
@@ -728,6 +732,22 @@ export async function ownerConnectWhatsApp(entrada: {
 }): Promise<{ error?: string; displayPhone?: string; aviso?: string }> {
   const { tenantId } = await requireTenantOwner();
   const resultado = await conectarWhatsApp(tenantId, entrada);
+  revalidatePath("/painel/campanhas");
+  revalidatePath("/painel/conexoes");
+  return resultado;
+}
+
+// Conexão em 1 clique: o popup da Meta devolve os IDs e um code de uso único.
+// O code não é segredo de longo prazo (expira em minutos e só vale com o
+// app secret da plataforma), mas o token que ele vira nunca sai do servidor.
+export async function ownerOnboardWhatsApp(entrada: {
+  code: string;
+  phoneNumberId: string;
+  wabaId: string;
+  pin?: string;
+}): Promise<{ error?: string; displayPhone?: string; aviso?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const resultado = await conectarWhatsAppPorOnboarding(tenantId, entrada);
   revalidatePath("/painel/campanhas");
   revalidatePath("/painel/conexoes");
   return resultado;

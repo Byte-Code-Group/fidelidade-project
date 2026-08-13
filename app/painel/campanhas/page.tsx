@@ -6,6 +6,7 @@ import { WhatsAppAccountCard } from "@/components/whatsapp-account-card";
 import { CampaignsList } from "@/components/campaigns-list";
 import {
   ownerConnectWhatsApp,
+  ownerOnboardWhatsApp,
   ownerDisconnectWhatsApp,
   ownerCreateCampaign,
   ownerUpdateCampaign,
@@ -21,6 +22,13 @@ export default async function OwnerCampanhasPage() {
   const db = createAdminClient();
 
   const conta = await getContaWhatsApp(tenantId);
+
+  // Conexão em 1 clique só aparece quando a plataforma já está aprovada como
+  // Tech Provider na Meta e as duas variáveis existem. Sem elas o painel cai
+  // no formulário manual, que funciona desde sempre.
+  const appId = process.env.NEXT_PUBLIC_FB_APP_ID;
+  const configId = process.env.NEXT_PUBLIC_FB_CONFIG_ID;
+  const embeddedSignup = appId && configId ? { appId, configId } : undefined;
 
   const [campaigns, stats, { templates, error: erroTemplates }, { data: plans }] =
     await Promise.all([
@@ -48,7 +56,9 @@ export default async function OwnerCampanhasPage() {
 
       <WhatsAppAccountCard
         conta={conta}
+        embeddedSignup={embeddedSignup}
         conectarAction={ownerConnectWhatsApp}
+        onboardAction={ownerOnboardWhatsApp}
         desconectarAction={ownerDisconnectWhatsApp}
       />
 
