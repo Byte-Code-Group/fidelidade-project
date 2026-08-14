@@ -1,28 +1,13 @@
-# Evolution API atrás de um Caddy com TLS automático.
+# Evolution API atrás de um nginx no host, que termina o TLS.
 #
-# Só o Caddy abre porta pra internet (80/443). A API fica na rede interna do
-# compose: a apikey dá controle total de todos os WhatsApp conectados, então
-# ela nunca deve trafegar em HTTP puro.
+# A API publica só no loopback (127.0.0.1:8080): o nginx alcança, a internet
+# não. A apikey dá controle total de todos os WhatsApp conectados, então ela
+# nunca deve trafegar em HTTP puro.
+#
+# Ver nginx.conf ao lado — inclusive `proxy_buffering off`, sem o qual o QR
+# code fica preso no buffer e chega expirado.
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    container_name: evolution_caddy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    environment:
-      - EVOLUTION_DOMAIN=${EVOLUTION_DOMAIN}
-    depends_on:
-      - api
-    networks:
-      - evolution-net
-
   api:
     # Versão fixa de propósito: `latest` aponta pra builds de release candidate.
     # Multi-arch — o mesmo tag serve amd64 e arm64 (Ampere da Oracle).
@@ -36,9 +21,10 @@ services:
       - .env
     volumes:
       - evolution_instances:/evolution/instances
-    # Sem `ports:` de propósito — quem publica é o Caddy.
-    expose:
-      - "8080"
+    # O prefixo 127.0.0.1 é obrigatório: "8080:8080" puro abriria a API direto
+    # pra internet, furando o TLS do nginx.
+    ports:
+      - "127.0.0.1:8080:8080"
     networks:
       - evolution-net
 
@@ -73,8 +59,6 @@ volumes:
   evolution_instances:
   evolution_redis:
   postgres_data:
-  caddy_data:
-  caddy_config:
 
 networks:
   evolution-net:

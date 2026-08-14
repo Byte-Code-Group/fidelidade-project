@@ -9,9 +9,12 @@ Escrito para **Oracle Cloud Always Free, shape Ampere A1 (aarch64)**.
 > disparo e com denúncia de destinatário. O caminho oficial (Meta Cloud API)
 > continua disponível no mesmo painel.
 
-Todas as imagens usadas — Evolution `v2.3.7`, Postgres 15, Redis 7 e Caddy 2 —
-publicam `linux/arm64`. O Docker escolhe a arquitetura sozinho; não existe
-nenhum passo específico de ARM no compose.
+Todas as imagens usadas — Evolution `v2.3.7`, Postgres 15 e Redis 7 — publicam
+`linux/arm64`. O Docker escolhe a arquitetura sozinho; não existe nenhum passo
+específico de ARM no compose.
+
+O TLS fica com um **nginx no host**, não em container: a API publica apenas em
+`127.0.0.1:8080`, alcançável pelo nginx e invisível pra internet.
 
 ---
 
@@ -77,10 +80,11 @@ docker --version
 Da sua máquina, do diretório do projeto:
 
 ```bash
-scp deploy/evolution/{docker-compose.yml,Caddyfile,.env.example} ubuntu@SEU-IP:~/evolution/
+ssh ubuntu@SEU-IP 'mkdir -p ~/evolution'
+scp deploy/evolution/{docker-compose.yml,nginx.conf,.env.example} ubuntu@SEU-IP:~/evolution/
 ```
 
-(Crie a pasta antes: `ssh ubuntu@SEU-IP 'mkdir -p ~/evolution'`.)
+Ou clone o repositório direto na VM — o `.env.example` está versionado.
 
 ## 5. Configurar
 
@@ -95,13 +99,36 @@ openssl rand -hex 24   # POSTGRES_PASSWORD
 
 Edite o `.env` e troque:
 
-- `EVOLUTION_DOMAIN` e `SERVER_URL` → o IP com pontos + `.nip.io`
-  (ex.: IP `129.153.10.20` vira `129.153.10.20.nip.io`). O `nip.io` resolve
-  qualquer IP sem registrar domínio, e é o que permite ter HTTPS de verdade.
+- `SERVER_URL` → o IP com pontos + `.nip.io` (ex.: IP `129.153.10.20` vira
+  `https://129.153.10.20.nip.io`). O `nip.io` resolve qualquer IP sem registrar
+  domínio, e é o que permite ter HTTPS de verdade — o Let's Encrypt não emite
+  certificado para endereço IP.
 - `AUTHENTICATION_API_KEY` → a primeira chave gerada.
 - `POSTGRES_PASSWORD` **e a mesma senha dentro de `DATABASE_CONNECTION_URI`** →
   a segunda chave. Esquecer de trocar nos dois lugares é o erro mais comum, e
   aparece como a API reiniciando em loop com erro de autenticação do Postgres.
+
+```bash
+chmod 600 .env
+```
+
+## 5b. nginx e certificado
+
+```bash
+sudo apt install -y nginx certbot python3-certbot-nginx
+
+sudo cp nginx.conf /etc/nginx/sites-available/evolution
+sudo sed -i "s/SEU-IP/$(curl -s ifconfig.me)/" /etc/nginx/sites-available/evolution
+sudo ln -sf /etc/nginx/sites-available/evolution /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d $(curl -s ifconfig.me).nip.io
+```
+
+O certbot reescreve o server block para 443, instala o certificado e agenda a
+renovação. O `proxy_buffering off` do `nginx.conf` não é ajuste fino: a rota do
+QR code responde em stream, e com buffer o código chega depois de expirar.
 
 ## 6. Subir
 
@@ -122,9 +149,11 @@ curl https://SEU-IP.nip.io/
 
 Deve responder com a versão da API, já em HTTPS válido.
 
-- **Erro de certificado / conexão recusada**: o Caddy não conseguiu emitir o
-  certificado. Quase sempre é a porta 80 fechada (passo 2b) — o Let's Encrypt
-  valida por HTTP antes de liberar o HTTPS. Veja `docker compose logs caddy`.
+- **Erro de certificado**: o certbot não conseguiu validar. Quase sempre é a
+  porta 80 fechada por dentro (passo 2b) — o Let's Encrypt valida por HTTP
+  antes de liberar o HTTPS.
+- **502 Bad Gateway**: o nginx subiu mas a API não. `docker compose ps` e
+  `docker compose logs api`.
 - **Timeout**: falta a regra na Security List (passo 2a).
 
 Teste autenticado:
@@ -178,9 +207,11 @@ negócio que a tabela `tenant_whatsapp_accounts` já faz.
 dá controle de todas as sessões conectadas. Para usar, abra por túnel SSH:
 
 ```bash
-ssh -L 8080:localhost:8080 ubuntu@SEU-IP
-docker compose exec api true   # a API já escuta em 8080 dentro da rede
+ssh -L 8080:127.0.0.1:8080 ubuntu@SEU-IP
 ```
+
+Depois abra `http://localhost:8080/manager` no navegador local. A API só
+escuta no loopback da VM, então o túnel é o único caminho.
 
 **Backup.** O que importa é o volume `evolution_instances` — são as sessões do
 WhatsApp. Se ele sumir, todo cliente precisa ler o QR code de novo.
@@ -198,9 +229,11 @@ docker compose pull && docker compose up -d
 ```
 
 **IP mudou.** O `nip.io` embute o IP no nome, então trocar o IP público troca o
-domínio: atualize `EVOLUTION_DOMAIN` e `SERVER_URL` no `.env`, suba de novo, e
-troque `EVOLUTION_API_URL` na Vercel. Os webhooks das instâncias são
-reapontados sozinhos na próxima conexão.
+domínio. Atualize `SERVER_URL` no `.env`, o `server_name` em
+`/etc/nginx/sites-available/evolution`, emita o certificado novo
+(`sudo certbot --nginx -d NOVO-IP.nip.io`), suba de novo e troque
+`EVOLUTION_API_URL` na Vercel. Os webhooks das instâncias são reapontados
+sozinhos na próxima conexão.
 
 ## Problemas comuns
 
