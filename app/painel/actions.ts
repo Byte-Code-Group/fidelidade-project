@@ -7,7 +7,10 @@ import { conectarAsaas, desconectarAsaas } from "@/lib/tenant-asaas";
 import {
   conectarWhatsApp,
   conectarWhatsAppPorOnboarding,
+  confirmarConexaoPorQrCode,
   desconectarWhatsApp,
+  iniciarConexaoPorQrCode,
+  type ProvedorWhatsApp,
 } from "@/lib/tenant-whatsapp";
 import {
   insertCampaign,
@@ -753,6 +756,39 @@ export async function ownerOnboardWhatsApp(entrada: {
   return resultado;
 }
 
+/**
+ * Conexão por QR code: prepara a instância e devolve o código pra ler no
+ * celular. Não conecta nada por si só — ver ownerCheckWhatsAppQrCode.
+ */
+export async function ownerStartWhatsAppQrCode(): Promise<{
+  error?: string;
+  qrCode?: string | null;
+  jaConectado?: boolean;
+}> {
+  const { tenantId } = await requireTenantOwner();
+  return await iniciarConexaoPorQrCode(tenantId);
+}
+
+/**
+ * Pergunta se a leitura do QR code já abriu a sessão. O painel chama em
+ * intervalo curto enquanto o código está na tela; grava a conexão no primeiro
+ * "open".
+ */
+export async function ownerCheckWhatsAppQrCode(): Promise<{
+  error?: string;
+  conectado?: boolean;
+  displayPhone?: string | null;
+}> {
+  const { tenantId } = await requireTenantOwner();
+  const { error, estado, displayPhone } = await confirmarConexaoPorQrCode(tenantId);
+  if (error) return { error };
+  if (estado !== "open") return { conectado: false };
+
+  revalidatePath("/painel/campanhas");
+  revalidatePath("/painel/conexoes");
+  return { conectado: true, displayPhone };
+}
+
 export async function ownerDisconnectWhatsApp(): Promise<{ error?: string }> {
   const { tenantId } = await requireTenantOwner();
   const resultado = await desconectarWhatsApp(tenantId);
@@ -794,10 +830,11 @@ export async function ownerDeleteCampaign(
 export async function ownerPreviewCampaignAudience(
   audience: CampaignAudience,
   categoria: TemplateCategory,
+  provider: ProvedorWhatsApp = "meta",
 ): Promise<{ total: number; cobradas: number; gratuitas: number; totalBrl: number }> {
   const { tenantId } = await requireTenantOwner();
   const publico = await resolverPublico(tenantId, audience);
-  return { total: publico.length, ...estimarCusto(categoria, publico) };
+  return { total: publico.length, ...estimarCusto(categoria, publico, provider) };
 }
 
 /** Congela o público na fila. Não envia nada — ver ownerSendCampaignBatch. */

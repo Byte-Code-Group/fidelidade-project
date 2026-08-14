@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/icons";
 import { CampaignFields, type PlanOption } from "@/components/campaign-fields";
 import type { Campaign, CampaignAudience, CampaignStats } from "@/lib/campaigns";
+import type { ProvedorWhatsApp } from "@/lib/tenant-whatsapp";
 import type { TemplateCategory, WhatsAppTemplate } from "@/lib/whatsapp";
 import { traduzirErro } from "@/lib/error-messages";
 
@@ -23,12 +24,15 @@ interface CampaignsListProps {
   templates: WhatsAppTemplate[];
   plans: PlanOption[];
   conectado: boolean;
+  /** Como o negócio está conectado — define o formato da mensagem. */
+  provider: ProvedorWhatsApp;
   createAction: (formData: FormData) => Promise<{ error?: string }>;
   updateAction: (campaignId: string, formData: FormData) => Promise<{ error?: string }>;
   deleteAction: (campaignId: string) => Promise<{ error?: string }>;
   previewAction: (
     audience: CampaignAudience,
     categoria: TemplateCategory,
+    provider: ProvedorWhatsApp,
   ) => Promise<Previa>;
   startAction: (campaignId: string) => Promise<{ error?: string; total?: number }>;
   sendBatchAction: (campaignId: string) => Promise<{
@@ -58,8 +62,11 @@ const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function CampaignsList(props: CampaignsListProps) {
-  const { campaigns, conectado, templates } = props;
-  const semTemplateAprovado = templates.every((t) => t.status !== "APPROVED");
+  const { campaigns, conectado, templates, provider } = props;
+  // Template só existe no caminho da Meta; conectado por QR code a mensagem é
+  // escrita na hora e nunca falta "template aprovado".
+  const semTemplateAprovado =
+    provider === "meta" && templates.every((t) => t.status !== "APPROVED");
 
   return (
     <div className="space-y-2">
@@ -90,7 +97,7 @@ export function CampaignsList(props: CampaignsListProps) {
   );
 }
 
-function NewCampaignForm({ createAction, templates, plans }: CampaignsListProps) {
+function NewCampaignForm({ createAction, templates, plans, provider }: CampaignsListProps) {
   const [pendente, iniciar] = useTransition();
 
   return (
@@ -119,7 +126,7 @@ function NewCampaignForm({ createAction, templates, plans }: CampaignsListProps)
             });
           }}
         >
-          <CampaignFields templates={templates} plans={plans} />
+          <CampaignFields templates={templates} plans={plans} provider={provider} />
           <div className="flex justify-end">
             <Button type="submit" disabled={pendente}>
               {pendente ? "Criando…" : "Criar campanha"}
@@ -136,6 +143,7 @@ function CampaignRow({
   stats,
   templates,
   plans,
+  provider,
   updateAction,
   deleteAction,
   previewAction,
@@ -157,7 +165,7 @@ function CampaignRow({
 
   const verPublico = () =>
     iniciarPrevia(async () => {
-      setPrevia(await previewAction(c.audience ?? {}, c.template_category));
+      setPrevia(await previewAction(c.audience ?? {}, c.template_category, c.provider));
     });
 
   /**
@@ -270,7 +278,7 @@ function CampaignRow({
                 });
               }}
             >
-              <CampaignFields campaign={c} templates={templates} plans={plans} />
+              <CampaignFields campaign={c} templates={templates} plans={plans} provider={provider} />
               <div className="flex justify-end">
                 <Button type="submit" className="px-3 py-1.5" disabled={salvando}>
                   {salvando ? "Salvando…" : "Salvar campanha"}
@@ -281,7 +289,9 @@ function CampaignRow({
             <div className="rounded-xl bg-black/5 px-3 py-2.5 text-sm dark:bg-white/10">
               <p className="whitespace-pre-wrap">{c.template_body}</p>
               <p className="mt-1 text-xs opacity-60">
-                Template {c.template_name} · {c.template_category}
+                {c.provider === "evolution"
+                  ? "Mensagem direta"
+                  : `Template ${c.template_name} · ${c.template_category}`}
                 {c.started_at &&
                   ` · disparada em ${new Date(c.started_at).toLocaleString("pt-BR")}`}
               </p>

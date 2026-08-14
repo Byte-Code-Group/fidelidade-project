@@ -7,6 +7,8 @@ import { CampaignsList } from "@/components/campaigns-list";
 import {
   ownerConnectWhatsApp,
   ownerOnboardWhatsApp,
+  ownerStartWhatsAppQrCode,
+  ownerCheckWhatsAppQrCode,
   ownerDisconnectWhatsApp,
   ownerCreateCampaign,
   ownerUpdateCampaign,
@@ -29,6 +31,16 @@ export default async function OwnerCampanhasPage() {
   const appId = process.env.NEXT_PUBLIC_FB_APP_ID;
   const configId = process.env.NEXT_PUBLIC_FB_CONFIG_ID;
   const embeddedSignup = appId && configId ? { appId, configId } : undefined;
+
+  // Conexão por QR code só aparece quando existe servidor Evolution
+  // configurado. Sem ele, o painel oferece apenas o caminho oficial da Meta.
+  const qrCode =
+    process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY
+      ? {
+          iniciarAction: ownerStartWhatsAppQrCode,
+          checarAction: ownerCheckWhatsAppQrCode,
+        }
+      : undefined;
 
   const [campaigns, stats, { templates, error: erroTemplates }, { data: plans }] =
     await Promise.all([
@@ -57,6 +69,7 @@ export default async function OwnerCampanhasPage() {
       <WhatsAppAccountCard
         conta={conta}
         embeddedSignup={embeddedSignup}
+        qrCode={qrCode}
         conectarAction={ownerConnectWhatsApp}
         onboardAction={ownerOnboardWhatsApp}
         desconectarAction={ownerDisconnectWhatsApp}
@@ -74,6 +87,7 @@ export default async function OwnerCampanhasPage() {
         templates={templates}
         plans={plans ?? []}
         conectado={!!conta}
+        provider={conta?.provider ?? "meta"}
         createAction={ownerCreateCampaign}
         updateAction={ownerUpdateCampaign}
         deleteAction={ownerDeleteCampaign}

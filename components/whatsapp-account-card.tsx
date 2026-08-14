@@ -56,8 +56,10 @@ const ORIGENS_DA_META = new Set([
 ]);
 
 interface Conta {
-  phoneNumberId: string;
-  wabaId: string;
+  provider: "meta" | "evolution";
+  phoneNumberId: string | null;
+  wabaId: string | null;
+  instanceName: string | null;
   displayPhone: string | null;
   verifiedName: string | null;
   connectedAt: string;
@@ -65,12 +67,30 @@ interface Conta {
   verifyToken: string;
 }
 
+/** Ações da conexão por QR code. Ausente = instalação sem servidor Evolution. */
+export interface QrCodeConfig {
+  iniciarAction: () => Promise<{
+    error?: string;
+    qrCode?: string | null;
+    jaConectado?: boolean;
+  }>;
+  checarAction: () => Promise<{
+    error?: string;
+    conectado?: boolean;
+    displayPhone?: string | null;
+  }>;
+}
+
+/** De quanto em quanto tempo o painel pergunta se o QR já foi lido. */
+const INTERVALO_CHECAGEM_MS = 3_000;
+
 // Conexão do número de WhatsApp DO NEGÓCIO no Cloud API da Meta. O token sai
 // daqui direto pro servidor e volta só como "conectado como X"; nunca é
 // devolvido pro browser (ver lib/tenant-whatsapp.ts).
 export function WhatsAppAccountCard({
   conta,
   embeddedSignup,
+  qrCode,
   conectarAction,
   onboardAction,
   desconectarAction,
@@ -78,6 +98,7 @@ export function WhatsAppAccountCard({
   conta: Conta | null;
   /** Ausente = plataforma ainda não aprovada como Tech Provider; só manual. */
   embeddedSignup?: EmbeddedSignupConfig;
+  qrCode?: QrCodeConfig;
   conectarAction: (entrada: {
     accessToken: string;
     phoneNumberId: string;
@@ -121,6 +142,69 @@ export function WhatsAppAccountCard({
       if (r.error) toast.error(r.error);
       else toast.success("Número desconectado.");
     });
+
+  // ---------- Conexão por QR code ----------
+  const [imagemQr, setImagemQr] = useState<string | null>(null);
+  const [lendoQr, setLendoQr] = useState(false);
+
+  const abrirQrCode = () =>
+    iniciar(async () => {
+      if (!qrCode) return;
+      const r = await qrCode.iniciarAction();
+      if (r.error) {
+        toast.error(r.error);
+        return;
+      }
+      if (r.jaConectado) {
+        // Sessão já estava aberta no servidor (o dono conectou noutra aba):
+        // só falta gravar do nosso lado.
+        const c = await qrCode.checarAction();
+        if (c.conectado) toast.success("Número conectado.");
+        return;
+      }
+      if (!r.qrCode) {
+        toast.error("Não consegui gerar o QR code. Tente de novo.");
+        return;
+      }
+      setImagemQr(r.qrCode);
+      setLendoQr(true);
+    });
+
+  const cancelarQrCode = () => {
+    setLendoQr(false);
+    setImagemQr(null);
+  };
+
+  // Enquanto o código está na tela, pergunta ao servidor se já foi lido. É o
+  // único jeito: quem sabe da leitura é o WhatsApp, não o browser.
+  useEffect(() => {
+    if (!lendoQr || !qrCode) return;
+
+    let vivo = true;
+    const timer = setInterval(async () => {
+      const r = await qrCode.checarAction();
+      if (!vivo) return;
+
+      if (r.error) {
+        setLendoQr(false);
+        setImagemQr(null);
+        toast.error(r.error);
+        return;
+      }
+      if (r.conectado) {
+        setLendoQr(false);
+        setImagemQr(null);
+        toast.success(
+          `Número conectado${r.displayPhone ? `: +${r.displayPhone}` : ""}.`,
+        );
+      }
+    }, INTERVALO_CHECAGEM_MS);
+
+    return () => {
+      vivo = false;
+      clearInterval(timer);
+    };
+  }, [lendoQr, qrCode]);
 
   // ---------- Embedded Signup ----------
   const [pin, setPin] = useState("");
@@ -224,13 +308,24 @@ export function WhatsAppAccountCard({
               </p>
               <p className="mt-0.5 text-xs text-gray-500">
                 {conta.verifiedName ? `${conta.verifiedName} · ` : ""}
-                desde {new Date(conta.connectedAt).toLocaleDateString("pt-BR")}
+                {conta.provider === "evolution"
+                  ? "conectado por QR code"
+                  : "API oficial da Meta"}{" "}
+                · desde {new Date(conta.connectedAt).toLocaleDateString("pt-BR")}
               </p>
             </div>
 
-            {/* Na conexão em 1 clique a inscrição do webhook é automática —
-                mostrar campo pra copiar só confundiria. */}
-            {!embeddedSignup && (
+            {conta.provider === "evolution" && (
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                Nessa forma de conexão as mensagens saem pela sessão do seu
+                próprio WhatsApp. Evite disparos grandes para quem não espera
+                seu contato: o WhatsApp pode bloquear o número.
+              </p>
+            )}
+
+            {/* Só o caminho da Meta tem webhook manual — e na conexão em 1
+                clique a inscrição é automática. */}
+            {conta.provider === "meta" && !embeddedSignup && (
               <details className="rounded-xl border border-black/10 px-3 py-2 dark:border-white/10">
                 <summary className="cursor-pointer text-sm font-medium">
                   Receber status de entrega e respostas
@@ -269,7 +364,63 @@ export function WhatsAppAccountCard({
           </>
         ) : (
           <div className="space-y-3">
-            {embeddedSignup && (
+            {qrCode && lendoQr && imagemQr && (
+              <div className="space-y-2 rounded-xl border border-black/10 p-3 text-center dark:border-white/10">
+                <p className="text-sm font-medium">Leia o código no celular</p>
+                {/* Imagem vem como data URI do próprio servidor; next/image não
+                    acrescenta nada aqui. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagemQr}
+                  alt="QR code para conectar o WhatsApp"
+                  className="mx-auto h-56 w-56 rounded-lg bg-white p-2"
+                />
+                <p className="text-xs text-gray-500">
+                  No WhatsApp do celular: <strong>Configurações</strong> &rarr;{" "}
+                  <strong>Dispositivos conectados</strong> &rarr;{" "}
+                  <strong>Conectar dispositivo</strong>. O código expira em
+                  segundos — se falhar, gere outro.
+                </p>
+                <div className="flex justify-center gap-2">
+                  <Button
+                    type="button"
+                    className="px-3 py-1.5 text-xs"
+                    onClick={abrirQrCode}
+                    disabled={pendente}
+                  >
+                    Gerar outro código
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={cancelarQrCode}
+                    className="text-xs text-gray-500 hover:underline"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {qrCode && !lendoQr && (
+              <div className="space-y-2 rounded-xl border border-black/10 p-3 dark:border-white/10">
+                <p className="text-sm font-medium">Conectar por QR code</p>
+                <p className="text-xs text-gray-500">
+                  Igual ao WhatsApp Web: você lê um código com o celular e
+                  pronto. Seu número continua funcionando normalmente no
+                  aparelho, e não há custo por mensagem.
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Atenção: essa forma de conexão não é oficial do WhatsApp.
+                  Disparo em massa para quem não espera seu contato pode fazer o
+                  número ser bloqueado.
+                </p>
+                <Button type="button" onClick={abrirQrCode} disabled={pendente}>
+                  {pendente ? "Gerando…" : "Gerar QR code"}
+                </Button>
+              </div>
+            )}
+
+            {embeddedSignup && !lendoQr && (
               <>
                 {/* Carrega o SDK só quando a conexão em 1 clique está ligada. */}
                 <Script
@@ -331,6 +482,8 @@ export function WhatsAppAccountCard({
               </>
             )}
 
+            {!lendoQr && (
+            <ConexaoManual recolhida={!!qrCode}>
             <ol className="list-decimal space-y-1 pl-4 text-xs text-gray-500 [&_strong]:font-semibold [&_strong]:text-gray-700 dark:[&_strong]:text-gray-300">
               <li>
                 Em <strong>developers.facebook.com</strong>, abra seu app e vá em{" "}
@@ -391,10 +544,40 @@ export function WhatsAppAccountCard({
                 </button>
               )}
             </div>
+            </ConexaoManual>
+            )}
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * A conexão manual pela Meta é longa e técnica. Quando existe o caminho por QR
+ * code ela vira o plano B e fica recolhida; sem QR code, é a única opção e
+ * aparece aberta.
+ */
+function ConexaoManual({
+  recolhida,
+  children,
+}: {
+  recolhida: boolean;
+  children: React.ReactNode;
+}) {
+  if (!recolhida) return <div className="space-y-3">{children}</div>;
+  return (
+    <details className="rounded-xl border border-black/10 px-3 py-2 dark:border-white/10">
+      <summary className="cursor-pointer text-sm font-medium">
+        Conectar pela API oficial da Meta
+      </summary>
+      <p className="mt-1 text-xs text-gray-500">
+        Caminho oficial e sem risco de bloqueio, mas exige conta de
+        desenvolvedor na Meta, CNPJ verificado e mensagens aprovadas
+        previamente. A Meta cobra por mensagem enviada.
+      </p>
+      <div className="mt-2 space-y-3">{children}</div>
+    </details>
   );
 }
 

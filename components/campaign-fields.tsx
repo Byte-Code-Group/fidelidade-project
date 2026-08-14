@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/section";
 import type { Campaign, CampaignVariable, VariableSource } from "@/lib/campaigns";
+import type { ProvedorWhatsApp } from "@/lib/tenant-whatsapp";
 import type { WhatsAppTemplate } from "@/lib/whatsapp";
 
 export interface PlanOption {
@@ -45,27 +47,40 @@ function contarVariaveis(body: string): number {
 /**
  * Campos compartilhados por criar e editar campanha.
  *
- * Ao editar, o template não muda: trocar o template mudaria o número de
- * variáveis e a categoria (e com ela o custo) de uma campanha já revisada.
+ * Dois formatos de mensagem, decididos pela conexão do negócio:
+ *  • meta      — escolhe um template aprovado; o corpo pertence à Meta e não é
+ *                editável aqui. Ao editar, o template também não muda: trocar
+ *                mudaria o número de variáveis e a categoria (e com ela o
+ *                custo) de uma campanha já revisada.
+ *  • evolution — escreve o texto na hora, e as variáveis saem do que foi
+ *                escrito.
  */
 export function CampaignFields({
   campaign,
   templates,
   plans,
+  provider,
 }: {
   campaign?: Campaign;
   templates: WhatsAppTemplate[];
   plans: PlanOption[];
+  provider: ProvedorWhatsApp;
 }) {
+  // A campanha existente manda: uma criada como template não vira texto livre
+  // só porque o negócio trocou de conexão depois.
+  const modo = campaign?.provider ?? provider;
+  const textoLivre = modo === "evolution";
+
   const aprovados = templates.filter((t) => t.status === "APPROVED");
   const [templateName, setTemplateName] = useState(
     campaign?.template_name ?? aprovados[0]?.name ?? "",
   );
+  const [textoDigitado, setTextoDigitado] = useState(campaign?.template_body ?? "");
 
   // Ao editar, o corpo salvo é a verdade: o template pode ter sumido da Meta e
   // ainda assim precisamos mostrar o que foi enviado.
   const template = aprovados.find((t) => t.name === templateName);
-  const body = campaign?.template_body ?? template?.body ?? "";
+  const body = textoLivre ? textoDigitado : (campaign?.template_body ?? template?.body ?? "");
   const categoria = campaign?.template_category ?? template?.category ?? "MARKETING";
   const quantidade = contarVariaveis(body);
 
@@ -100,8 +115,23 @@ export function CampaignFields({
         <Input name="name" defaultValue={campaign?.name ?? ""} placeholder="Reativação de agosto" required />
       </Field>
 
-      {campaign ? (
-        <input type="hidden" name="template_name" value={campaign.template_name} />
+      {textoLivre ? (
+        <Field
+          label="Mensagem"
+          hint="use {{1}}, {{2}}… para personalizar"
+        >
+          <Textarea
+            name="message_body"
+            rows={5}
+            maxLength={4096}
+            required
+            value={textoDigitado}
+            onChange={(e) => setTextoDigitado(e.target.value)}
+            placeholder={"Oi {{1}}, tudo bem? Essa semana temos {{2}} de desconto pra você!"}
+          />
+        </Field>
+      ) : campaign ? (
+        <input type="hidden" name="template_name" value={campaign.template_name ?? ""} />
       ) : (
         <Field
           label="Template aprovado"
@@ -126,7 +156,13 @@ export function CampaignFields({
         </Field>
       )}
 
-      {categoria === "MARKETING" ? (
+      {textoLivre ? (
+        <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          A mensagem sai pela sessão do seu próprio WhatsApp, sem custo por
+          envio. Escreva como você escreveria pra um cliente: texto genérico
+          disparado em massa é o que faz o número ser denunciado e bloqueado.
+        </p>
+      ) : categoria === "MARKETING" ? (
         <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
           Template de <strong>marketing</strong>: a Meta cobra por mensagem
           enviada, inclusive pra quem já está conversando com você.
@@ -142,7 +178,9 @@ export function CampaignFields({
 
       {quantidade > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium">Variáveis do template</p>
+          <p className="text-sm font-medium">
+            {textoLivre ? "Variáveis da mensagem" : "Variáveis do template"}
+          </p>
           {Array.from({ length: quantidade }, (_, i) => {
             const v = variavelEm(i);
             return (

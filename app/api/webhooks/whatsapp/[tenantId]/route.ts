@@ -2,6 +2,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { tenantDoWebhook } from "@/lib/tenant-whatsapp";
+import {
+  aplicarStatusEntrega,
+  registrarMensagemRecebida,
+  type StatusEntrega,
+} from "@/lib/whatsapp-inbox";
 
 // Webhook do WhatsApp Cloud API de UM negócio.
 //
@@ -41,11 +46,6 @@ interface CorpoDoWebhook {
 // interessam: não mudam o que o cliente viu.
 const STATUS_VALIDOS = new Set(["sent", "delivered", "read", "failed"]);
 
-// Um status atrasado não pode rebaixar o que já avançou: "read" chegando antes
-// de "delivered" acontece, e regravar "delivered" mentiria no relatório.
-const ORDEM: Record<string, number> = { queued: 0, sent: 1, delivered: 2, read: 3, failed: 3 };
-
-const PALAVRAS_DE_SAIDA = /^\s*(sair|parar|pare|cancelar|descadastrar|stop|unsubscribe)\s*$/i;
 
 // ------------------------------------------------------------
 // Verificação do endpoint (a Meta chama uma vez ao cadastrar a URL)
@@ -105,10 +105,23 @@ export async function POST(
       if (value.metadata?.phone_number_id !== conta.phone_number_id) continue;
 
       for (const status of value.statuses ?? []) {
-        await aplicarStatus(tenantId, status);
+        if (!status.id || !status.status || !STATUS_VALIDOS.has(status.status)) continue;
+        const erro = status.errors?.[0];
+        await aplicarStatusEntrega(tenantId, {
+          messageId: status.id,
+          status: status.status as StatusEntrega,
+          erro: erro
+            ? (erro.error_data?.details ?? erro.title ?? "Falha na entrega")
+            : null,
+        });
       }
       for (const mensagem of value.messages ?? []) {
-        await aplicarMensagemRecebida(tenantId, mensagem);
+        if (!mensagem.from) continue;
+        await registrarMensagemRecebida(tenantId, {
+          de: mensagem.from,
+          quandoMs: mensagem.timestamp ? Number(mensagem.timestamp) * 1000 : undefined,
+          texto: mensagem.text?.body,
+        });
       }
     }
   }
@@ -130,62 +143,4 @@ function assinaturaConfere(corpo: string, cabecalho: string | null): boolean {
   );
   const recebido = Buffer.from(cabecalho);
   return esperado.length === recebido.length && timingSafeEqual(esperado, recebido);
-}
-
-async function aplicarStatus(tenantId: string, status: StatusDaMeta) {
-  if (!status.id || !status.status || !STATUS_VALIDOS.has(status.status)) return;
-
-  const db = createAdminClient();
-  const { data: atual } = await db
-    .from("whatsapp_messages")
-    .select("id, status")
-    .eq("tenant_id", tenantId)
-    .eq("wa_message_id", status.id)
-    .maybeSingle<{ id: string; status: string }>();
-
-  if (!atual) return;
-  if ((ORDEM[status.status] ?? 0) <= (ORDEM[atual.status] ?? 0)) return;
-
-  const erro = status.errors?.[0];
-  await db
-    .from("whatsapp_messages")
-    .update({
-      status: status.status,
-      error: erro ? (erro.error_data?.details ?? erro.title ?? "Falha na entrega") : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", atual.id);
-}
-
-async function aplicarMensagemRecebida(tenantId: string, mensagem: MensagemDaMeta) {
-  if (!mensagem.from) return;
-
-  const db = createAdminClient();
-  const quandoMs = mensagem.timestamp ? Number(mensagem.timestamp) * 1000 : Date.now();
-  const texto = mensagem.text?.body ?? "";
-
-  // O telefone no banco pode estar com máscara; a Meta manda só dígitos. Casar
-  // pelos últimos 8 dígitos evita erro com o 9 extra de celular antigo.
-  const { data: candidatos } = await db
-    .from("users")
-    .select("id, phone")
-    .eq("tenant_id", tenantId)
-    .not("phone", "is", null)
-    .returns<{ id: string; phone: string }[]>();
-
-  const finalRecebido = mensagem.from.replace(/\D/g, "").slice(-8);
-  const cliente = (candidatos ?? []).find(
-    (c) => c.phone.replace(/\D/g, "").slice(-8) === finalRecebido,
-  );
-  if (!cliente) return;
-
-  await db
-    .from("users")
-    .update({
-      wa_last_inbound_at: new Date(quandoMs).toISOString(),
-      // Pediu pra sair: nenhuma campanha futura inclui esse cliente.
-      ...(PALAVRAS_DE_SAIDA.test(texto) && { whatsapp_opt_out: true }),
-    })
-    .eq("id", cliente.id)
-    .eq("tenant_id", tenantId);
 }

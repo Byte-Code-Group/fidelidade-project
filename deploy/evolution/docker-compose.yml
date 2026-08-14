@@ -1,0 +1,80 @@
+# Evolution API atrás de um Caddy com TLS automático.
+#
+# Só o Caddy abre porta pra internet (80/443). A API fica na rede interna do
+# compose: a apikey dá controle total de todos os WhatsApp conectados, então
+# ela nunca deve trafegar em HTTP puro.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: evolution_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - EVOLUTION_DOMAIN=${EVOLUTION_DOMAIN}
+    depends_on:
+      - api
+    networks:
+      - evolution-net
+
+  api:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution_api
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - .env
+    volumes:
+      - evolution_instances:/evolution/instances
+    # Sem `ports:` de propósito — quem publica é o Caddy.
+    expose:
+      - "8080"
+    networks:
+      - evolution-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: evolution_redis
+    restart: always
+    command: redis-server --port 6379 --appendonly yes
+    volumes:
+      - evolution_redis:/data
+    networks:
+      evolution-net:
+        aliases:
+          - evolution-redis
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      evolution-net:
+        aliases:
+          - evolution-postgres
+
+volumes:
+  evolution_instances:
+  evolution_redis:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  evolution-net:
+    name: evolution-net
+    driver: bridge

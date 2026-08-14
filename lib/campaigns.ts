@@ -1,26 +1,35 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { traduzirErro } from "@/lib/error-messages";
-import { getCredenciaisWhatsApp } from "@/lib/tenant-whatsapp";
+import {
+  getCredenciaisWhatsApp,
+  getEnvioWhatsApp,
+  type ProvedorWhatsApp,
+} from "@/lib/tenant-whatsapp";
+import { enviarTexto } from "@/lib/evolution";
 import {
   contarVariaveis,
   enviarTemplate,
   listarTemplates,
   normalizarE164,
+  preencherPreview,
   type TemplateCategory,
   type WhatsAppTemplate,
 } from "@/lib/whatsapp";
 
-// Campanha de WhatsApp: escolhe um template aprovado na Meta, monta o público
-// a partir da base de clientes e dispara em lotes.
+// Campanha de WhatsApp: monta o público a partir da base de clientes e dispara
+// em lotes. O que muda entre os dois provedores (ver lib/tenant-whatsapp.ts) é
+// só a mensagem e o custo:
 //
-// Por que template e não texto livre: fora da janela de 24h (cliente falou com
-// o número há menos de 24h) a Meta só aceita template aprovado. Campanha por
-// definição vai pra quem não está falando com você agora.
-//
-// Custo: a Meta cobra por mensagem, na conta do próprio negócio. MARKETING é
-// cobrado sempre; UTILITY sai de graça pra quem está na janela de 24h. É por
-// isso que a fila guarda free_window e o painel mostra a estimativa antes.
+//  'meta'      — template aprovado. Fora da janela de 24h (cliente falou com o
+//                número há menos de 24h) a Meta não aceita outra coisa, e
+//                campanha por definição vai pra quem não está falando com você
+//                agora. Cobrado por mensagem: MARKETING sempre, UTILITY de
+//                graça dentro da janela — daí free_window na fila e a
+//                estimativa no painel.
+//  'evolution' — texto livre com {{1}}, {{2}}…, sem aprovação e sem custo por
+//                mensagem. O preço é outro: rajada de mensagem não solicitada
+//                é o caminho mais curto pro número ser banido pelo WhatsApp.
 
 // ------------------------------------------------------------
 // Tipos
@@ -57,7 +66,9 @@ export interface Campaign {
   id: string;
   tenant_id: string;
   name: string;
-  template_name: string;
+  provider: ProvedorWhatsApp;
+  /** Null nas campanhas de texto livre (provider 'evolution'). */
+  template_name: string | null;
   template_language: string;
   template_category: TemplateCategory;
   template_body: string | null;
@@ -101,6 +112,13 @@ const JANELA_MS = 24 * 60 * 60 * 1000;
 
 /** Quantas mensagens saem por chamada do disparo — ver dispararLote. */
 export const TAMANHO_DO_LOTE = 25;
+
+/**
+ * Pausa entre mensagens no caminho Evolution, aplicada pelo próprio servidor.
+ * Não é otimização: mensagem em rajada perfeita é o padrão que o WhatsApp usa
+ * pra identificar automação e banir o número.
+ */
+const DELAY_ENVIO_MS = 1_200;
 
 // ------------------------------------------------------------
 // Público
@@ -220,7 +238,14 @@ export function valoresDasVariaveis(
 export function estimarCusto(
   categoria: TemplateCategory,
   destinatarios: Pick<Destinatario, "freeWindow">[],
+  provider: ProvedorWhatsApp = "meta",
 ): { cobradas: number; gratuitas: number; totalBrl: number } {
+  // No Evolution quem entrega é a sessão do próprio número: não há cobrança
+  // por mensagem, então tudo conta como gratuito.
+  if (provider === "evolution") {
+    return { cobradas: 0, gratuitas: destinatarios.length, totalBrl: 0 };
+  }
+
   // Só UTILITY fica de graça dentro da janela de 24h; MARKETING é cobrado
   // mesmo com a conversa aberta.
   const gratuitas =
@@ -268,24 +293,50 @@ export async function insertCampaign(
   formData: FormData,
 ): Promise<{ error?: string }> {
   const name = String(formData.get("name") ?? "").trim();
-  const templateName = String(formData.get("template_name") ?? "").trim();
   if (!name) return { error: "Dê um nome pra campanha." };
-  if (!templateName) return { error: "Escolha um template aprovado." };
 
-  const cred = await getCredenciaisWhatsApp(tenantId);
-  if (!cred) return { error: "Conecte o WhatsApp do seu negócio antes de criar campanhas." };
+  const envio = await getEnvioWhatsApp(tenantId);
+  if (!envio) return { error: "Conecte o WhatsApp do seu negócio antes de criar campanhas." };
+
+  const db = createAdminClient();
+
+  // Texto livre: o corpo vem do formulário e as variáveis saem do próprio
+  // texto. Sem template, sem idioma e sem categoria pra consultar.
+  if (envio.provider === "evolution") {
+    const corpo = String(formData.get("message_body") ?? "").trim();
+    if (!corpo) return { error: "Escreva a mensagem da campanha." };
+    if (corpo.length > 4096) return { error: "A mensagem passou de 4096 caracteres." };
+
+    const { error: erroInsert } = await db.from("whatsapp_campaigns").insert({
+      tenant_id: tenantId,
+      name,
+      provider: "evolution",
+      template_name: null,
+      template_language: "pt_BR",
+      // Não há cobrança nesse caminho; UTILITY zera a estimativa no painel.
+      template_category: "UTILITY",
+      template_body: corpo,
+      variables: lerVariaveis(formData, contarVariaveis(corpo)),
+      audience: lerPublico(formData),
+      status: "draft",
+    });
+    return { error: erroInsert ? traduzirErro(erroInsert.message) : undefined };
+  }
+
+  const templateName = String(formData.get("template_name") ?? "").trim();
+  if (!templateName) return { error: "Escolha um template aprovado." };
 
   // O template é a fonte da verdade de idioma, categoria e nº de variáveis —
   // nada disso vem do formulário, senão um envio quebra com "132000".
-  const { templates, error } = await listarTemplates(cred);
+  const { templates, error } = await listarTemplates(envio.cred);
   if (error) return { error };
   const template = templates?.find((t) => t.name === templateName && t.status === "APPROVED");
   if (!template) return { error: "Esse template não está mais aprovado na Meta." };
 
-  const db = createAdminClient();
   const { error: erroInsert } = await db.from("whatsapp_campaigns").insert({
     tenant_id: tenantId,
     name,
+    provider: "meta",
     template_name: template.name,
     template_language: template.language,
     template_category: template.category,
@@ -305,10 +356,14 @@ export async function applyCampaignUpdate(
   const db = createAdminClient();
   const { data: atual } = await db
     .from("whatsapp_campaigns")
-    .select("status, template_body")
+    .select("status, provider, template_body")
     .eq("id", campaignId)
     .eq("tenant_id", tenantId)
-    .maybeSingle<{ status: string; template_body: string | null }>();
+    .maybeSingle<{
+      status: string;
+      provider: ProvedorWhatsApp;
+      template_body: string | null;
+    }>();
 
   if (!atual) return { error: "Campanha não encontrada." };
   // Mexer no texto de uma campanha que já saiu reescreveria o histórico do
@@ -320,11 +375,21 @@ export async function applyCampaignUpdate(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Dê um nome pra campanha." };
 
+  // Na campanha de texto livre o corpo é editável; no template ele pertence à
+  // Meta e só muda lá.
+  let corpo = atual.template_body ?? "";
+  if (atual.provider === "evolution") {
+    corpo = String(formData.get("message_body") ?? "").trim();
+    if (!corpo) return { error: "Escreva a mensagem da campanha." };
+    if (corpo.length > 4096) return { error: "A mensagem passou de 4096 caracteres." };
+  }
+
   const { error } = await db
     .from("whatsapp_campaigns")
     .update({
       name,
-      variables: lerVariaveis(formData, contarVariaveis(atual.template_body ?? "")),
+      template_body: corpo,
+      variables: lerVariaveis(formData, contarVariaveis(corpo)),
       audience: lerPublico(formData),
     })
     .eq("id", campaignId)
@@ -419,8 +484,8 @@ export async function montarFila(
   if (!campanha) return { error: "Campanha não encontrada." };
   if (campanha.status === "sent") return { error: "Essa campanha já foi enviada." };
 
-  const cred = await getCredenciaisWhatsApp(tenantId);
-  if (!cred) return { error: "Conecte o WhatsApp do seu negócio antes de disparar." };
+  const envio = await getEnvioWhatsApp(tenantId);
+  if (!envio) return { error: "Conecte o WhatsApp do seu negócio antes de disparar." };
 
   const publico = await resolverPublico(tenantId, campanha.audience ?? {});
   if (publico.length === 0) {
@@ -472,22 +537,33 @@ export async function dispararLote(
 
   const { data: campanha } = await db
     .from("whatsapp_campaigns")
-    .select("id, status, template_name, template_language, variables")
+    .select("id, status, provider, template_name, template_language, template_body, variables")
     .eq("id", campaignId)
     .eq("tenant_id", tenantId)
     .maybeSingle<{
       id: string;
       status: string;
-      template_name: string;
+      provider: ProvedorWhatsApp;
+      template_name: string | null;
       template_language: string;
+      template_body: string | null;
       variables: CampaignVariable[];
     }>();
 
   if (!campanha) return { error: "Campanha não encontrada." };
   if (campanha.status === "canceled") return { error: "Campanha cancelada." };
 
-  const cred = await getCredenciaisWhatsApp(tenantId);
-  if (!cred) return { error: "WhatsApp desconectado. Reconecte o número." };
+  const envio = await getEnvioWhatsApp(tenantId);
+  if (!envio) return { error: "WhatsApp desconectado. Reconecte o número." };
+
+  // O negócio trocou de provedor depois de criar a campanha: um template não
+  // roda por sessão de WhatsApp Web, nem texto livre vira template aprovado.
+  if (envio.provider !== campanha.provider) {
+    return {
+      error:
+        "Essa campanha foi criada para outra forma de conexão. Crie uma nova com a conexão atual.",
+    };
+  }
 
   const { data: negocio } = await db
     .from("tenants")
@@ -518,19 +594,27 @@ export async function dispararLote(
   let falhas = 0;
 
   // Em série de propósito: a Meta limita a taxa de envio por número e um
-  // burst paralelo volta como 130429 pra metade do lote.
+  // burst paralelo volta como 130429 pra metade do lote. No Evolution o
+  // motivo é outro e mais grave — rajada é o que dispara o banimento.
   for (const item of fila) {
     const dest = porTelefone.get(item.phone);
     const valores = dest
       ? valoresDasVariaveis(campanha.variables ?? [], dest, negocio?.name ?? "")
       : (campanha.variables ?? []).map((v) => (v.source === "literal" ? (v.value ?? "-") : "-"));
 
-    const { messageId, error } = await enviarTemplate(cred, {
-      to: item.phone,
-      template: campanha.template_name,
-      language: campanha.template_language,
-      variaveis: valores,
-    });
+    const { messageId, error } =
+      envio.provider === "meta"
+        ? await enviarTemplate(envio.cred, {
+            to: item.phone,
+            template: campanha.template_name ?? "",
+            language: campanha.template_language,
+            variaveis: valores,
+          })
+        : await enviarTexto(envio.servidor, envio.instancia, {
+            to: item.phone,
+            texto: preencherPreview(campanha.template_body ?? "", valores),
+            delayMs: DELAY_ENVIO_MS,
+          });
 
     if (error) {
       falhas++;
