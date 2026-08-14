@@ -24,7 +24,9 @@ services:
       - evolution-net
 
   api:
-    image: evoapicloud/evolution-api:latest
+    # Versão fixa de propósito: `latest` aponta pra builds de release candidate.
+    # Multi-arch — o mesmo tag serve amd64 e arm64 (Ampere da Oracle).
+    image: evoapicloud/evolution-api:v2.3.7
     container_name: evolution_api
     restart: always
     depends_on:
