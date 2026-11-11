@@ -1,11 +1,9 @@
 import "server-only";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-// Enquanto fideliza.com.br não estiver verificado em resend.com/domains, o
-// remetente precisa ser o domínio de teste do Resend — qualquer outro volta
-// com 403 (validation_error). Atenção: com onboarding@resend.dev o plano free
-// só entrega no e-mail dono da conta Resend.
-const FROM = process.env.EMAIL_FROM || "Fideliza <onboarding@resend.dev>";
+// OCI Email Delivery por SMTP (STARTTLS na 587). O remetente precisa ser um
+// "Approved Sender" no console da Oracle — qualquer outro é recusado.
+const FROM = process.env.EMAIL_FROM || "Fideliza <nao-responda@fidelidade.bytecodegroup.com.br>";
 
 export interface SendEmailOptions {
   to: string;
@@ -19,27 +17,36 @@ export interface SendEmailResult {
   error?: string;
 }
 
+let transport: nodemailer.Transporter | null = null;
+
+function getTransport() {
+  const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
+  transport ??= nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
+    requireTLS: true,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+  return transport;
+}
+
 // Devolve o resultado em vez de lançar: e-mail é efeito secundário na maioria
 // dos fluxos (boas-vindas, resgate) e não deve derrubá-los. Quem depende do
 // envio — recuperação de senha — checa o retorno.
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
-  if (!process.env.RESEND_API_KEY) {
-    console.error("[email] RESEND_API_KEY ausente — envio ignorado");
+  const smtp = getTransport();
+  if (!smtp) {
+    console.error("[email] SMTP_HOST/SMTP_USER/SMTP_PASS ausentes — envio ignorado");
     return { ok: false, error: "Envio de e-mail não configurado." };
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to: opts.to,
-    subject: opts.subject,
-    html: opts.html,
-  });
-
-  if (error) {
-    console.error("[email]", error);
-    return { ok: false, error: error.message };
+  try {
+    await smtp.sendMail({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
+    return { ok: true };
+  } catch (err) {
+    console.error("[email]", err);
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
-
-  return { ok: true };
 }

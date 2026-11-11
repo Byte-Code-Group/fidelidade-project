@@ -38,10 +38,10 @@ const TRADUCOES: Array<[RegExp, string]> = [
   [/captcha/i, "Falha na verificação de segurança. Recarregue a página e tente de novo."],
   [/database error (saving|granting|finding|querying)/i, "Erro ao processar sua conta. Tente novamente em instantes."],
   [/(email_address_not_authorized|not authorized to send)/i, "Não foi possível enviar o e-mail para este endereço."],
-  // Resend: domínio do remetente ainda não verificado, ou destinatário fora
-  // da conta enquanto se usa o domínio de teste. Detalhe é de configuração —
-  // o usuário final só precisa saber que não saiu.
-  [/(domain is not verified|you can only send testing emails)/i, "Não foi possível enviar o e-mail agora. Tente novamente em instantes."],
+  // SMTP (OCI Email Delivery): remetente não aprovado, credencial errada ou
+  // destinatário recusado. Detalhe é de configuração — o usuário final só
+  // precisa saber que não saiu.
+  [/(sender.*not (approved|authorized)|invalid login|authentication failed|5\d\d [0-9.]+ |ECONNREFUSED|ETIMEDOUT)/i, "Não foi possível enviar o e-mail agora. Tente novamente em instantes."],
   [/(provider is not enabled|oauth)/i, "Este método de login não está habilitado."],
   [/user is banned/i, "Esta conta está bloqueada. Fale com o suporte."],
   [/(anonymous sign-ins|signup is disabled)/i, "Cadastro indisponível no momento."],

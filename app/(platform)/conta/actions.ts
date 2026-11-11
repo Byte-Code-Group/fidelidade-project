@@ -107,7 +107,7 @@ export async function platformSignIn(formData: FormData) {
 
 // ---------- Recuperação de senha ----------
 
-// O e-mail de recuperação é nosso (Resend + template da marca), não o padrão
+// O e-mail de recuperação é nosso (SMTP da Oracle + template da marca), não o padrão
 // da Supabase: `generateLink` só gera o token, sem disparar mensagem. O link
 // aponta pra /auth/recuperar, que troca o token por sessão e leva pra tela de
 // nova senha.

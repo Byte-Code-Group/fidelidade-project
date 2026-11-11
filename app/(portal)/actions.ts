@@ -45,7 +45,7 @@ export async function signOut() {
   redirect("/login");
 }
 
-// Envia e-mail de recuperação de senha pelo Resend, com o branding do negócio
+// Envia e-mail de recuperação de senha pelo SMTP (OCI Email Delivery), com o branding do negócio
 // (ver lib/password-reset.ts). O link passa por /auth/recuperar, que valida o
 // token e abre /redefinir-senha já com sessão.
 export async function requestPasswordReset(formData: FormData) {

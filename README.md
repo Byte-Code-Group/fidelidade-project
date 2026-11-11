@@ -21,7 +21,7 @@ Três públicos, três áreas:
 - **Tailwind CSS 4**
 - **AI SDK** + Google Gemini (assistente do portal)
 - **Asaas** — cobrança recorrente das assinaturas dos tenants
-- **Resend** — e-mails transacionais
+- **OCI Email Delivery** (SMTP) — e-mails transacionais
 - **Vercel** — deploy e gestão de domínios customizados
 
 ## Como o multi-tenant funciona
@@ -73,7 +73,7 @@ Copie para `.env.local`:
 | `NEXT_PUBLIC_ROOT_DOMAIN` | sim | domínio base do multi-tenant (`lvh.me:3000` em dev) |
 | `NEXT_PUBLIC_SITE_URL` | sim | URL canônica (metadata, sitemap, links de e-mail) |
 | `SUPABASE_WEBHOOK_SECRET` | sim | valida a assinatura do webhook de e-mail do Auth |
-| `RESEND_API_KEY` / `EMAIL_FROM` | sim | envio de e-mails transacionais |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | sim | e-mails transacionais pelo OCI Email Delivery (SMTP) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | sim | assistente de IA do portal |
 | `ASAAS_API_KEY` / `ASAAS_SANDBOX` | sim | cobrança das assinaturas |
 | `ASAAS_WEBHOOK_TOKEN` | sim | valida o webhook de pagamento do Asaas |

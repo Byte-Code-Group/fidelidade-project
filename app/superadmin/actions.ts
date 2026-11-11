@@ -58,7 +58,7 @@ export async function requestSuperadminPasswordReset(formData: FormData) {
     redirect("/superadmin/esqueci-senha?error=" + encodeURIComponent("Informe o e-mail."));
   }
 
-  // Pelo Resend, com o template da plataforma — não pelo e-mail padrão da
+  // Pelo SMTP (OCI Email Delivery), com o template da plataforma — não pelo e-mail padrão da
   // Supabase (ver lib/password-reset.ts).
   const resultado = await enviarLinkDeRecuperacao({
     email,

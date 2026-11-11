@@ -21,7 +21,7 @@ export type EnviarLinkResultado =
   | { ok: false; naoEncontrado: true };
 
 /**
- * Gera o link de recuperação e envia pelo Resend, com o template da marca.
+ * Gera o link de recuperação e envia pelo SMTP (OCI Email Delivery), com o template da marca.
  *
  * `generateLink` só cria o token, sem disparar mensagem — é o que permite não
  * usar o e-mail padrão da Supabase, que ignora o design do projeto.
