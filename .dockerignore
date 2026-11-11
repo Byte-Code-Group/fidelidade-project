@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env*
+.pnpm-store
+.code-review-graph
+.claude
+supabase
+tsconfig.tsbuildinfo
