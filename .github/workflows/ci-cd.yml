@@ -1,0 +1,135 @@
+# Pipeline: checagem → imagem no GHCR → deploy por SSH.
+#
+# - Pull request: só a checagem (lint, tipos, build).
+# - Push na main / execução manual: checagem, imagem e deploy.
+#
+# O deploy só roda se a variável DEPLOY_HOST estiver configurada no
+# repositório. Configuração em Settings → Secrets and variables → Actions:
+#
+#   Variables
+#     DEPLOY_HOST        IP ou hostname do servidor
+#     DEPLOY_USER        usuário SSH (ex.: ubuntu)
+#     DEPLOY_PLATFORM    linux/arm64 (padrão) ou linux/amd64
+#     BUILD_ENV          opcional: KEY=valor por linha, vira build-arg
+#   Secrets
+#     DEPLOY_SSH_KEY     chave privada SSH usada pela pipeline
+#     DEPLOY_KNOWN_HOSTS saída de `ssh-keyscan -t ed25519 <host>`
+#
+# Do lado do servidor, a chave deve estar presa a um comando que recebe a
+# referência da imagem como argumento e as credenciais do GHCR pelo stdin
+# (usuário na 1ª linha, token na 2ª), puxa a imagem e reinicia o app.
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # PR novo cancela a checagem antiga; deploy em andamento nunca é cortado.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, tipos e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Com "packageManager" no package.json o action-setup usa essa versão;
+      # sem, ele exige uma explícita — cai no pnpm 10.
+      - id: pnpm
+        name: Versão do pnpm
+        run: |
+          if node -e 'process.exit(require("./package.json").packageManager ? 0 : 1)' 2>/dev/null; then
+            echo "version=" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=10" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ steps.pnpm.outputs.version }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Cada etapa só roda se o projeto tiver o script/arquivo.
+      - run: pnpm run --if-present lint
+      - run: if [ -f tsconfig.json ]; then pnpm exec tsc --noEmit; fi
+      - run: pnpm run --if-present build
+
+  image:
+    name: Imagem Docker
+    needs: check
+    if: github.event_name != 'pull_request'
+    # Runner ARM nativo só é gratuito em repositório público. Nos demais o
+    # build ARM roda emulado (QEMU) no runner comum: funciona, mas o
+    # `next build` fica várias vezes mais lento.
+    runs-on: ${{ (vars.DEPLOY_PLATFORM == 'linux/amd64' || github.event.repository.private) && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: meta
+        # O GHCR exige nome em minúsculas; a tag é o commit, para o deploy
+        # sempre saber exatamente o que está rodando.
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+        if: github.event.repository.private && vars.DEPLOY_PLATFORM != 'linux/amd64'
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ vars.DEPLOY_PLATFORM || 'linux/arm64' }}
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          # Variáveis de build (ex.: NEXT_PUBLIC_*), uma KEY=valor por linha na
+          # variável de repositório BUILD_ENV. O Dockerfile precisa declarar
+          # cada uma com ARG. Ficam embutidas na imagem: nada de segredo aqui.
+          build-args: ${{ vars.BUILD_ENV }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy
+    needs: image
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      packages: read
+    steps:
+      - name: Configura SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Publica ${{ needs.image.outputs.image }}
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          IMAGE: ${{ needs.image.outputs.image }}
+          # Token do próprio job: só lê pacotes e expira quando o job acaba.
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s\n%s\n' "$GITHUB_ACTOR" "$GHCR_TOKEN" |
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$DEPLOY_USER@$HOST" "$IMAGE"
