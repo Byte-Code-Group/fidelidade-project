@@ -1,0 +1,20 @@
+# fidelidade. Criado pelo Bytecode App — para trocar o domínio, edite a linha
+# abaixo (ou use a tela Domínios do Bytecode App).
+fidelidade.bytecodegroup.com.br {
+	import comuns
+	# Primeiro no arquivo: a tela Domínios lê o 1º reverse_proxy como o do app.
+	# O Caddy ordena os handle por especificidade, então este (sem matcher) fica por último.
+	handle {
+		reverse_proxy fidelidade:3000
+	}
+	# O que o supabase-js chama (NEXT_PUBLIC_SUPABASE_URL = este domínio).
+	handle_path /auth/v1/* {
+		reverse_proxy fidelidade-auth:9999
+	}
+	handle_path /rest/v1/* {
+		reverse_proxy fidelidade-rest:3000
+	}
+	handle_path /storage/v1/* {
+		reverse_proxy fidelidade-storage:5000
+	}
+}

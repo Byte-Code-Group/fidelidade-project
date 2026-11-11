@@ -1,0 +1,60 @@
+# Fidelidade na VM (Bytecode App): o app + as peças open source do Supabase
+# que o código usa (auth, API REST e storage), sobre o Postgres
+# compartilhado da VM (database `fidelidade`). Sem Supabase na nuvem.
+#
+# Vai em ~/apps/fidelidade/compose.vm.yml. Segredos ficam ao lado, só na VM:
+#   .env.vm       app (tela Variáveis do Bytecode App)
+#   .env.auth     GoTrue      .env.rest  PostgREST      .env.storage  storage-api
+# O Caddy roteia /auth/v1, /rest/v1 e /storage/v1 para cá (fidelidade.caddy).
+
+name: fidelidade
+
+services:
+  app:
+    image: fidelidade:current
+    container_name: fidelidade
+    restart: unless-stopped
+    env_file: .env.vm
+    expose:
+      - "3000"
+    mem_limit: 512m
+    networks: [infra]
+
+  auth:
+    image: supabase/gotrue:v2.197.0
+    container_name: fidelidade-auth
+    restart: unless-stopped
+    env_file: .env.auth
+    expose:
+      - "9999"
+    mem_limit: 128m
+    networks: [infra]
+
+  rest:
+    image: postgrest/postgrest:v14.18
+    container_name: fidelidade-rest
+    restart: unless-stopped
+    env_file: .env.rest
+    expose:
+      - "3000"
+    mem_limit: 128m
+    networks: [infra]
+
+  storage:
+    image: supabase/storage-api:v1.89.12
+    container_name: fidelidade-storage
+    restart: unless-stopped
+    env_file: .env.storage
+    expose:
+      - "5000"
+    mem_limit: 256m
+    volumes:
+      - storage:/var/lib/storage
+    networks: [infra]
+
+volumes:
+  storage:
+
+networks:
+  infra:
+    external: true
