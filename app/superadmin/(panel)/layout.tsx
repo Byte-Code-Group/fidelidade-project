@@ -3,7 +3,7 @@ import { SuperadminSidebar } from "@/components/superadmin-sidebar";
 import { superSignOut } from "../actions";
 import { SessionWatch } from "@/components/session-watch";
 
-// Shell do console da plataforma (Fideliza.OS). O guard roda aqui → todas as
+// Shell do console da plataforma (Fidelidade.OS). O guard roda aqui → todas as
 // páginas do grupo (panel) exigem platform admin.
 export default async function SuperPanelLayout({
   children,

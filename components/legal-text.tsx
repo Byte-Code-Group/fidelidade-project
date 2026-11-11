@@ -13,13 +13,13 @@ export function TermosDeUso() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-[13px] leading-relaxed text-gray-600">
-        Ao criar uma conta na Fideliza, você concorda com as condições abaixo. Leia com atenção
+        Ao criar uma conta na Fidelidade, você concorda com as condições abaixo. Leia com atenção
         antes de continuar.
       </p>
 
       <Section title="1. O serviço">
         <p>
-          A Fideliza é uma plataforma que permite ao seu negócio criar um portal de fidelidade
+          A Fidelidade é uma plataforma que permite ao seu negócio criar um portal de fidelidade
           próprio, com carteirinha digital, pontos, recompensas, loja de benefícios e atendimento
           automatizado. O acesso é feito por assinatura, conforme o plano escolhido.
         </p>
@@ -69,7 +69,7 @@ export function TermosDeUso() {
       <Section title="7. Disponibilidade e limitação de responsabilidade">
         <p>
           Trabalhamos para manter o serviço disponível, mas ele pode passar por manutenções e
-          interrupções eventuais. A Fideliza não se responsabiliza por lucros cessantes ou danos
+          interrupções eventuais. A Fidelidade não se responsabiliza por lucros cessantes ou danos
           indiretos decorrentes do uso ou da indisponibilidade da plataforma.
         </p>
       </Section>
@@ -88,7 +88,7 @@ export function PoliticaDePrivacidade() {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-[13px] leading-relaxed text-gray-600">
-        Esta política explica quais dados a Fideliza coleta, por que coleta e como você pode
+        Esta política explica quais dados a Fidelidade coleta, por que coleta e como você pode
         controlá-los, em linha com a Lei Geral de Proteção de Dados (LGPD).
       </p>
 
@@ -127,7 +127,7 @@ export function PoliticaDePrivacidade() {
         <p>
           Os dados dos clientes cadastrados no seu portal são controlados por você. Cabe a você
           obter o consentimento necessário e usá-los apenas para a finalidade do programa de
-          fidelidade. A Fideliza atua como operadora desses dados.
+          fidelidade. A Fidelidade atua como operadora desses dados.
         </p>
       </Section>
 

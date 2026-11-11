@@ -4,13 +4,13 @@ export interface ResetPasswordEmailData {
   userName?: string;
   /** Tempo de validade exibido no corpo do e-mail. */
   validade?: string;
-  /** Marca do remetente. No portal é o nome do negócio; senão, a Fideliza. */
+  /** Marca do remetente. No portal é o nome do negócio; senão, a Fidelidade. */
   brandName?: string;
   primaryColor?: string;
 }
 
 // Azul da plataforma (blue-600 do Tailwind) — mesmo do painel e das telas de
-// autenticação. Vale quando o e-mail sai da própria Fideliza; no portal de um
+// autenticação. Vale quando o e-mail sai da própria Fidelidade; no portal de um
 // negócio, a cor vem de tenant_settings.
 const BRAND_COLOR = "#2563eb";
 
@@ -20,7 +20,7 @@ export function resetPasswordEmail(d: ResetPasswordEmailData): {
 } {
   const year = new Date().getFullYear();
   const validade = d.validade ?? "1 hora";
-  const marca = d.brandName ?? "Fideliza";
+  const marca = d.brandName ?? "Fidelidade";
   const BRAND = d.primaryColor || BRAND_COLOR;
 
   return {

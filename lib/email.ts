@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 
 // OCI Email Delivery por SMTP (STARTTLS na 587). O remetente precisa ser um
 // "Approved Sender" no console da Oracle — qualquer outro é recusado.
-const FROM = process.env.EMAIL_FROM || "Fideliza <nao-responda@fidelidade.bytecodegroup.com.br>";
+const FROM = process.env.EMAIL_FROM || "Fidelidade <nao-responda@fidelidade.bytecodegroup.com.br>";
 
 export interface SendEmailOptions {
   to: string;

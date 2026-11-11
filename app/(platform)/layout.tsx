@@ -8,7 +8,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <Logo className="h-6 w-6" />
-            Fideliza
+            Fidelidade
           </Link>
         </div>
       </nav>

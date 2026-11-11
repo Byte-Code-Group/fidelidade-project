@@ -16,7 +16,7 @@ function scheme(host: string): string {
   return local ? "http://" : "https://";
 }
 
-/** Ex.: https://oraldents.fideliza.com.br (http://oraldents.lvh.me:3000 em dev). */
+/** Ex.: https://oraldents.fidelidade.bytecodegroup.com.br (http://oraldents.lvh.me:3000 em dev). */
 export function portalUrl(slug: string, path = ""): string {
   const host = `${slug}.${ROOT_DOMAIN}`;
   return `${scheme(host)}${host}${path}`;

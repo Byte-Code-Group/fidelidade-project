@@ -149,7 +149,7 @@ export async function conectarAsaas(
   if (url && email) {
     try {
       const webhook = await createWebhookNaConta(conta, {
-        name: "Fideliza.OS",
+        name: "Fidelidade.OS",
         url,
         email,
         authToken: webhookToken,

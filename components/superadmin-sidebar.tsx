@@ -133,7 +133,7 @@ function Brand() {
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-bold leading-tight">
-          Fideliza
+          Fidelidade
         </p>
         <p className="truncate text-[10px] uppercase tracking-wider opacity-50">
           Console do Operador

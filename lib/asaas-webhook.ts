@@ -193,7 +193,7 @@ export async function garantirWebhookDaPlataforma(
   const { apiKey, authToken, sandbox } = lerAmbiente();
   const baseUrl = baseUrlDe(sandbox ? "sandbox" : "production");
   const corpo = {
-    name: diag.webhook?.name ?? "Fideliza.OS — plataforma",
+    name: diag.webhook?.name ?? "Fidelidade.OS — plataforma",
     url: diag.urlEsperada,
     email: diag.webhook?.email || diag.contaEmail,
     enabled: true,

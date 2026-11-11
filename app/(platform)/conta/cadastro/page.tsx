@@ -26,7 +26,7 @@ export default async function CadastroPage({
 
         <div className="relative z-10 flex items-center gap-2.5">
           <Logo className="h-6 w-6 text-white" />
-          <span className="text-xl font-extrabold">Fideliza</span>
+          <span className="text-xl font-extrabold">Fidelidade</span>
         </div>
 
         <div className="relative z-10 max-w-sm">
@@ -44,7 +44,7 @@ export default async function CadastroPage({
         </div>
 
         <p className="relative z-10 text-[13px] text-white/70">
-          © {new Date().getFullYear()} Fideliza
+          © {new Date().getFullYear()} Fidelidade
         </p>
       </div>
 
@@ -54,7 +54,7 @@ export default async function CadastroPage({
           {/* Logo topo só no mobile (painel de marca fica oculto) */}
           <div className="flex items-center gap-2.5 text-gray-900 md:hidden">
             <Logo className="h-6 w-6" />
-            <span className="text-xl font-extrabold">Fideliza</span>
+            <span className="text-xl font-extrabold">Fidelidade</span>
           </div>
 
           <div>

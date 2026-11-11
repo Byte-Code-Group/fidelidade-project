@@ -71,7 +71,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <span className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <Logo className="h-6 w-6" />
-            Fideliza
+            Fidelidade
           </span>
           <div className="flex items-center gap-3">
             <Link href="/conta/login" className="text-sm text-gray-500 hover:text-gray-900">
@@ -247,7 +247,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
 
       {/* Footer */}
       <footer className="border-t border-black/5 py-8 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} Fideliza · Todos os direitos reservados ·{" "}
+        © {new Date().getFullYear()} Fidelidade · Todos os direitos reservados ·{" "}
         <Link href="/conta/login" className="hover:underline">Entrar</Link>
       </footer>
     </div>

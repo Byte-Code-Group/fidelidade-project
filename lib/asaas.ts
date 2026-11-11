@@ -128,7 +128,7 @@ export async function createSubscription(opts: {
       value,
       nextDueDate: nextDueDate.toISOString().slice(0, 10),
       cycle: "MONTHLY",
-      description: `Fideliza.OS — Plano ${opts.plan}`,
+      description: `Fidelidade.OS — Plano ${opts.plan}`,
       externalReference: opts.customer,
       ...(siteUrl && {
         callback: {

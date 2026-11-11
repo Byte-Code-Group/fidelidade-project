@@ -9,7 +9,7 @@ export interface EnviarLinkOptions {
   origin: string;
   /** Path pra onde mandar depois de validar o token (ex.: "/redefinir-senha"). */
   destino: string;
-  /** Marca exibida no e-mail. Sem isso, é a própria Fideliza. */
+  /** Marca exibida no e-mail. Sem isso, é a própria Fidelidade. */
   brandName?: string;
   primaryColor?: string;
 }

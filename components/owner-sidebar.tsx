@@ -257,7 +257,7 @@ function Brand({ businessName }: { businessName?: string }) {
         <p className="truncate text-sm font-bold leading-tight">
           {businessName || (
             <>
-              Fideliza
+              Fidelidade
             </>
           )}
         </p>
