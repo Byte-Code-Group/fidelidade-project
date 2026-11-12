@@ -39,7 +39,8 @@ function resolveLoginPath(pathname: string): string {
   if (
     pathname.startsWith("/painel") ||
     pathname.startsWith("/conta") ||
-    pathname.startsWith("/api/conta")
+    pathname.startsWith("/api/conta") ||
+    pathname.startsWith("/api/painel")
   ) {
     return "/conta/login";
   }

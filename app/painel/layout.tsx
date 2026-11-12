@@ -7,6 +7,7 @@ import { OwnerSidebar } from "@/components/owner-sidebar";
 import { platformSignOut } from "@/app/(platform)/conta/actions";
 import { switchActiveTenant } from "./actions";
 import { SessionWatch } from "@/components/session-watch";
+import { OwnerAssistant } from "@/components/owner-assistant";
 
 // Shell do painel do dono do tenant. O guard roda aqui → todas as páginas
 // do grupo exigem um dono de tenant autenticado (mesmo fallback de
@@ -53,6 +54,7 @@ export default async function PainelLayout({
       <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 md:py-10">
         {children}
       </main>
+      <OwnerAssistant />
     </div>
   );
 }

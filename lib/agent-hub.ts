@@ -20,7 +20,7 @@ const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingm
 const hasPlaceholders = (text: string) => /\{\{\s*[^}]+\}\}/.test(text);
 
 // Tudo que a plataforma sabe do cliente, em texto — é daqui que a IA tira os valores.
-async function clientDataText(tenantId: string, userId: string) {
+export async function clientDataText(tenantId: string, userId: string) {
   const db = createAdminClient();
   const [{ data: tenant }, { data: user }, { data: membership }, { data: fields }, { data: values }] =
     await Promise.all([
