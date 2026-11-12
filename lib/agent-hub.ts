@@ -89,7 +89,9 @@ async function callHub(agent: string, body: FormData) {
     return { error: `A IA não conseguiu gerar o documento${error ? `: ${error}` : "."}` };
   }
   if (!res.headers.get("content-type")?.includes(DOCX_MIME)) {
-    return { error: "A IA respondeu num formato inesperado." };
+    // 200 sem .docx = o agent no hub está com saída "Texto".
+    const expected = agent === TEMPLATE_AGENT ? "Template" : "DOCX";
+    return { error: `o agent "${agent}" no Byte Agent Hub precisa estar com saída ${expected}, não Texto.` };
   }
   return {
     file: new Uint8Array(await res.arrayBuffer()),
