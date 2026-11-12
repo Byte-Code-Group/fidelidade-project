@@ -118,8 +118,8 @@ export async function createSubscription(opts: {
   const nextDueDate = new Date();
   nextDueDate.setDate(nextDueDate.getDate() + 1);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
+  // Sem callback.successUrl de propósito: o Asaas exige o site cadastrado na
+  // conta pra aceitá-lo. Quem leva o dono ao painel é /conta/aguardando.
   return request<AsaasSubscription>("/subscriptions", {
     method: "POST",
     body: JSON.stringify({
@@ -130,14 +130,13 @@ export async function createSubscription(opts: {
       cycle: "MONTHLY",
       description: `Fidelidade.OS — Plano ${opts.plan}`,
       externalReference: opts.customer,
-      ...(siteUrl && {
-        callback: {
-          successUrl: `${siteUrl}/conta/aguardando`,
-          autoRedirect: true,
-        },
-      }),
     }),
   });
+}
+
+/** Asaas recusa o callback quando o domínio da successUrl não é o cadastrado na conta. */
+export function isDominioRecusado(err: unknown): boolean {
+  return err instanceof AsaasError && /dom[íi]nio/i.test(err.descricao ?? "");
 }
 
 // ---------- Chamadas na conta do próprio negócio ----------
@@ -289,22 +288,6 @@ export async function getSubscription(
   subscriptionId: string,
 ): Promise<AsaasSubscription> {
   return request<AsaasSubscription>(`/subscriptions/${subscriptionId}`);
-}
-
-export async function updateSubscriptionCallback(
-  subscriptionId: string,
-): Promise<void> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!siteUrl) return;
-  await request(`/subscriptions/${subscriptionId}`, {
-    method: "PUT",
-    body: JSON.stringify({
-      callback: {
-        successUrl: `${siteUrl}/conta/aguardando`,
-        autoRedirect: true,
-      },
-    }),
-  });
 }
 
 export async function cancelSubscription(

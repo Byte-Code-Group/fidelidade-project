@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCredenciais } from "@/lib/tenant-asaas";
 import {
   AsaasError,
+  isDominioRecusado,
   cancelSubscriptionNaConta,
   createCustomerNaConta,
   createSubscriptionNaConta,
@@ -166,7 +167,7 @@ export async function assinarPlanoComCobranca(
         await marcarCallbackBloqueado(tenantId, false);
         return criada;
       } catch (err) {
-        if (err instanceof AsaasError && /dom[íi]nio/i.test(err.descricao ?? "")) {
+        if (isDominioRecusado(err)) {
           // Fica registrado pro painel cobrar o dono a cadastrar o site.
           await marcarCallbackBloqueado(tenantId, true);
           return createSubscriptionNaConta(conta, dadosDaAssinatura);

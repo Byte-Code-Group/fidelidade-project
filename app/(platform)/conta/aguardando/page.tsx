@@ -22,6 +22,7 @@ function AguardandoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const modo = searchParams.get("modo");
+  const fatura = faturaAsaas(searchParams.get("fatura"));
   const [checking, setChecking] = useState(true);
 
   // Retorna true quando já redirecionou — aí não faz sentido seguir olhando.
@@ -99,9 +100,21 @@ function AguardandoContent() {
           <p className="mt-2 text-sm text-gray-500">
             {modo === "sem_asaas"
               ? "Pagamento em processamento. Entraremos em contato para confirmar sua assinatura."
-              : "Assim que o pagamento for confirmado, seu portal será ativado automaticamente. Verifique seu e-mail."}
+              : fatura
+                ? "Pague a fatura na aba que vai abrir. Esta página leva você ao painel assim que o pagamento for confirmado."
+                : "Assim que o pagamento for confirmado, seu portal será ativado automaticamente. Verifique seu e-mail."}
           </p>
           <div className="mt-6 space-y-3">
+            {fatura && (
+              <a
+                href={fatura}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition hover:opacity-90"
+              >
+                Abrir fatura
+              </a>
+            )}
             <Button
               className="w-full"
               variant="outline"
@@ -118,4 +131,16 @@ function AguardandoContent() {
       </Card>
     </div>
   );
+}
+
+// Só aceita fatura do Asaas: o parâmetro vem da URL e viraria open redirect.
+function faturaAsaas(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const { protocol, hostname } = new URL(url);
+    const asaas = hostname === "asaas.com" || hostname.endsWith(".asaas.com");
+    return protocol === "https:" && asaas ? url : null;
+  } catch {
+    return null;
+  }
 }

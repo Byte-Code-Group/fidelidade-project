@@ -15,7 +15,6 @@ import {
   createCustomer,
   createSubscription,
   getSubscriptionFirstPayment,
-  updateSubscriptionCallback,
   isRemovedCustomerError,
   type BillingType,
 } from "@/lib/asaas";
@@ -375,17 +374,11 @@ export async function initiatePayment(formData: FormData) {
         .from("tenants")
         .update({ asaas_subscription_id: subscriptionId })
         .eq("id", tenantId);
-    } else {
-      // Assinatura já existia (pode ter sido criada antes do callback ser configurado)
-      await updateSubscriptionCallback(subscriptionId);
     }
 
-    // Get invoice URL from first payment
-    // Nunca anexar ?autoRedirect=true aqui: esse parâmetro redireciona o dono
-    // de volta assim que a fatura ABRE, pago ou não — ele nem chegava a
-    // preencher o cartão. O redirect certo é o callback da assinatura, que
-    // só dispara depois do pagamento.
-    // (https://docs.asaas.com/docs/redirecionamento-apos-o-pagamento)
+    // Nunca anexar ?autoRedirect=true na fatura: redireciona assim que ela
+    // ABRE, pago ou não. A fatura abre em outra aba a partir de
+    // /conta/aguardando, que leva o dono ao painel quando o pagamento entra.
     const payment = await getSubscriptionFirstPayment(subscriptionId);
     invoiceUrl = payment?.invoiceUrl;
   } catch (err) {
@@ -393,5 +386,9 @@ export async function initiatePayment(formData: FormData) {
     redirect(`/conta/planos?error=${encodeURIComponent(msg)}`);
   }
 
-  redirect(invoiceUrl || "/conta/aguardando");
+  redirect(
+    invoiceUrl
+      ? `/conta/aguardando?fatura=${encodeURIComponent(invoiceUrl)}`
+      : "/conta/aguardando",
+  );
 }
