@@ -19,7 +19,10 @@ import type {
   RewardRedemption,
 } from "@/lib/types";
 import { GenerateDocumentForm } from "@/components/generate-document-form";
+import { DeleteClientButton } from "@/components/client-crud";
+import { FlashToast } from "@/components/flash-toast";
 import {
+  ownerDeleteClient,
   ownerGenerateClientDocument,
   ownerSetMemberPoints,
   ownerToggleMemberStatus,
@@ -91,10 +94,13 @@ function EmptyRow({ text }: { text: string }) {
 
 export default async function OwnerClientDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
 }) {
   const { id } = await params;
+  const { saved } = await searchParams;
   const { tenantId } = await requireTenantOwner();
   const db = createAdminClient();
 
@@ -266,12 +272,25 @@ export default async function OwnerClientDetailPage({
             {client.email ?? "sem e-mail"} · cliente desde {formatDate(client.created_at)}
           </p>
         </div>
-        {membership && (
-          <Badge className={statusStyle[membership.status] ?? "bg-black/5 opacity-70"}>
-            {membership.status}
-          </Badge>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {membership && (
+            <Badge className={statusStyle[membership.status] ?? "bg-black/5 opacity-70"}>
+              {membership.status}
+            </Badge>
+          )}
+          <Link
+            href={`/painel/clientes/${client.id}/editar`}
+            className="rounded-lg border border-[var(--primary)] px-3 py-1.5 text-sm font-medium text-[var(--primary)] transition hover:bg-[var(--primary)]/5"
+          >
+            Editar
+          </Link>
+          <DeleteClientButton
+            name={client.full_name ?? client.email ?? "este cliente"}
+            action={ownerDeleteClient.bind(null, client.id)}
+          />
+        </div>
       </div>
+      <FlashToast saved={saved} successMessage="Cliente salvo." />
 
       {membership ? (
         <Card>

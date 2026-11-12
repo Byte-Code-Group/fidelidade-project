@@ -41,6 +41,7 @@ import {
   reorderDocumentTemplates,
 } from "@/lib/document-templates";
 import { generateClientDocument } from "@/lib/agent-hub";
+import { createClientByOwner, deleteClientByOwner, updateClientByOwner } from "@/lib/clients";
 import {
   insertProfileField,
   applyProfileFieldUpdate,
@@ -406,6 +407,33 @@ export async function ownerToggleMemberStatus(membershipId: string, nextStatus: 
     .eq("id", membershipId)
     .eq("tenant_id", tenantId);
   revalidatePath("/painel/clientes");
+}
+
+// ---------- Cadastro de clientes (CRUD) ----------
+// Sucesso redireciona; erro volta pro form (que mantém o que foi digitado).
+
+export async function ownerCreateClient(formData: FormData): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { id, error } = await createClientByOwner(tenantId, formData);
+  if (error || !id) return { error: error ?? "Não consegui cadastrar o cliente." };
+  revalidatePath("/painel/clientes");
+  redirect(`/painel/clientes/${id}?saved=1`);
+}
+
+export async function ownerUpdateClient(clientId: string, formData: FormData): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await updateClientByOwner(tenantId, clientId, formData);
+  if (error) return { error };
+  revalidatePath("/painel/clientes");
+  redirect(`/painel/clientes/${clientId}?saved=1`);
+}
+
+export async function ownerDeleteClient(clientId: string): Promise<{ error?: string }> {
+  const { tenantId } = await requireTenantOwner();
+  const { error } = await deleteClientByOwner(tenantId, clientId);
+  if (error) return { error };
+  revalidatePath("/painel/clientes");
+  redirect("/painel/clientes?deleted=1");
 }
 
 // ---------- Assinatura ----------

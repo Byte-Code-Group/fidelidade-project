@@ -1,6 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -13,7 +12,7 @@ import { enviarLinkDeRecuperacao } from "@/lib/password-reset";
 import { welcomeEmail } from "@/lib/emails/welcome";
 import { redemptionEmail } from "@/lib/emails/redemption";
 import type { Membership, Mission, MissionCompletion, ProfileField, Reward } from "@/lib/types";
-import { validateProfileFieldValues } from "@/lib/profile-fields";
+import { collectProfileFieldValues, insertMembership } from "@/lib/clients";
 import { assinarPlanoComCobranca } from "@/lib/member-subscriptions";
 import { changeMembershipPlan } from "@/lib/memberships";
 import { traduzirErro } from "@/lib/error-messages";
@@ -124,27 +123,8 @@ export async function signUp(formData: FormData) {
     redirect("/cadastro?error=" + encodeURIComponent("Erro ao salvar cadastro."));
   }
 
-  // Gera código único da carteirinha: SLUG-XXXXX (6 hex aleatórios). O código
-  // é unique no banco, então uma colisão derrubava o insert em silêncio e o
-  // cliente ficava sem carteirinha — tenta de novo com outro sufixo.
-  let memberCode = "";
-  let membershipErr: { code?: string } | null = null;
-  for (let tentativa = 0; tentativa < 5; tentativa++) {
-    const suffix = randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
-    memberCode = `${tenant.slug.toUpperCase().slice(0, 6)}-${suffix}`;
-
-    const { error } = await db.from("memberships").insert({
-      tenant_id: tenant.id,
-      user_id: authData.user.id,
-      modality: "titular",
-      status: "active",
-      member_code: memberCode,
-      points_total: 0,
-    });
-    membershipErr = error;
-    if (!error) break;
-    if (error.code !== "23505") break;
-  }
+  // Código da carteirinha: SLUG-XXXXXX, com retry em colisão (ver lib/clients).
+  const { error: membershipErr, memberCode } = await insertMembership(db, tenant.id, tenant.slug, authData.user.id);
 
   if (membershipErr) {
     console.error("[signUp] carteirinha não criada", {
@@ -249,32 +229,12 @@ export async function saveProfile(formData: FormData) {
     .eq("tenant_id", ctx.tenant.id)
     .returns<ProfileField[]>();
 
-  // Campos dinâmicos: chegam como field_<uuid> no form. O id vem do cliente,
-  // então só vale se for campo DESTE negócio — senão dava pra gravar valor
-  // preso a um campo de outro tenant só editando o HTML.
-  const camposDoTenant = new Set((fieldDefs ?? []).map((f) => f.id));
-  const rows: {
-    tenant_id: string;
-    user_id: string;
-    field_id: string;
-    value: string;
-  }[] = [];
-  const valuesByField = new Map<string, string>();
-  for (const [key, raw] of formData.entries()) {
-    if (!key.startsWith("field_")) continue;
-    const fieldId = key.slice("field_".length);
-    if (!camposDoTenant.has(fieldId)) continue;
-    const value = String(raw);
-    valuesByField.set(fieldId, value);
-    rows.push({
-      tenant_id: ctx.tenant.id,
-      user_id: user.id,
-      field_id: fieldId,
-      value,
-    });
-  }
-
-  const validationError = validateProfileFieldValues(fieldDefs ?? [], valuesByField);
+  const { rows, error: validationError } = collectProfileFieldValues(
+    fieldDefs ?? [],
+    formData,
+    ctx.tenant.id,
+    user.id,
+  );
   if (validationError) {
     redirect(`/perfil?error=${encodeURIComponent(validationError)}`);
   }
