@@ -106,5 +106,23 @@ Só diga que gerou depois que generate_document confirmar. Se der erro, mostre o
     tools,
     stopWhen: stepCountIs(8),
   });
-  return result.toTextStreamResponse();
+  // Stream manual: toTextStreamResponse engole erro do modelo e o chat ficava mudo.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (s: string) => controller.enqueue(encoder.encode(s));
+      try {
+        for await (const part of result.stream) {
+          if (part.type === "text-delta") send(part.text);
+          else if (part.type === "error") throw part.error;
+        }
+      } catch (err) {
+        console.error("[painel/chat]", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        send(`\n\nNão consegui responder (${msg.slice(0, 200)}).`);
+      }
+      controller.close();
+    },
+  });
+  return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }
