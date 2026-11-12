@@ -37,6 +37,8 @@ export default async function OwnerDocumentTemplatesPage() {
         <p className="mt-1 text-sm text-gray-500">
           Modelos de documento que a IA usa pra gerar documentos pro cliente
           (contrato, atestado, termo...). Arraste pelo ⠿ pra reordenar.
+          Num .docx com campos como {"{{ nome_cliente }}"}, a IA só preenche os
+          campos e mantém o layout; gere pelo cliente, na aba Documentos.
         </p>
       </div>
 

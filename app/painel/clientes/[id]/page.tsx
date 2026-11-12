@@ -18,7 +18,12 @@ import type {
   ProfileField,
   RewardRedemption,
 } from "@/lib/types";
-import { ownerSetMemberPoints, ownerToggleMemberStatus } from "../../actions";
+import { GenerateDocumentForm } from "@/components/generate-document-form";
+import {
+  ownerGenerateClientDocument,
+  ownerSetMemberPoints,
+  ownerToggleMemberStatus,
+} from "../../actions";
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/10 text-green-600",
@@ -111,6 +116,7 @@ export default async function OwnerClientDetailPage({
     { data: checkins },
     { data: appointments },
     { data: documents },
+    { data: templates },
   ] = await Promise.all([
     db
       .from("memberships")
@@ -167,6 +173,12 @@ export default async function OwnerClientDetailPage({
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .returns<Document[]>(),
+    db
+      .from("document_templates")
+      .select("id, name")
+      .eq("tenant_id", tenantId)
+      .order("display_order", { ascending: true })
+      .returns<{ id: string; name: string }[]>(),
   ]);
 
   const valueByField = new Map((values ?? []).map((v) => [v.field_id, v.value]));
@@ -433,6 +445,10 @@ export default async function OwnerClientDetailPage({
             count: documentRows.length,
             content: (
               <Card>
+                <GenerateDocumentForm
+                  templates={templates ?? []}
+                  action={ownerGenerateClientDocument.bind(null, client.id)}
+                />
                 <DataList
                   rows={documentRows}
                   emptyText="Nenhum documento ainda."

@@ -40,6 +40,7 @@ import {
   removeDocumentTemplate,
   reorderDocumentTemplates,
 } from "@/lib/document-templates";
+import { generateClientDocument } from "@/lib/agent-hub";
 import {
   insertProfileField,
   applyProfileFieldUpdate,
@@ -293,6 +294,20 @@ export async function ownerDeleteDocumentTemplate(templateId: string): Promise<{
   const { error } = await removeDocumentTemplate(tenantId, templateId);
   revalidatePath("/painel/documentos");
   return { error };
+}
+
+export async function ownerGenerateClientDocument(
+  clientId: string,
+  formData: FormData,
+): Promise<{ error?: string; emptyFields?: string[] }> {
+  const { tenantId } = await requireTenantOwner();
+  const templateId = String(formData.get("templateId") ?? "");
+  const instructions = String(formData.get("instructions") ?? "").trim().slice(0, 2000);
+  if (!templateId) return { error: "Escolha um modelo." };
+  const result = await generateClientDocument(tenantId, clientId, templateId, instructions);
+  revalidatePath(`/painel/clientes/${clientId}`);
+  revalidatePath("/documentos");
+  return result;
 }
 
 export async function ownerReorderDocumentTemplates(orderedIds: string[]): Promise<{ error?: string }> {
