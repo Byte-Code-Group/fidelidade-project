@@ -97,6 +97,31 @@ async function callHub(agent: string, body: FormData) {
   };
 }
 
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+/** Conversa com um agent de texto do hub (assistente do painel). */
+export async function hubChat(agent: string, messages: ChatMessage[]): Promise<{ output?: string; error?: string }> {
+  const key = process.env.BYTE_AGENT_HUB_KEY;
+  if (!key) return { error: "IA não configurada (BYTE_AGENT_HUB_KEY)." };
+  try {
+    const res = await fetch(`${HUB_URL}/api/agents/${agent}/run`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error("[agent-hub]", agent, res.status, data.error);
+      return { error: `a IA recusou${data.error ? `: ${data.error}` : ""}` };
+    }
+    return { output: String(data.output ?? "") };
+  } catch (e) {
+    console.error("[agent-hub]", agent, e);
+    return { error: "não consegui falar com o serviço de IA" };
+  }
+}
+
 /** Gera o documento do modelo com os dados do cliente e salva na aba Documentos dele. */
 export async function generateClientDocument(
   tenantId: string,
