@@ -33,3 +33,24 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Editor de mapeamento de .docx (components/docx-mapper.tsx): a "mesa" é do
+   app; a página continua com as cores do próprio documento. */
+.docx-desk .docx-wrapper {
+  background: transparent;
+  padding: 0;
+}
+.docx-desk .docx-wrapper > section.docx {
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08), 0 8px 28px -12px rgb(15 23 42 / 0.25);
+}
+.docx-desk ::selection {
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+}
+.docx-desk mark.docx-field {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent);
+  padding: 0 1px;
+}

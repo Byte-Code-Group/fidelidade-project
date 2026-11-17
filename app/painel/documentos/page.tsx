@@ -1,14 +1,9 @@
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BUCKETS, signedUrl } from "@/lib/storage";
 import { DocumentTemplatesList } from "@/components/document-templates-list";
+import { FIELD_REGEX } from "@/lib/docx-mapping";
 import type { DocumentTemplate } from "@/lib/types";
-import {
-  ownerCreateDocumentTemplate,
-  ownerUpdateDocumentTemplate,
-  ownerDeleteDocumentTemplate,
-  ownerReorderDocumentTemplates,
-} from "../actions";
+import { ownerCreateDocumentTemplate, ownerReorderDocumentTemplates } from "../actions";
 
 export default async function OwnerDocumentTemplatesPage() {
   const { tenantId } = await requireTenantOwner();
@@ -20,33 +15,24 @@ export default async function OwnerDocumentTemplatesPage() {
     .order("display_order", { ascending: true })
     .returns<DocumentTemplate[]>();
 
-  // Bucket privado: o anexo do modelo é um path, precisa de signed URL.
-  const templateRows = await Promise.all(
-    (templates ?? []).map(async (t) => ({
-      ...t,
-      file_url: t.file_url
-        ? await signedUrl(BUCKETS.documentTemplates, t.file_url)
-        : null,
-    })),
-  );
+  const rows = (templates ?? []).map((t) => ({
+    ...t,
+    fieldCount: new Set([...t.content.matchAll(FIELD_REGEX)].map((m) => m[1])).size,
+  }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Documentos</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Modelos de documento que a IA usa pra gerar documentos pro cliente
-          (contrato, atestado, termo...). Arraste pelo ⠿ pra reordenar.
-          Num .docx com campos como {"{{ nome_cliente }}"}, a IA só preenche os
-          campos e mantém o layout; gere pelo cliente, na aba Documentos.
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Documentos</h1>
+        <p className="mt-1 max-w-prose text-sm opacity-60">
+          Modelos que a IA preenche com os dados do cliente: contrato, atestado, termo. Envie o .docx, marque
+          onde entra cada dado e gere o documento pela ficha do cliente.
         </p>
       </div>
 
       <DocumentTemplatesList
-        templates={templateRows}
+        templates={rows}
         createAction={ownerCreateDocumentTemplate}
-        updateAction={ownerUpdateDocumentTemplate}
-        deleteAction={ownerDeleteDocumentTemplate}
         reorderAction={ownerReorderDocumentTemplates}
       />
     </div>

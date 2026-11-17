@@ -74,7 +74,7 @@ async function processTemplateFile(tenantId: string, formData: FormData) {
 export async function insertDocumentTemplate(
   tenantId: string,
   formData: FormData,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; id?: string }> {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Nome é obrigatório." };
 
@@ -89,15 +89,19 @@ export async function insertDocumentTemplate(
     .from("document_templates")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId);
-  const { error } = await db.from("document_templates").insert({
-    tenant_id: tenantId,
-    name,
-    content,
-    file_url: fromFile.file_url ?? null,
-    file_name: fromFile.file_name ?? null,
-    display_order: count ?? 0,
-  });
-  return { error: error ? traduzirErro(error.message) : undefined };
+  const { data, error } = await db
+    .from("document_templates")
+    .insert({
+      tenant_id: tenantId,
+      name,
+      content,
+      file_url: fromFile.file_url ?? null,
+      file_name: fromFile.file_name ?? null,
+      display_order: count ?? 0,
+    })
+    .select("id")
+    .single<{ id: string }>();
+  return error ? { error: traduzirErro(error.message) } : { id: data.id };
 }
 
 export async function applyDocumentTemplateUpdate(

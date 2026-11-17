@@ -273,11 +273,13 @@ export async function ownerReorderRewards(orderedIds: string[]): Promise<{ error
 
 // ---------- Documentos (document_templates) ----------
 
-export async function ownerCreateDocumentTemplate(formData: FormData): Promise<{ error?: string }> {
+export async function ownerCreateDocumentTemplate(
+  formData: FormData,
+): Promise<{ error?: string; id?: string }> {
   const { tenantId } = await requireTenantOwner();
-  const { error } = await insertDocumentTemplate(tenantId, formData);
+  const result = await insertDocumentTemplate(tenantId, formData);
   revalidatePath("/painel/documentos");
-  return { error };
+  return result;
 }
 
 export async function ownerUpdateDocumentTemplate(
@@ -287,6 +289,7 @@ export async function ownerUpdateDocumentTemplate(
   const { tenantId } = await requireTenantOwner();
   const { error } = await applyDocumentTemplateUpdate(tenantId, templateId, formData);
   revalidatePath("/painel/documentos");
+  revalidatePath(`/painel/documentos/${templateId}`);
   return { error };
 }
 

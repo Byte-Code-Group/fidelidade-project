@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BUCKETS, documentPath, pathBelongsTo } from "@/lib/storage";
 import { DEFAULT_TIMEZONE } from "@/lib/scheduling";
+import { documentFieldGroups, profileFieldKey } from "@/lib/document-fields";
 
 /**
  * Geração de documento pelo dono via Byte Agent Hub.
@@ -20,11 +21,22 @@ const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingm
 const hasPlaceholders = (text: string) => /\{\{\s*[^}]+\}\}/.test(text);
 
 // Tudo que a plataforma sabe do cliente, em texto — é daqui que a IA tira os valores.
+// Cada linha leva a chave {{ campo }} do catálogo (lib/document-fields.ts): é a
+// mesma chave que o dono mapeou no .docx, então a IA preenche sem adivinhar.
 export async function clientDataText(tenantId: string, userId: string) {
   const db = createAdminClient();
-  const [{ data: tenant }, { data: user }, { data: membership }, { data: fields }, { data: values }] =
+  const [{ data: tenant }, { data: settings }, { data: user }, { data: membership }, { data: fields }, { data: values }] =
     await Promise.all([
-      db.from("tenants").select("name").eq("id", tenantId).maybeSingle<{ name: string }>(),
+      db
+        .from("tenants")
+        .select("name, owner_cpf_cnpj, owner_email")
+        .eq("id", tenantId)
+        .maybeSingle<{ name: string; owner_cpf_cnpj: string | null; owner_email: string | null }>(),
+      db
+        .from("tenant_settings")
+        .select("footer_address, footer_phone, footer_whatsapp, footer_website")
+        .eq("tenant_id", tenantId)
+        .maybeSingle<Record<"footer_address" | "footer_phone" | "footer_whatsapp" | "footer_website", string | null>>(),
       db
         .from("users")
         .select("full_name, email, created_at")
@@ -33,36 +45,54 @@ export async function clientDataText(tenantId: string, userId: string) {
         .maybeSingle<{ full_name: string | null; email: string | null; created_at: string }>(),
       db
         .from("memberships")
-        .select("member_code, points_total, status, modality, valid_until")
+        .select("member_code, points_total, status, modality, valid_until, plan:business_plans!plan_id(name)")
         .eq("tenant_id", tenantId)
         .eq("user_id", userId)
         .order("created_at", { ascending: true })
         .limit(1)
-        .maybeSingle(),
+        .maybeSingle<{
+          member_code: string;
+          points_total: number;
+          status: string;
+          modality: string;
+          valid_until: string | null;
+          plan: { name: string } | null;
+        }>(),
       db.from("profile_fields").select("id, label").eq("tenant_id", tenantId).order("display_order"),
       db.from("profile_field_values").select("field_id, value").eq("tenant_id", tenantId).eq("user_id", userId),
     ]);
   if (!user) return null;
 
   const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: DEFAULT_TIMEZONE });
+  const today = new Date();
   const valueByField = new Map((values ?? []).map((v) => [v.field_id, v.value]));
-  const lines = [
-    `Empresa emissora: ${tenant?.name ?? ""}`,
-    `Data de hoje: ${fmt(new Date().toISOString())}`,
-    `Nome do cliente: ${user.full_name ?? ""}`,
-    `E-mail do cliente: ${user.email ?? ""}`,
-    `Cliente desde: ${fmt(user.created_at)}`,
-    ...(fields ?? []).map((f) => `${f.label}: ${valueByField.get(f.id) ?? ""}`),
-  ];
-  if (membership) {
-    lines.push(
-      `Código da carteirinha: ${membership.member_code}`,
-      `Pontos: ${membership.points_total}`,
-      `Status da carteirinha: ${membership.status}`,
-      `Modalidade: ${membership.modality}`,
-      `Válida até: ${membership.valid_until ? fmt(membership.valid_until) : "sem prazo"}`,
-    );
-  }
+  const valueByKey: Record<string, string> = {
+    data_hoje: fmt(today.toISOString()),
+    data_extenso: today.toLocaleDateString("pt-BR", { timeZone: DEFAULT_TIMEZONE, dateStyle: "long" }),
+    nome_empresa: tenant?.name ?? "",
+    documento_empresa: tenant?.owner_cpf_cnpj ?? "",
+    email_empresa: tenant?.owner_email ?? "",
+    telefone_empresa: settings?.footer_phone ?? "",
+    whatsapp_empresa: settings?.footer_whatsapp ?? "",
+    endereco_empresa: settings?.footer_address ?? "",
+    site_empresa: settings?.footer_website ?? "",
+    nome_cliente: user.full_name ?? "",
+    email_cliente: user.email ?? "",
+    cliente_desde: fmt(user.created_at),
+    plano_cliente: membership ? (membership.plan?.name ?? membership.modality) : "",
+    codigo_carteirinha: membership?.member_code ?? "",
+    pontos_cliente: membership ? String(membership.points_total) : "",
+    validade_carteirinha: membership ? (membership.valid_until ? fmt(membership.valid_until) : "sem prazo") : "",
+  };
+  const profileLabels = (fields ?? []).map((f) => f.label);
+  (fields ?? []).forEach((f) => {
+    valueByKey[profileFieldKey(f.label)] = valueByField.get(f.id) ?? "";
+  });
+
+  const lines = documentFieldGroups(profileLabels).flatMap((g) =>
+    g.fields.map((f) => `{{ ${f.key} }} (${g.title} — ${f.label}): ${valueByKey[f.key] ?? ""}`),
+  );
+  if (membership) lines.push(`Status da carteirinha: ${membership.status}`);
   return lines.join("\n");
 }
 
@@ -144,7 +174,7 @@ export async function generateClientDocument(
   if (!data) return { error: "Cliente não encontrado." };
 
   const input = [
-    "Dados do cliente cadastrados na plataforma:",
+    "Dados cadastrados na plataforma. Cada linha traz o campo {{ chave }} do modelo e o valor dele:",
     data,
     instructions && `\nInstruções de quem está emitindo o documento:\n${instructions}`,
   ]
