@@ -7,7 +7,8 @@ const MAX_MSG_LENGTH = 2000;
 const MAX_HISTORY = 20;
 const CHAT_AGENT = process.env.BYTE_AGENT_HUB_CHAT_AGENT ?? "fidelidade-assistente";
 // O hub não tem tool calling: o agent pede uma ação numa linha <<ACAO ...>> e esta rota executa.
-const ACTION = /<<\s*(GERAR|DADOS)\s+([\s\S]*?)>>/;
+// O modelo às vezes fecha com um ">" só — aceita ">>" ou ">" no fim da resposta.
+const ACTION = /<<\s*(GERAR|DADOS)\s+([\s\S]*?)\s*(?:>>|>\s*$)/;
 // Só gera se o dono acabou de responder "sim" a um pedido de confirmação — o prompt sozinho não garante.
 const CONFIRMA = /^\s*(sim|pode|confirmo|confirmado|confirma|ok|isso|certo)\b/i;
 
