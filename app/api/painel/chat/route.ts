@@ -8,6 +8,8 @@ const MAX_HISTORY = 20;
 const CHAT_AGENT = process.env.BYTE_AGENT_HUB_CHAT_AGENT ?? "fidelidade-assistente";
 // O hub não tem tool calling: o agent pede uma ação numa linha <<ACAO ...>> e esta rota executa.
 const ACTION = /<<\s*(GERAR|DADOS)\s+([\s\S]*?)>>/;
+// Só gera se o dono acabou de responder "sim" a um pedido de confirmação — o prompt sozinho não garante.
+const CONFIRMA = /^\s*(sim|pode|confirmo|confirmado|confirma|ok|isso|certo)\b/i;
 
 const text = (body: string, status = 200) =>
   new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -58,7 +60,10 @@ ${(templates ?? []).map((t) => `${t.id} | ${t.name}`).join("\n") || "(nenhum mod
 Ações — quando precisar de uma, responda SÓ com a linha da ação, sem mais nada:
 - Gerar documento: <<GERAR {"cliente":"<id do cliente>","modelo":"<id do modelo>","instrucoes":"<detalhes do caso que não estão no cadastro, ou vazio>"}>>
 - Ver dados completos de um cliente (cadastro, CPF, pontos, carteirinha): <<DADOS <id do cliente>>>
-Se o pedido for ambíguo (mais de um cliente com o nome, modelo não existe), pergunte antes. Não peça dado que já está no cadastro: o que faltar vai em instrucoes.
+Regras:
+- Se o dono não disser o cliente, pergunte "Para qual cliente?" — nunca escolha sozinho. Mais de um cliente com o nome: liste (nome + e-mail) e peça para escolher.
+- Antes de gerar, busque os dados do cliente com <<DADOS>> e mostre um resumo (cliente, modelo, dados que vão no documento, o que falta) terminando com "Confirma que posso gerar? (sim / corrigir)".
+- Só use <<GERAR>> depois que o dono confirmar esse resumo. Não peça dado que já está no cadastro: o que faltar vai em instrucoes.
 [FIM DO CONTEXTO]
 
 `;
@@ -91,6 +96,16 @@ Se o pedido for ambíguo (mais de um cliente com o nome, modelo não existe), pe
     const modelo = String(args.modelo ?? "");
     if (!clientName.has(cliente) || !templateName.has(modelo)) {
       return text("Não achei esse cliente ou esse modelo. Confira os nomes e peça de novo.");
+    }
+    const prev = history[last - 1];
+    if (!CONFIRMA.test(history[last].content) || prev?.role !== "assistant" || !/confirm/i.test(prev.content)) {
+      const c = clients?.find((x) => x.id === cliente);
+      const instrucoes = String(args.instrucoes ?? "").trim();
+      return text(
+        `Vou gerar **${templateName.get(modelo)}** para **${clientName.get(cliente)}**${c?.email ? ` (${c.email})` : ""}.` +
+          (instrucoes ? `\n\nInstruções extras: ${instrucoes}` : "") +
+          "\n\nConfirma que posso gerar? (sim / corrigir)",
+      );
     }
     const r = await generateClientDocument(tenantId, cliente, modelo, String(args.instrucoes ?? "").slice(0, 2000));
     if (r.error) return text(`Não consegui gerar o documento: ${r.error}`);
