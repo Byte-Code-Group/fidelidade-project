@@ -10,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { traduzirErro } from "@/lib/error-messages";
 import { fieldSlug, type DocFieldGroup } from "@/lib/document-fields";
 import { applyMapOp, countBefore, FIELD_REGEX, mappedFields, normText, type MapOp } from "@/lib/docx-mapping";
+import { readPageShapes, type PageShapes } from "@/lib/docx-shapes";
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const DOC_XML = "word/document.xml";
@@ -100,6 +101,23 @@ function highlightFields(root: HTMLElement, labels: Map<string, string>) {
   }
 }
 
+// Formas vetoriais do cabeçalho/rodapé (logo, ondas) que o docx-preview não desenha.
+function drawPageShapes(view: HTMLElement, shapes: PageShapes | null) {
+  if (!shapes) return;
+  const pushTo = Math.max(0, ...shapes.header.filter((s) => s.pushesText).map((s) => s.top + s.height));
+  for (const page of view.querySelectorAll<HTMLElement>("section.docx")) {
+    const header = page.querySelector<HTMLElement>(":scope > header");
+    if (header && pushTo > shapes.headerDistance) header.style.paddingTop = `${pushTo - shapes.headerDistance}pt`;
+    for (const s of [...shapes.header, ...shapes.footer]) {
+      const div = document.createElement("div");
+      div.className = "docx-shape";
+      div.style.cssText = `left:${s.left}pt;top:${s.top}pt;width:${s.width}pt;height:${s.height}pt`;
+      div.innerHTML = s.svg;
+      page.prepend(div);
+    }
+  }
+}
+
 // Página do Word tem largura fixa; encolhe pra caber na coluna sem rolar de lado.
 function fitToWidth(view: HTMLElement) {
   const wrapper = view.querySelector<HTMLElement>(".docx-wrapper");
@@ -149,10 +167,14 @@ export function DocxMapper({ templateId, name, fileName, fileUrl, groups, update
       });
       if (cancelled) return;
       highlightFields(view, labels);
-      fitToWidth(view);
       const zip = await JSZip.loadAsync(bytes);
+      const parse = (x: string) => new DOMParser().parseFromString(x, "application/xml");
+      const shapes = await readPageShapes(async (p) => zip.file(p)?.async("string"), parse);
+      if (cancelled) return;
+      drawPageShapes(view, shapes);
+      fitToWidth(view);
       const xml = await zip.file(DOC_XML)?.async("string");
-      if (xml && !cancelled) setUsed(mappedFields(new DOMParser().parseFromString(xml, "application/xml")));
+      if (xml && !cancelled) setUsed(mappedFields(parse(xml)));
     })().catch(() => setLoadError(true));
     return () => {
       cancelled = true;

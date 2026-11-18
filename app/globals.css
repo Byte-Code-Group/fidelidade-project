@@ -41,8 +41,16 @@ body {
   padding: 0;
 }
 .docx-desk .docx-wrapper > section.docx {
+  position: relative;
+  isolation: isolate; /* .docx-shape (z-index -1) fica atrás do texto, mas na frente do papel */
+  overflow: hidden; /* forma que passa da borda é cortada, como no Word */
   margin-bottom: 1.5rem;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.08), 0 8px 28px -12px rgb(15 23 42 / 0.25);
+}
+.docx-desk .docx-shape {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
 }
 .docx-desk ::selection {
   background: color-mix(in srgb, var(--primary) 28%, transparent);
