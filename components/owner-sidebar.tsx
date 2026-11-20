@@ -18,7 +18,12 @@ interface NavItem {
 
 // Agrupado pelo que o dono está tentando fazer, não pela ordem em que as telas surgiram.
 const GROUPS: { label?: string; items: NavItem[] }[] = [
-  { items: [{ href: "/painel", label: "Dashboard", icon: "chart", exact: true }] },
+  {
+    items: [
+      { href: "/painel", label: "Dashboard", icon: "chart", exact: true },
+      { href: "/painel/assistente", label: "Assistente IA", icon: "sparkles" },
+    ],
+  },
   {
     label: "Atendimento",
     items: [

@@ -3,6 +3,7 @@ const PAGES = [
   "/painel/agenda",
   "/painel/agenda/configuracoes",
   "/painel/assinatura",
+  "/painel/assistente",
   "/painel/campanhas",
   "/painel/clientes",
   "/painel/clientes/novo",
