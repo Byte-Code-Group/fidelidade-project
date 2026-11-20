@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MissionsList } from "@/components/missions-list";
@@ -21,13 +22,7 @@ export default async function OwnerMissionsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Missões</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Missões que aparecem no portal de Engajamento do cliente. Arraste pelo
-          ⠿ pra reordenar.
-        </p>
-      </div>
+      <PageHeader icon="award" title="Missões" subtitle="Missões que aparecem no portal de Engajamento do cliente. Arraste pela alça para reordenar." />
 
       <MissionsList
         missions={missions ?? []}

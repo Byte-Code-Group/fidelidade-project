@@ -61,11 +61,11 @@ export default async function PortalLayout({
     return (
       <div className="flex min-h-dvh items-center justify-center bg-gray-50 p-6 text-center">
         <div className="max-w-sm">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-2xl">
-            🔒
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-600">
+            <Icon name="lock" className="h-6 w-6" />
           </div>
           <h1 className="text-lg font-semibold text-gray-900">Portal suspenso</h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted">
             {tenant.status === "pending"
               ? "Este portal está aguardando a confirmação do pagamento. Tente novamente em alguns minutos."
               : "O acesso a este portal está temporariamente suspenso. Entre em contato com a empresa para regularizar."}
@@ -100,7 +100,7 @@ export default async function PortalLayout({
     return (
       <div
         data-theme={settings.theme_mode}
-        className="min-h-dvh bg-[var(--background)] md:grid md:grid-cols-2 lg:grid-cols-[1.1fr_1fr]"
+        className="min-h-dvh bg-surface md:grid md:grid-cols-2 lg:grid-cols-[1.1fr_1fr]"
       >
         <style dangerouslySetInnerHTML={{ __html: themeVars }} />
 

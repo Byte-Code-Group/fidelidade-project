@@ -39,7 +39,7 @@ export default async function TemplatesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wider opacity-50">
+              <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-5 py-3 font-medium">Template</th>
                 <th className="px-5 py-3 font-medium">Rótulo do Cliente</th>
                 <th className="px-5 py-3 font-medium text-center">Módulos</th>
@@ -47,17 +47,17 @@ export default async function TemplatesPage() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody className="divide-y divide-line">
               {entries.map(([key, tpl]) => (
-                <tr key={key} className="hover:bg-black/[0.02]">
+                <tr key={key} className="hover:bg-surface-2">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/5 text-lg dark:bg-white/10">
-                        {tpl.emoji}
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
+                        <Icon name={tpl.icon} />
                       </div>
                       <div>
                         <p className="font-medium">{tpl.label}</p>
-                        <p className="text-xs uppercase tracking-wider opacity-40">
+                        <p className="text-xs text-muted">
                           {key}
                         </p>
                       </div>
@@ -65,7 +65,7 @@ export default async function TemplatesPage() {
                   </td>
                   <td className="px-5 py-3.5 opacity-70">{tpl.label_client}</td>
                   <td className="px-5 py-3.5 text-center">
-                    <span className="inline-block rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium dark:bg-white/10">
+                    <span className="inline-block rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium dark:bg-white/10">
                       {tpl.modules.length}
                     </span>
                   </td>

@@ -224,7 +224,7 @@ export function AppointmentForm({
         </p>
 
         {!carregandoSlots && slots!.length === 0 ? (
-          <p className="rounded-xl bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
+          <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
             Sem horário livre nesse dia para esse profissional. Tente outra data ou
             revise os horários de trabalho nas configurações.
           </p>
@@ -239,7 +239,7 @@ export function AppointmentForm({
                   "rounded-lg border px-2.5 py-1.5 text-sm tabular-nums transition",
                   slot === time
                     ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                    : "border-black/10 hover:border-[var(--primary)] dark:border-white/15",
+                    : "border-line hover:border-[var(--primary)] dark:border-white/15",
                 )}
               >
                 {slot}

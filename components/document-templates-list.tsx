@@ -142,7 +142,7 @@ function PaperGlyph({ ext }: { ext: string }) {
         : "bg-black/60 text-white dark:bg-white/70 dark:text-black";
   return (
     <span className="relative block h-11 w-9 shrink-0 rounded-[3px] border border-black/15 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06)] dark:border-white/20 dark:bg-white/90">
-      <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-bl-[3px] border-b border-l border-black/15 bg-black/[0.04]" />
+      <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-bl-[3px] border-b border-l border-black/15 bg-surface-2" />
       <span className="absolute left-1.5 right-2.5 top-3 h-px bg-black/15" />
       <span className="absolute left-1.5 right-1.5 top-[17px] h-px bg-black/15" />
       <span className="absolute left-1.5 right-3 top-[21px] h-px bg-black/15" />
@@ -174,7 +174,7 @@ function TemplateRow({ template: t }: { template: TemplateRowData }) {
       value={t}
       dragListener={false}
       dragControls={controls}
-      className="rounded-xl border border-black/10 bg-[var(--background)] transition-colors hover:border-black/20 dark:border-white/10 dark:hover:border-white/20"
+      className="rounded-xl border border-line bg-surface transition-colors hover:border-black/20 dark:border-white/10 dark:hover:border-white/20"
       whileDrag={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
       onDragStart={() => {
         draggedRef.current = true;
@@ -223,7 +223,7 @@ function TextTemplateForm({ createAction }: { createAction: CreateAction }) {
         Sem arquivo? Escreva o modelo em texto
       </summary>
       <form
-        className="mt-3 space-y-3 rounded-xl border border-black/10 p-4 dark:border-white/10"
+        className="mt-3 space-y-3 rounded-xl border border-line p-4 dark:border-white/10"
         onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);

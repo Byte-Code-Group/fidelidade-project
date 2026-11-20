@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -135,14 +137,13 @@ export default async function AgendaPage({
           Próximos ({upcoming.length})
         </h2>
         {upcoming.length === 0 ? (
-          <Card>
-            <div className="px-5 py-8 text-center text-sm opacity-50">
-              Nenhum agendamento futuro.
-            </div>
-          </Card>
+          <EmptyState
+            icon={<Icon name="calendar" />}
+            title="Nenhum agendamento futuro"
+          />
         ) : (
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {upcoming.map((a) => (
                 <div key={a.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="min-w-0 flex-1">
@@ -189,7 +190,7 @@ export default async function AgendaPage({
             Histórico ({past.length})
           </h2>
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {past.map((a) => (
                 <div
                   key={a.id}
@@ -202,7 +203,7 @@ export default async function AgendaPage({
                       {fmtDate(a.scheduled_at)}
                     </p>
                   </div>
-                  <Badge className={statusStyle[a.status] ?? "bg-black/5"}>
+                  <Badge className={statusStyle[a.status] ?? "bg-surface-2"}>
                     {statusLabel[a.status] ?? a.status}
                   </Badge>
                   <form action={deleteAppointment.bind(null, id, a.id)}>

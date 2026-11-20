@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -90,7 +91,7 @@ export default async function EmpresasPage({
                 "rounded-full border px-4 py-1.5 text-sm font-medium transition",
                 active
                   ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                  : "border-black/10 opacity-70 hover:opacity-100",
+                  : "border-line opacity-70 hover:opacity-100",
               )}
             >
               {f.label} · {count}
@@ -103,7 +104,7 @@ export default async function EmpresasPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wider opacity-50">
+              <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-5 py-3 font-medium">Empresa</th>
                 <th className="px-5 py-3 font-medium">Segmento</th>
                 <th className="px-5 py-3 font-medium">Plano</th>
@@ -112,9 +113,9 @@ export default async function EmpresasPage({
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody className="divide-y divide-line">
               {rows.map((t) => (
-                <tr key={t.id} className="hover:bg-black/[0.02]">
+                <tr key={t.id} className="hover:bg-surface-2">
                   <td className="px-5 py-3.5">
                     <Link
                       href={`/superadmin/tenants/${t.id}`}
@@ -137,7 +138,7 @@ export default async function EmpresasPage({
                     {clientsByTenant.get(t.id) ?? 0}
                   </td>
                   <td className="px-5 py-3.5">
-                    <Badge className={statusStyle[t.status] ?? "bg-black/5"}>
+                    <Badge className={statusStyle[t.status] ?? "bg-surface-2"}>
                       {statusLabel[t.status] ?? t.status}
                     </Badge>
                   </td>
@@ -165,8 +166,13 @@ export default async function EmpresasPage({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center opacity-50">
-                    Nenhuma empresa neste filtro.
+                  <td colSpan={6}>
+                    <EmptyState
+                      bare
+                      icon={<Icon name="searchX" />}
+                      title="Nenhuma empresa neste filtro"
+                      description="Troque o filtro ou a busca para ver outras empresas."
+                    />
                   </td>
                 </tr>
               )}

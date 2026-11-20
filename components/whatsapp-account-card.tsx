@@ -293,7 +293,7 @@ export function WhatsAppAccountCard({
       <CardContent className="space-y-3">
         <div>
           <h2 className="font-semibold">WhatsApp do seu negócio</h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted">
             Conecte o número no WhatsApp Cloud API (Meta) para disparar
             campanhas. As mensagens saem do seu número e a Meta cobra na sua
             conta — a plataforma não fica no meio do caminho.
@@ -302,11 +302,11 @@ export function WhatsAppAccountCard({
 
         {conta && !editando ? (
           <>
-            <div className="rounded-xl border border-black/10 px-3 py-2.5 text-sm dark:border-white/10">
+            <div className="rounded-xl border border-line px-3 py-2.5 text-sm dark:border-white/10">
               <p className="font-medium text-green-600">
                 Conectado{conta.displayPhone ? ` — ${conta.displayPhone}` : ""}
               </p>
-              <p className="mt-0.5 text-xs text-gray-500">
+              <p className="mt-0.5 text-xs text-muted">
                 {conta.verifiedName ? `${conta.verifiedName} · ` : ""}
                 {conta.provider === "evolution"
                   ? "conectado por QR code"
@@ -326,12 +326,12 @@ export function WhatsAppAccountCard({
             {/* Só o caminho da Meta tem webhook manual — e na conexão em 1
                 clique a inscrição é automática. */}
             {conta.provider === "meta" && !embeddedSignup && (
-              <details className="rounded-xl border border-black/10 px-3 py-2 dark:border-white/10">
+              <details className="rounded-xl border border-line px-3 py-2 dark:border-white/10">
                 <summary className="cursor-pointer text-sm font-medium">
                   Receber status de entrega e respostas
                 </summary>
                 <div className="mt-2 space-y-2">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted">
                     No painel da Meta, em{" "}
                     <strong>WhatsApp &rarr; Configuração &rarr; Webhooks</strong>,
                     cadastre o endereço abaixo e assine os campos{" "}
@@ -365,7 +365,7 @@ export function WhatsAppAccountCard({
         ) : (
           <div className="space-y-3">
             {qrCode && lendoQr && imagemQr && (
-              <div className="space-y-2 rounded-xl border border-black/10 p-3 text-center dark:border-white/10">
+              <div className="space-y-2 rounded-xl border border-line p-3 text-center dark:border-white/10">
                 <p className="text-sm font-medium">Leia o código no celular</p>
                 {/* Imagem vem como data URI do próprio servidor; next/image não
                     acrescenta nada aqui. */}
@@ -375,7 +375,7 @@ export function WhatsAppAccountCard({
                   alt="QR code para conectar o WhatsApp"
                   className="mx-auto h-56 w-56 rounded-lg bg-white p-2"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted">
                   No WhatsApp do celular: <strong>Configurações</strong> &rarr;{" "}
                   <strong>Dispositivos conectados</strong> &rarr;{" "}
                   <strong>Conectar dispositivo</strong>. O código expira em
@@ -393,7 +393,7 @@ export function WhatsAppAccountCard({
                   <button
                     type="button"
                     onClick={cancelarQrCode}
-                    className="text-xs text-gray-500 hover:underline"
+                    className="text-xs text-muted hover:underline"
                   >
                     Cancelar
                   </button>
@@ -402,9 +402,9 @@ export function WhatsAppAccountCard({
             )}
 
             {qrCode && !lendoQr && (
-              <div className="space-y-2 rounded-xl border border-black/10 p-3 dark:border-white/10">
+              <div className="space-y-2 rounded-xl border border-line p-3 dark:border-white/10">
                 <p className="text-sm font-medium">Conectar por QR code</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted">
                   Igual ao WhatsApp Web: você lê um código com o celular e
                   pronto. Seu número continua funcionando normalmente no
                   aparelho, e não há custo por mensagem.
@@ -437,9 +437,9 @@ export function WhatsAppAccountCard({
                   }}
                 />
 
-                <div className="space-y-2 rounded-xl border border-black/10 p-3 dark:border-white/10">
+                <div className="space-y-2 rounded-xl border border-line p-3 dark:border-white/10">
                   <p className="text-sm font-medium">Conexão em 1 clique</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted">
                     Abre uma janela da Meta onde você cadastra o número, recebe o
                     código por SMS e escolhe o nome de exibição. Você não precisa
                     criar app nem copiar nenhum código.
@@ -457,7 +457,7 @@ export function WhatsAppAccountCard({
                       onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                     />
                   </Field>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted">
                     Preencha antes de clicar. É com ele que o número é liberado
                     pra enviar — sem o PIN a conexão salva, mas o disparo falha.
                   </p>
@@ -475,7 +475,7 @@ export function WhatsAppAccountCard({
                   </Button>
                 </div>
 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted">
                   Já tem uma conta de WhatsApp Business API própria? Use a conexão
                   manual abaixo.
                 </p>
@@ -484,7 +484,7 @@ export function WhatsAppAccountCard({
 
             {!lendoQr && (
             <ConexaoManual recolhida={!!qrCode}>
-            <ol className="list-decimal space-y-1 pl-4 text-xs text-gray-500 [&_strong]:font-semibold [&_strong]:text-gray-700 dark:[&_strong]:text-gray-300">
+            <ol className="list-decimal space-y-1 pl-4 text-xs text-muted [&_strong]:font-semibold [&_strong]:text-gray-700 dark:[&_strong]:text-gray-300">
               <li>
                 Em <strong>developers.facebook.com</strong>, abra seu app e vá em{" "}
                 <strong>WhatsApp &rarr; Configuração da API</strong>.
@@ -538,7 +538,7 @@ export function WhatsAppAccountCard({
                 <button
                   type="button"
                   onClick={() => setEditando(false)}
-                  className="text-xs text-gray-500 hover:underline"
+                  className="text-xs text-muted hover:underline"
                 >
                   Cancelar
                 </button>
@@ -567,11 +567,11 @@ function ConexaoManual({
 }) {
   if (!recolhida) return <div className="space-y-3">{children}</div>;
   return (
-    <details className="rounded-xl border border-black/10 px-3 py-2 dark:border-white/10">
+    <details className="rounded-xl border border-line px-3 py-2 dark:border-white/10">
       <summary className="cursor-pointer text-sm font-medium">
         Conectar pela API oficial da Meta
       </summary>
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-xs text-muted">
         Caminho oficial e sem risco de bloqueio, mas exige conta de
         desenvolvedor na Meta, CNPJ verificado e mensagens aprovadas
         previamente. A Meta cobra por mensagem enviada.
@@ -586,7 +586,7 @@ function CampoCopiavel({ rotulo, valor }: { rotulo: string; valor: string }) {
     <div>
       <p className="text-xs font-medium">{rotulo}</p>
       <div className="mt-1 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-lg bg-black/5 px-2 py-1.5 text-xs dark:bg-white/10">
+        <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1.5 text-xs dark:bg-white/10">
           {valor}
         </code>
         <button

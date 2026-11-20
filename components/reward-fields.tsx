@@ -43,7 +43,7 @@ export function RewardFields({ reward }: { reward?: Reward }) {
               name="image"
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
-              className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-black/5 file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:bg-white/10"
+              className="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:bg-white/10"
             />
           </div>
         </Field>

@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DocumentTemplatesList } from "@/components/document-templates-list";
@@ -22,13 +23,7 @@ export default async function OwnerDocumentTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Documentos</h1>
-        <p className="mt-1 max-w-prose text-sm opacity-60">
-          Modelos que a IA preenche com os dados do cliente: contrato, atestado, termo. Envie o .docx, marque
-          onde entra cada dado e gere o documento pela ficha do cliente.
-        </p>
-      </div>
+      <PageHeader icon="document" title="Documentos" subtitle="Modelos que a IA preenche com os dados do cliente: contrato, atestado, termo. Envie o .docx, marque onde entra cada dado e gere o documento pela ficha do cliente." />
 
       <DocumentTemplatesList
         templates={rows}

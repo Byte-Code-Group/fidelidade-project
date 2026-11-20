@@ -97,7 +97,7 @@ function AguardandoContent() {
             ⏳
           </div>
           <h1 className="text-xl font-bold">Aguardando confirmação</h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted">
             {modo === "sem_asaas"
               ? "Pagamento em processamento. Entraremos em contato para confirmar sua assinatura."
               : fatura
@@ -123,7 +123,7 @@ function AguardandoContent() {
             >
               {checking ? "Verificando..." : "Verificar status"}
             </Button>
-            <Link href="/conta/planos" className="block text-sm text-gray-400 hover:underline">
+            <Link href="/conta/planos" className="block text-sm text-muted hover:underline">
               Voltar aos planos
             </Link>
           </div>

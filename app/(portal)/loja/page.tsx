@@ -48,7 +48,7 @@ export default async function LojaPage({
         title="Loja de Resgate"
         subtitle="Troque seus pontos por recompensas."
         action={
-          <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 dark:bg-white/5">
+          <div className="flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 dark:bg-white/5">
             <Icon name="award" className="h-5 w-5 text-[var(--primary)]" />
             <span className="font-bold text-[var(--primary)]">{points}</span>
             <span className="text-sm opacity-60">pontos</span>
@@ -59,7 +59,7 @@ export default async function LojaPage({
       <FlashToast
         saved={done}
         error={error ? traduzirErro(error, "Não foi possível resgatar agora.") : undefined}
-        successMessage="🎉 Resgate solicitado! Retire seu prêmio na recepção."
+        successMessage="Resgate solicitado. Retire seu prêmio na recepção."
       />
 
       {!rewards || rewards.length === 0 ? (
@@ -76,7 +76,7 @@ export default async function LojaPage({
             return (
               <div
                 key={r.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white dark:bg-white/5"
+                className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white dark:bg-white/5"
               >
                 <div className="flex h-32 items-center justify-center bg-[var(--primary)]/10">
                   {r.image_url ? (

@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -113,19 +115,19 @@ export default async function AgendaPage({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Agenda</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Calendário de atendimentos, horários dos profissionais e procedimentos.
-          </p>
-        </div>
-        <Link href="/painel/agenda/configuracoes">
-          <Button variant="outline" type="button">
-            Configurações da agenda
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        icon="calendar"
+        title="Agenda"
+        subtitle="Calendário de atendimentos, horários dos profissionais e procedimentos."
+        action={
+          <Link href="/painel/agenda/configuracoes">
+            <Button variant="outline" type="button">
+              <Icon name="settings" className="h-4 w-4" />
+              Configurações da agenda
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
         <div className="space-y-3">
@@ -141,7 +143,7 @@ export default async function AgendaPage({
           {providersAtivos.length > 0 && (
             <Card>
               <CardContent className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wide opacity-50">
+                <p className="text-xs font-semibold text-muted">
                   Profissionais
                 </p>
                 {providersAtivos.map((p) => (
@@ -168,8 +170,8 @@ export default async function AgendaPage({
             }
             desc={
               ativos.length === 0
-                ? "Nenhum atendimento ativo nesse dia."
-                : `${ativos.length} atendimento(s) ativo(s) · ${doDia.length} no total`
+                ? undefined
+                : `${ativos.length} ${ativos.length === 1 ? "atendimento ativo" : "atendimentos ativos"} de ${doDia.length} no dia`
             }
           >
             <DayAgenda
@@ -197,7 +199,7 @@ export default async function AgendaPage({
                 createAction={ownerCreateAppointment}
               />
             ) : (
-              <p className="rounded-xl bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
+              <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
                 Nenhum {labelClient.toLowerCase()} cadastrado ainda — o cadastro
                 acontece pelo portal do seu negócio.
               </p>

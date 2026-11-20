@@ -69,7 +69,7 @@ export function LogoUploadForm({
 
   return (
     <div className="flex items-center gap-4">
-      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/10 bg-black/5 dark:bg-white/10">
+      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-surface-2">
         {imagem ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imagem} alt="logo" className="h-full w-full object-cover" />

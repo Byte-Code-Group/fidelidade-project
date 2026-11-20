@@ -1,3 +1,4 @@
+import type { IconKey } from "@/components/icons";
 // Templates de segmento — FIXOS (definidos em código, não editáveis em runtime).
 // Cada template é o "teto" de uma empresa: define os módulos/páginas disponíveis,
 // os rótulos e os defaults de marca/conteúdo. Ao criar uma empresa ela herda o
@@ -39,7 +40,7 @@ export interface ProfileFieldDef {
 
 export interface SegmentTemplate {
   label: string; // nome do segmento
-  emoji: string;
+  icon: IconKey;
   label_client: string; // como o portal chama o cliente
   label_appointment: string; // como chama o agendamento
   modules: ModuleKey[]; // TETO: módulos disponíveis neste template
@@ -70,7 +71,7 @@ const ODONTO_PROFILE_FIELDS: ProfileFieldDef[] = [
 export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   odonto: {
     label: "Odontologia",
-    emoji: "🦷",
+    icon: "tooth",
     label_client: "Paciente",
     label_appointment: "Consulta",
     modules: ["appointments", "documents", "care_plans", "partnerships"],
@@ -93,7 +94,7 @@ export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   },
   academia: {
     label: "Academia",
-    emoji: "🏋️",
+    icon: "dumbbell",
     label_client: "Aluno",
     label_appointment: "Aula",
     modules: ["appointments", "care_plans"],
@@ -112,7 +113,7 @@ export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   },
   barbearia: {
     label: "Barbearia",
-    emoji: "💈",
+    icon: "scissors",
     label_client: "Cliente",
     label_appointment: "Horário",
     modules: ["appointments"],
@@ -130,7 +131,7 @@ export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   },
   salao: {
     label: "Salão de Beleza",
-    emoji: "💇",
+    icon: "scissors",
     label_client: "Cliente",
     label_appointment: "Horário",
     modules: ["appointments", "care_plans"],
@@ -148,7 +149,7 @@ export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   },
   restaurante: {
     label: "Restaurante",
-    emoji: "🍽️",
+    icon: "utensils",
     label_client: "Cliente",
     label_appointment: "Reserva",
     modules: ["appointments", "partnerships"],
@@ -166,7 +167,7 @@ export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   },
   estetica: {
     label: "Clínica Estética",
-    emoji: "✨",
+    icon: "sparkles",
     label_client: "Cliente",
     label_appointment: "Sessão",
     modules: ["appointments", "documents", "care_plans", "partnerships"],
@@ -184,7 +185,7 @@ export const SEGMENT_TEMPLATES: Record<string, SegmentTemplate> = {
   },
   generico: {
     label: "Genérico",
-    emoji: "🏷️",
+    icon: "tag",
     label_client: "Cliente",
     label_appointment: "Agendamento",
     modules: [],

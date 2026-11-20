@@ -46,13 +46,13 @@ export default async function ConfigurarPage({
     <div className="mx-auto max-w-lg">
       <Card>
         <CardContent>
-          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-600">
+          <div className="mb-1 text-xs font-medium text-blue-600">
             Passo 1 de 2
           </div>
           <h1 className="text-xl font-bold">
             {isNew ? "Novo negócio" : "Sobre o seu negócio"}
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted">
             {isNew
               ? "Cada negócio tem seu próprio portal e assinatura."
               : "Estas informações personalizam o seu portal de fidelidade."}
@@ -95,7 +95,7 @@ export default async function ConfigurarPage({
                 placeholder="00.000.000/0001-00"
                 defaultValue={defaults.cpfCnpj}
               />
-              <p className="mt-1 text-xs text-gray-400">Necessário para emissão de cobranças.</p>
+              <p className="mt-1 text-xs text-muted">Necessário para emissão de cobranças.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">WhatsApp (opcional)</label>

@@ -262,13 +262,13 @@ export function DocxMapper({ templateId, name, fileName, fileUrl, groups, update
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             aria-label="Nome do modelo"
-            className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-xl font-semibold tracking-tight outline-none transition hover:border-black/10 focus:border-[var(--primary)] dark:hover:border-white/15"
+            className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-xl font-semibold tracking-tight outline-none transition hover:border-line focus:border-[var(--primary)] dark:hover:border-white/15"
           />
           <button
             type="button"
             onClick={undo}
             disabled={!history.length || saving}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium opacity-70 transition hover:bg-black/5 hover:opacity-100 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-white/10"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium opacity-70 transition hover:bg-surface-2 hover:opacity-100 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-white/10"
           >
             <Icon name="history" className="h-4 w-4" />
             Desfazer
@@ -297,8 +297,8 @@ export function DocxMapper({ templateId, name, fileName, fileUrl, groups, update
       </div>
 
       <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto">
-        <div className="rounded-2xl border border-black/10 bg-[var(--background)] dark:border-white/10">
-          <div className="border-b border-black/10 p-4 dark:border-white/10">
+        <div className="rounded-2xl border border-line bg-surface dark:border-white/10">
+          <div className="border-b border-line p-4 dark:border-white/10">
             {target ? (
               target.mode === "replace" ? (
                 <p className="text-sm">
@@ -319,7 +319,7 @@ export function DocxMapper({ templateId, name, fileName, fileUrl, groups, update
           </div>
 
           {groups.map((g) => (
-            <details key={g.id} open className="group border-b border-black/10 last:border-0 dark:border-white/10">
+            <details key={g.id} open className="group border-b border-line last:border-0 dark:border-white/10">
               <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold">
                 {g.title}
                 <Icon name="chevronRight" className="h-4 w-4 opacity-40 transition group-open:rotate-90" />
@@ -369,12 +369,12 @@ export function DocxMapper({ templateId, name, fileName, fileUrl, groups, update
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 placeholder="ex: procedimento"
-                className="min-w-0 flex-1 rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--primary)] dark:border-white/15"
+                className="min-w-0 flex-1 rounded-lg border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--primary)] dark:border-white/15"
               />
               <button
                 type="submit"
                 disabled={!custom.trim() || !bytes}
-                className="rounded-lg border border-black/10 px-3 text-sm font-medium transition hover:bg-black/5 disabled:opacity-40 dark:border-white/15 dark:hover:bg-white/10"
+                className="rounded-lg border border-line px-3 text-sm font-medium transition hover:bg-surface-2 disabled:opacity-40 dark:border-white/15 dark:hover:bg-white/10"
               >
                 Inserir
               </button>

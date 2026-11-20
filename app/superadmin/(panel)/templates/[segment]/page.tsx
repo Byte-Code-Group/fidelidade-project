@@ -53,23 +53,23 @@ export default async function TemplateShowcasePage({
         <div className="space-y-5">
           <Card>
             <CardContent className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black/5 text-3xl dark:bg-white/10">
-                {tpl.emoji}
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)]">
+                <Icon name={tpl.icon} className="h-7 w-7" />
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-bold">{tpl.label}</h1>
-                <p className="text-xs uppercase tracking-wider opacity-40">
+                <p className="text-xs text-muted">
                   template fixo · {segment}
                 </p>
               </div>
               <div className="flex gap-1.5">
                 <span
-                  className="h-7 w-7 rounded-full border border-black/10"
+                  className="h-7 w-7 rounded-full border border-line"
                   style={{ background: d.primary_color }}
                   title="Cor primária"
                 />
                 <span
-                  className="h-7 w-7 rounded-full border border-black/10"
+                  className="h-7 w-7 rounded-full border border-line"
                   style={{ background: d.secondary_color }}
                   title="Cor secundária"
                 />
@@ -89,14 +89,14 @@ export default async function TemplateShowcasePage({
             <CardContent className="space-y-3">
               <h2 className="font-semibold">Páginas do portal</h2>
               <div>
-                <p className="mb-1.5 text-xs uppercase tracking-wider opacity-50">
+                <p className="mb-1.5 text-xs text-muted">
                   Sempre incluídas
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {basePages.map((label) => (
                     <span
                       key={label}
-                      className="rounded-lg bg-black/5 px-2.5 py-1 text-sm dark:bg-white/10"
+                      className="rounded-lg bg-surface-2 px-2.5 py-1 text-sm dark:bg-white/10"
                     >
                       {label}
                     </span>
@@ -104,7 +104,7 @@ export default async function TemplateShowcasePage({
                 </div>
               </div>
               <div>
-                <p className="mb-1.5 text-xs uppercase tracking-wider opacity-50">
+                <p className="mb-1.5 text-xs text-muted">
                   Módulos deste template ({tpl.modules.length})
                 </p>
                 {tpl.modules.length === 0 ? (
@@ -151,7 +151,7 @@ export default async function TemplateShowcasePage({
 
         {/* Preview "como é" */}
         <div>
-          <p className="mb-3 text-xs font-medium uppercase tracking-wider opacity-50">
+          <p className="mb-3 text-xs font-medium text-muted">
             Como o portal aparece
           </p>
           <div className="lg:sticky lg:top-6">

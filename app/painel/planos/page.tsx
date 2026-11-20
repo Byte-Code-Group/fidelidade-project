@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PlansList } from "@/components/plans-list";
@@ -21,13 +22,7 @@ export default async function OwnerPlansPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Planos</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Planos/assinaturas que aparecem na aba Planos do portal do cliente.
-          Arraste pelo ⠿ pra reordenar.
-        </p>
-      </div>
+      <PageHeader icon="receipt" title="Planos" subtitle="Planos/assinaturas que aparecem na aba Planos do portal do cliente. Arraste pela alça para reordenar." />
 
       <PlansList
         plans={plans ?? []}

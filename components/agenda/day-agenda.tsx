@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -54,9 +55,12 @@ export function DayAgenda({
 }: DayAgendaProps) {
   if (agendamentos.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-black/10 px-4 py-8 text-center text-sm opacity-60 dark:border-white/15">
-        Nenhum atendimento nesse dia.
-      </p>
+      <EmptyState
+        bare
+        icon={<Icon name="calendar" />}
+        title="Dia livre"
+        description="Nenhum atendimento marcado nessa data."
+      />
     );
   }
 
@@ -106,7 +110,7 @@ function AppointmentRow({
   const cor = a.providers?.color ?? "#64748B";
 
   return (
-    <li className="rounded-xl border border-black/10 p-3 dark:border-white/10">
+    <li className="rounded-xl border border-line p-3 dark:border-white/10">
       <div className="flex flex-wrap items-start gap-3">
         <span
           aria-hidden
@@ -153,8 +157,8 @@ function AppointmentRow({
                 disabled={pendente}
                 onClick={() => setRemarcando((v) => !v)}
                 className={cn(
-                  "rounded-lg px-2 py-1 text-xs font-medium transition hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/10",
-                  remarcando && "bg-black/5 dark:bg-white/10",
+                  "rounded-lg px-2 py-1 text-xs font-medium transition hover:bg-surface-2 disabled:opacity-50 dark:hover:bg-white/10",
+                  remarcando && "bg-surface-2",
                 )}
               >
                 Remarcar
@@ -251,7 +255,7 @@ function RescheduleForm({
   }
 
   return (
-    <div className="mt-3 space-y-2 rounded-lg bg-black/[0.03] p-3 dark:bg-white/[0.04]">
+    <div className="mt-3 space-y-2 rounded-lg bg-surface-2 p-3 dark:bg-white/[0.04]">
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block text-xs">
           <span className="mb-1 block font-medium opacity-70">Profissional</span>

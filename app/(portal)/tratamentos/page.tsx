@@ -110,7 +110,7 @@ export default async function TratamentosPage() {
                           {doneCount} de {steps.length} etapas
                         </span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                      <div className="h-2 overflow-hidden rounded-full bg-surface-2">
                         <div
                           className="h-full rounded-full bg-[var(--primary)] transition-all"
                           style={{ width: `${pct}%` }}

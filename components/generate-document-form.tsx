@@ -28,7 +28,7 @@ export function GenerateDocumentForm({ templates, action }: GenerateDocumentForm
 
   return (
     <form
-      className="space-y-3 border-b border-black/10 px-6 py-4 dark:border-white/10"
+      className="space-y-3 border-b border-line px-6 py-4 dark:border-white/10"
       action={async (formData) => {
         const { error, emptyFields } = await action(formData);
         if (error) return void toast.error(traduzirErro(error));

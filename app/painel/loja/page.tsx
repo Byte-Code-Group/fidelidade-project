@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { RewardsList } from "@/components/rewards-list";
@@ -21,13 +22,7 @@ export default async function OwnerRewardsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Loja</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Prêmios que o cliente troca por pontos na Loja de Resgate do portal.
-          Arraste pelo ⠿ pra reordenar.
-        </p>
-      </div>
+      <PageHeader icon="store" title="Loja" subtitle="Prêmios que o cliente troca por pontos na Loja de Resgate do portal. Arraste pela alça para reordenar." />
 
       <RewardsList
         rewards={rewards ?? []}

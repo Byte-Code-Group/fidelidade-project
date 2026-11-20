@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { AppToaster } from "@/components/app-toaster";
 import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+// Títulos e números: grotesca com calor de "negócio de bairro", contraste com o Geist do corpo.
+const display = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
 });
 
@@ -45,7 +51,7 @@ export default function RootLayout({
       lang="pt-BR"
       // data-theme é setado pelo script do <head> antes da hidratação.
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
     >
       <head>
         {/* Set data-theme before paint to avoid flash */}

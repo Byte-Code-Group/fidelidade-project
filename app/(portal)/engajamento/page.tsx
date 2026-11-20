@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +61,7 @@ export default async function EngajamentoPage() {
         title="Engajamento"
         subtitle="Complete missões, acumule pontos e troque na Loja."
         action={
-          <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 dark:bg-white/5">
+          <div className="flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 dark:bg-white/5">
             <Icon name="award" className="h-5 w-5 text-[var(--primary)]" />
             <span className="font-bold text-[var(--primary)]">{points}</span>
             <span className="text-sm opacity-60">pontos</span>
@@ -90,13 +91,11 @@ export default async function EngajamentoPage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Missões</h2>
         {(missions ?? []).length === 0 ? (
-          <Card>
-            <CardContent>
-              <p className="text-sm opacity-70">
-                Nenhuma missão disponível no momento.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={<Icon name="target" />}
+            title="Nenhuma missão no momento"
+            description="Volte depois: novas missões para ganhar pontos aparecem aqui."
+          />
         ) : (
           <div className="space-y-3">
             {(missions ?? []).map((mission) => {
@@ -120,8 +119,8 @@ export default async function EngajamentoPage() {
                       </Badge>
 
                       {status === "completed" ? (
-                        <span className="text-sm font-medium text-green-600">
-                          ✓ Concluída
+                        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                          <Icon name="checkCircle" className="h-4 w-4" /> Concluída
                         </span>
                       ) : status === "pending_validation" ? (
                         <span className="text-sm font-medium opacity-60">

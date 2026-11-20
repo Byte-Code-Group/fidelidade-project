@@ -103,7 +103,7 @@ export default async function RelatoriosPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent>
-            <p className="text-xs uppercase tracking-wider opacity-50">MRR Atual</p>
+            <p className="text-xs text-muted">MRR Atual</p>
             <p className="mt-1 text-2xl font-bold">
               {currentMrr.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </p>
@@ -112,7 +112,7 @@ export default async function RelatoriosPage() {
         </Card>
         <Card>
           <CardContent>
-            <p className="text-xs uppercase tracking-wider opacity-50">ARR (projeção)</p>
+            <p className="text-xs text-muted">ARR (projeção)</p>
             <p className="mt-1 text-2xl font-bold">
               {(currentMrr * 12).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </p>
@@ -121,7 +121,7 @@ export default async function RelatoriosPage() {
         </Card>
         <Card>
           <CardContent>
-            <p className="text-xs uppercase tracking-wider opacity-50">Tokens IA (mês)</p>
+            <p className="text-xs text-muted">Tokens IA (mês)</p>
             <p className="mt-1 text-2xl font-bold">
               {totalAiTokens.toLocaleString("pt-BR")}
             </p>

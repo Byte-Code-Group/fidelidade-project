@@ -14,11 +14,11 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white/70 p-5 shadow-sm dark:bg-white/5">
+    <div className="rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgb(16_24_40/0.04)] md:p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">{title}</h2>
-          {desc && <p className="mt-0.5 text-xs opacity-55">{desc}</p>}
+          <h2 className="text-[17px] font-semibold">{title}</h2>
+          {desc && <p className="mt-0.5 text-sm text-muted">{desc}</p>}
         </div>
         {action}
       </div>
@@ -40,7 +40,7 @@ export function Field({
     <label className="block space-y-1.5">
       <span className="text-sm font-medium">
         {label}
-        {hint && <span className="ml-2 font-normal opacity-50">{hint}</span>}
+        {hint && <span className="ml-2 font-normal text-muted">{hint}</span>}
       </span>
       {children}
     </label>

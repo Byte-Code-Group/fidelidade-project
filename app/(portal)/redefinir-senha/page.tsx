@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@/components/icons";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -50,7 +51,7 @@ export default function RedefinirSenhaPage() {
       <Card>
         <CardContent className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-600 text-2xl">
-            ✓
+            <Icon name="check" className="h-6 w-6" />
           </div>
           <h1 className="text-lg font-semibold">Senha atualizada</h1>
           <p className="mt-2 text-sm opacity-70">

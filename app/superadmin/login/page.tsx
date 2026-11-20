@@ -24,7 +24,7 @@ export default async function SuperLoginPage({
     <div className="mx-auto flex min-h-dvh max-w-sm items-center px-5">
       <Card className="w-full">
         <CardContent>
-          <p className="text-xs font-medium uppercase tracking-wider opacity-50">
+          <p className="text-xs font-medium text-muted">
             Plataforma
           </p>
           <h1 className="mt-1 text-xl font-semibold">Super Admin</h1>

@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -61,14 +63,14 @@ export default async function RedemptionsPage({
         </h2>
 
         {pending.length === 0 ? (
-          <Card>
-            <div className="px-5 py-8 text-center text-sm opacity-50">
-              Nenhum resgate pendente. 🎉
-            </div>
-          </Card>
+          <EmptyState
+            icon={<Icon name="gift" />}
+            title="Nenhum resgate pendente"
+            description="Resgates feitos na Loja do portal aparecem aqui para entrega."
+          />
         ) : (
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {pending.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="min-w-0 flex-1">
@@ -78,7 +80,7 @@ export default async function RedemptionsPage({
                       {r.points_spent} pts · {formatDate(r.created_at)}
                     </p>
                   </div>
-                  <Badge className={statusStyle[r.status] ?? "bg-black/5"}>
+                  <Badge className={statusStyle[r.status] ?? "bg-surface-2"}>
                     {statusLabel[r.status] ?? r.status}
                   </Badge>
                   <form action={approveRedemption.bind(null, id, r.id)}>
@@ -108,7 +110,7 @@ export default async function RedemptionsPage({
             Histórico ({done.length})
           </h2>
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {done.map((r) => (
                 <div
                   key={r.id}
@@ -121,7 +123,7 @@ export default async function RedemptionsPage({
                       {r.points_spent} pts · {formatDate(r.created_at)}
                     </p>
                   </div>
-                  <Badge className={statusStyle[r.status] ?? "bg-black/5"}>
+                  <Badge className={statusStyle[r.status] ?? "bg-surface-2"}>
                     {statusLabel[r.status] ?? r.status}
                   </Badge>
                 </div>

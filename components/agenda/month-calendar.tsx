@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
@@ -38,22 +39,22 @@ export function MonthCalendar({
   const mesAtual = mes.slice(0, 7);
 
   return (
-    <div className="rounded-2xl border border-black/10 bg-[var(--background)] p-4 dark:border-white/10">
+    <div className="rounded-2xl border border-line bg-surface p-4 dark:border-white/10">
       <div className="mb-3 flex items-center justify-between">
         <Link
           href={hrefDoMes(mesAnterior(mesAtual))}
           aria-label="Mês anterior"
-          className="rounded-lg px-2 py-1 text-sm opacity-60 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
+          className="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-foreground"
         >
-          ←
+          <Icon name="chevronLeft" className="h-4 w-4" />
         </Link>
-        <p className="text-sm font-semibold capitalize">{formatarMes(mesAtual)}</p>
+        <p className="font-display text-[15px] font-semibold first-letter:uppercase">{formatarMes(mesAtual)}</p>
         <Link
           href={hrefDoMes(mesSeguinte(mesAtual))}
           aria-label="Próximo mês"
-          className="rounded-lg px-2 py-1 text-sm opacity-60 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
+          className="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-foreground"
         >
-          →
+          <Icon name="chevronRight" className="h-4 w-4" />
         </Link>
       </div>
 
@@ -79,7 +80,7 @@ export function MonthCalendar({
                 doMes ? "" : "opacity-30",
                 selecionado
                   ? "bg-[var(--primary)] font-semibold text-[var(--primary-foreground)]"
-                  : "hover:bg-black/5 dark:hover:bg-white/10",
+                  : "hover:bg-surface-2",
                 !selecionado && dia === hoje && "ring-1 ring-[var(--primary)]",
                 resumo?.fechado && !selecionado && "line-through opacity-40",
               )}

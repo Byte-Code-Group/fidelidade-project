@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { motion } from "motion/react";
 import { Icon, type IconKey } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
@@ -15,26 +16,34 @@ interface TabDef {
 export function Tabs({ tabs }: { tabs: TabDef[] }) {
   const [active, setActive] = useState(tabs[0]?.key);
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
+  const pill = useId();
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-black/10 bg-black/[0.02] p-1 dark:border-white/10 dark:bg-white/[0.03]">
+      <div role="tablist" className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-surface-2 p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
+            role="tab"
+            aria-selected={t.key === current?.key}
             onClick={() => setActive(t.key)}
             className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition",
-              t.key === current?.key
-                ? "bg-[var(--background)] shadow-sm"
-                : "opacity-60 hover:opacity-100",
+              "relative flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              t.key === current?.key ? "text-foreground" : "text-muted hover:text-foreground",
             )}
           >
-            <Icon name={t.icon} className="h-4 w-4" />
-            {t.label}
+            {t.key === current?.key && (
+              <motion.span
+                layoutId={pill}
+                className="absolute inset-0 rounded-lg bg-surface shadow-[0_1px_3px_rgb(16_24_40/0.1)]"
+                transition={{ type: "spring", stiffness: 500, damping: 38 }}
+              />
+            )}
+            <Icon name={t.icon} className="relative h-4 w-4" />
+            <span className="relative">{t.label}</span>
             {typeof t.count === "number" && (
-              <span className="text-xs opacity-50">({t.count})</span>
+              <span className="relative rounded-full bg-black/5 px-1.5 text-[11px] tabular-nums dark:bg-white/10">{t.count}</span>
             )}
           </button>
         ))}

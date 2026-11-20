@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@/components/icons";
 
 import Link from "next/link";
 
@@ -18,15 +19,15 @@ export function ErrorView({
   return (
     <div className="flex min-h-[60dvh] items-center justify-center p-6 text-center">
       <div className="max-w-sm">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-2xl">
-          ⚠️
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 ring-1 ring-red-500/15">
+          <Icon name="alert" className="h-6 w-6" />
         </div>
         <h1 className="text-lg font-semibold">Algo deu errado</h1>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted">
           Não foi possível carregar esta página. Tente novamente em instantes.
         </p>
         {error.digest ? (
-          <p className="mt-2 font-mono text-xs text-gray-400">
+          <p className="mt-2 font-mono text-xs text-muted">
             Código: {error.digest}
           </p>
         ) : null}
@@ -39,7 +40,7 @@ export function ErrorView({
           </button>
           <Link
             href={homeHref}
-            className="block text-sm text-gray-400 hover:underline"
+            className="block text-sm text-muted hover:underline"
           >
             {homeLabel}
           </Link>
@@ -60,11 +61,11 @@ export function NotFoundView({
   return (
     <div className="flex min-h-[60dvh] items-center justify-center p-6 text-center">
       <div className="max-w-sm">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-2xl">
-          🔍
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] ring-1 ring-[var(--primary)]/15">
+          <Icon name="searchX" className="h-6 w-6" />
         </div>
         <h1 className="text-lg font-semibold">Página não encontrada</h1>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted">
           O endereço acessado não existe ou foi movido.
         </p>
         <Link

@@ -25,7 +25,7 @@ export function PlanFields({ plan }: { plan?: BusinessPlan }) {
           rows={3}
           defaultValue={(plan?.benefits ?? []).join("\n")}
           placeholder={"2 limpezas/ano\nDesconto 20%"}
-          className="w-full rounded-lg border border-black/10 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
+          className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
         />
       </Field>
 

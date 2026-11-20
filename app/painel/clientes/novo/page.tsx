@@ -25,7 +25,7 @@ export default async function NewClientPage() {
       </Link>
       <div>
         <h1 className="text-2xl font-bold">Novo cliente</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted">
           A carteirinha é criada na hora. Para entrar no portal, o cliente usa &ldquo;Esqueci minha senha&rdquo; com este e-mail.
         </p>
       </div>

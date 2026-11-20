@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -32,9 +33,12 @@ export function ProceduresManager({
   return (
     <div className="space-y-2">
       {procedures.length === 0 && !novo && (
-        <p className="rounded-xl border border-dashed border-black/10 px-4 py-6 text-center text-sm opacity-60 dark:border-white/15">
-          Nenhum procedimento cadastrado. Ex.: “Consulta · 30 min”, “Limpeza · 50 min”.
-        </p>
+        <EmptyState
+          bare
+          icon={<Icon name="clock" />}
+          title="Nenhum procedimento cadastrado"
+          description="Cadastre o que você atende e quanto tempo leva, como Consulta (30 min) ou Limpeza (50 min)."
+        />
       )}
 
       {procedures.map((p) => (
@@ -82,13 +86,13 @@ function ProcedureRow({
   const preco = formatarPreco(p.price_cents);
 
   return (
-    <div className="rounded-xl border border-black/10 dark:border-white/10">
+    <div className="rounded-xl border border-line">
       <div className="flex items-center gap-3 p-3">
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 truncate text-sm font-semibold">
             {p.name}
             {!p.is_active && (
-              <span className="rounded bg-black/10 px-1.5 py-0.5 text-[10px] font-medium uppercase opacity-70 dark:bg-white/15">
+              <span className="rounded bg-black/10 px-1.5 py-0.5 text-xs font-medium opacity-70 dark:bg-white/15">
                 inativo
               </span>
             )}
@@ -104,7 +108,7 @@ function ProcedureRow({
         <button
           type="button"
           onClick={() => setEditando((v) => !v)}
-          className="rounded-lg p-1.5 opacity-50 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
+          className="rounded-lg p-1.5 opacity-50 transition hover:bg-surface-2 hover:opacity-100 dark:hover:bg-white/10"
           aria-label="Editar procedimento"
         >
           <Icon name="edit" className="h-4 w-4" />
@@ -127,7 +131,7 @@ function ProcedureRow({
       </div>
 
       {editando && (
-        <div className="border-t border-black/5 p-3 dark:border-white/10">
+        <div className="border-t border-line p-3 dark:border-white/10">
           <ProcedureForm
             procedure={p}
             onCancelar={() => setEditando(false)}
@@ -165,7 +169,7 @@ function ProcedureForm({
           await onSalvar(formData);
         })
       }
-      className="space-y-3 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.04]"
+      className="space-y-3 rounded-xl bg-surface-2 p-3 dark:bg-white/[0.04]"
     >
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block text-sm sm:col-span-3">

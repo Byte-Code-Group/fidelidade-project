@@ -24,7 +24,7 @@ export function TenantTabs({ tenantId }: { tenantId: string }) {
   ];
 
   return (
-    <nav className="flex gap-1 border-b border-black/5">
+    <nav className="flex gap-1 border-b border-line">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (

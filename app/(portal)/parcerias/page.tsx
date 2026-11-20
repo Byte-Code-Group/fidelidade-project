@@ -39,7 +39,7 @@ export default async function ParceriasPage() {
           {partnerships.map((p) => (
             <div
               key={p.id}
-              className="flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white dark:bg-white/5"
+              className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white dark:bg-white/5"
             >
               {/* Logo / placeholder */}
               <div className="flex h-28 items-center justify-center bg-[var(--primary)]/5 px-6">

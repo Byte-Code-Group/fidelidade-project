@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -97,19 +99,14 @@ export default async function OwnerAssinaturaPage({
 
       return (
         <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold">Assinatura</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Escolha quais negócios continuam ativos.
-            </p>
-          </div>
+          <PageHeader icon="card" title="Assinatura" subtitle="Escolha quais negócios continuam ativos." />
 
           <FlashToast error={error} saved={saved} successMessage={successMessage} />
 
           <Card>
             <CardContent className="space-y-4">
               <h2 className="font-semibold">Escolha quais negócios continuam ativos</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted">
                 O plano {PLAN_LABEL[select_plan]} permite {impact.limit} negócio
                 {impact.limit === 1 ? "" : "s"} ativo{impact.limit === 1 ? "" : "s"}. Você tem{" "}
                 {impact.activeTenants.length} negócios ativos hoje. Este negócio continua ativo
@@ -128,7 +125,7 @@ export default async function OwnerAssinaturaPage({
                     {others.map((t) => (
                       <label
                         key={t.id}
-                        className="flex items-center gap-2 rounded-lg border border-black/10 px-3 py-2.5 text-sm dark:border-white/10"
+                        className="flex items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm dark:border-white/10"
                       >
                         <input
                           type="checkbox"
@@ -172,12 +169,7 @@ export default async function OwnerAssinaturaPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Assinatura</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Plano atual, troca de plano e cancelamento.
-        </p>
-      </div>
+      <PageHeader icon="card" title="Assinatura" subtitle="Plano atual, troca de plano e cancelamento." />
 
       <FlashToast error={error} saved={saved} successMessage={successMessage} />
 
@@ -219,12 +211,12 @@ export default async function OwnerAssinaturaPage({
             {PLAN_LABEL[currentPlan] ?? currentPlan ?? "—"}
           </p>
           <span
-            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}
+            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-muted"}`}
           >
             {isCancelledButActive ? "Cancelada (ativa até o fim do período)" : STATUS_LABEL[status] ?? status ?? "—"}
           </span>
           {subscription && !cancelAt && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               Asaas: {subscription.status} · R$ {subscription.value} · próx. vencimento{" "}
               {fmtDate(subscription.nextDueDate)}
             </p>
@@ -236,7 +228,7 @@ export default async function OwnerAssinaturaPage({
         <h2 className="mb-1 font-semibold">
           {isActive && !isCancelledButActive ? "Trocar de plano" : "Assinar / Reativar"}
         </h2>
-        <p className="mb-3 text-xs text-gray-500">
+        <p className="mb-3 text-xs text-muted">
           {isActive && !isCancelledButActive
             ? "Upgrade vale na hora, sem cobrar nada agora — o valor novo entra só na próxima fatura. Downgrade continua com o plano atual até o fim do período, depois muda sozinho."
             : "Escolha o plano e a forma de pagamento — você será redirecionado para o checkout do Asaas para concluir o pagamento."}
@@ -277,13 +269,14 @@ export default async function OwnerAssinaturaPage({
 
                   <p>
                     <span className="text-2xl font-bold">R$ {price}</span>
-                    <span className="text-sm text-gray-400">/mês</span>
+                    <span className="text-sm text-muted">/mês</span>
                   </p>
 
                   <ul className="flex-1 space-y-1.5">
                     {plan.features.map((f) => (
-                      <li key={f} className="text-sm text-gray-500">
-                        ✓ {f}
+                      <li key={f} className="flex items-start gap-2 text-sm text-muted">
+                        <Icon name="check" className="mt-0.5 h-4 w-4 text-[var(--primary)]" />
+                        {f}
                       </li>
                     ))}
                   </ul>
@@ -295,7 +288,7 @@ export default async function OwnerAssinaturaPage({
                     const renewalDate = subscription ? fmtDate(subscription.nextDueDate) : null;
 
                     if (isCurrent) {
-                      return <p className="text-xs text-gray-500">Este é o seu plano atual.</p>;
+                      return <p className="text-xs text-muted">Este é o seu plano atual.</p>;
                     }
                     if (isThisPending) {
                       return (
@@ -309,7 +302,7 @@ export default async function OwnerAssinaturaPage({
                       <form action={ownerChangePlan} className="space-y-2">
                         <input type="hidden" name="plan" value={plan.key} />
                         {!needsBillingType && !isUpgrade && (
-                          <p className="text-[11px] text-gray-500">
+                          <p className="text-[11px] text-muted">
                             Na próxima renovação{renewalDate ? ` (${renewalDate})` : ""} passa a cobrar
                             R$ {price}/mês e permitir {limitLabel}. Até lá, {PLAN_LABEL[currentPlan]}{" "}
                             continua valendo.
@@ -340,7 +333,7 @@ export default async function OwnerAssinaturaPage({
         <Card>
           <CardContent className="space-y-3">
             <h2 className="font-semibold text-red-600">Cancelar assinatura</h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Cancela a cobrança na hora. Se ainda tiver dias pagos, seu acesso continua até o
               fim do período — depois disso o portal é suspenso.
             </p>

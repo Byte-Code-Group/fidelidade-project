@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,10 +34,6 @@ export function ValidationsList({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm opacity-60">
-        Missões enviadas pelos clientes que precisam de validação manual antes
-        de creditarem pontos.
-      </p>
 
       {/* Pendentes */}
       <section className="space-y-3">
@@ -45,14 +43,14 @@ export function ValidationsList({
         </h2>
 
         {pending.length === 0 ? (
-          <Card>
-            <div className="px-5 py-8 text-center text-sm opacity-50">
-              Nenhuma missão aguardando validação. ✓
-            </div>
-          </Card>
+          <EmptyState
+            icon={<Icon name="checkCircle" />}
+            title="Tudo validado"
+            description="Quando um cliente concluir uma missão que pede confirmação, ela aparece aqui."
+          />
         ) : (
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {pending.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="min-w-0 flex-1">
@@ -86,7 +84,7 @@ export function ValidationsList({
         <section className="space-y-3">
           <h2 className="text-sm font-semibold opacity-60">Aprovadas ({done.length})</h2>
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {done.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 px-5 py-3.5 opacity-70">
                   <div className="min-w-0 flex-1">

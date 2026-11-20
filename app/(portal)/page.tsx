@@ -67,14 +67,14 @@ function LandingPage({ sent }: { sent?: boolean }) {
   return (
     <div className="min-h-dvh bg-white font-sans text-gray-900">
       {/* Nav */}
-      <nav className="sticky top-0 z-10 border-b border-black/5 bg-white/90 backdrop-blur">
+      <nav className="sticky top-0 z-10 border-b border-line bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <span className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <Logo className="h-6 w-6" />
             Fidelidade
           </span>
           <div className="flex items-center gap-3">
-            <Link href="/conta/login" className="text-sm text-gray-500 hover:text-gray-900">
+            <Link href="/conta/login" className="text-sm text-muted hover:text-gray-900">
               Entrar
             </Link>
             <Link href="/conta/cadastro">
@@ -105,11 +105,11 @@ function LandingPage({ sent }: { sent?: boolean }) {
               Criar meu portal agora →
             </Button>
           </Link>
-          <a href="#planos" className="text-sm text-gray-500 hover:underline">
+          <a href="#planos" className="text-sm text-muted hover:underline">
             Ver planos e preços
           </a>
         </div>
-        <p className="mt-4 text-sm text-gray-400">
+        <p className="mt-4 text-sm text-muted">
           Sem taxa de setup · Cancele quando quiser
         </p>
       </section>
@@ -125,7 +125,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
                   <Icon name={f.icon} />
                 </div>
                 <h3 className="font-semibold">{f.title}</h3>
-                <p className="mt-1 text-sm text-gray-500">{f.desc}</p>
+                <p className="mt-1 text-sm text-muted">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -150,7 +150,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
       <section id="planos" className="bg-gray-50 py-20">
         <div className="mx-auto max-w-4xl px-5">
           <h2 className="mb-2 text-center text-3xl font-bold">Planos e preços</h2>
-          <p className="mb-10 text-center text-gray-500">Cancele a qualquer momento.</p>
+          <p className="mb-10 text-center text-muted">Cancele a qualquer momento.</p>
           <div className="grid gap-5 sm:grid-cols-3">
             {PLANS.map((plan) => (
               <div
@@ -165,12 +165,12 @@ function LandingPage({ sent }: { sent?: boolean }) {
                 <h3 className="text-lg font-bold">{plan.name}</h3>
                 <p className="mt-1 text-3xl font-extrabold">
                   R$ {plan.price}
-                  <span className="text-base font-normal text-gray-400">/mês</span>
+                  <span className="text-base font-normal text-muted">/mês</span>
                 </p>
                 <ul className="mt-4 space-y-1.5">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="mt-0.5 text-blue-500">✓</span> {f}
+                      <Icon name="check" className="mt-0.5 h-4 w-4 text-blue-500" /> {f}
                     </li>
                   ))}
                 </ul>
@@ -207,12 +207,12 @@ function LandingPage({ sent }: { sent?: boolean }) {
       <section id="contato" className="py-20">
         <div className="mx-auto max-w-lg px-5">
           <h2 className="mb-2 text-center text-xl font-bold">Prefere falar com a gente?</h2>
-          <p className="mb-8 text-center text-sm text-gray-500">
+          <p className="mb-8 text-center text-sm text-muted">
             Deixe seu contato e retornamos em até 24h.
           </p>
           {sent ? (
             <p className="rounded-xl bg-green-50 px-4 py-3 text-center text-sm font-medium text-green-700">
-              ✓ Recebemos seu contato! Retornaremos em breve.
+              Recebemos seu contato. Retornamos em breve.
             </p>
           ) : (
             <form action={submitLead} className="space-y-3">
@@ -246,7 +246,7 @@ function LandingPage({ sent }: { sent?: boolean }) {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-black/5 py-8 text-center text-sm text-gray-400">
+      <footer className="border-t border-line py-8 text-center text-sm text-muted">
         © {new Date().getFullYear()} Fidelidade · Todos os direitos reservados ·{" "}
         <Link href="/conta/login" className="hover:underline">Entrar</Link>
       </footer>
@@ -376,12 +376,12 @@ export default async function HomePage({
         <div>
           <p className="text-sm opacity-60">Bem-vindo de volta,</p>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            {memberName} <span className="align-middle">👋</span>
+            {memberName}
           </h1>
         </div>
-        <div className="flex items-center gap-3 rounded-full border border-black/5 bg-white px-3 py-1.5 dark:bg-white/5">
+        <div className="flex items-center gap-3 rounded-full border border-line bg-white px-3 py-1.5 dark:bg-white/5">
           <div className="text-right leading-tight">
-            <p className="text-[10px] uppercase tracking-wider opacity-50">
+            <p className="text-xs text-muted">
               Pontos
             </p>
             <p className="font-bold text-[var(--primary)]">{points}</p>
@@ -450,7 +450,13 @@ export default async function HomePage({
 
           <Link href="/checkin" className="block">
             <Button className="w-full" disabled={checkedIn}>
-              {checkedIn ? "Check-in do período feito ✓" : "Fazer Check-in"}
+              {checkedIn ? (
+                <>
+                  <Icon name="check" className="h-4 w-4" /> Check-in do período feito
+                </>
+              ) : (
+                "Fazer check-in"
+              )}
             </Button>
           </Link>
         </CardContent>

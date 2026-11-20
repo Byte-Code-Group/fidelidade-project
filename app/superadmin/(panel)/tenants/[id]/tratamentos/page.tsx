@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -188,7 +190,7 @@ export default async function TratamentosAdminPage({
                     </span>
                     <span>{pct}%</span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
                     <div
                       className="h-full rounded-full bg-[var(--primary)] transition-all"
                       style={{ width: `${pct}%` }}
@@ -199,7 +201,7 @@ export default async function TratamentosAdminPage({
 
               {/* Etapas */}
               {steps.length > 0 && (
-                <div className="divide-y divide-black/5 rounded-xl border border-black/5">
+                <div className="divide-y divide-line rounded-xl border border-line">
                   {steps.map((step) => (
                     <div
                       key={step.id}
@@ -274,11 +276,10 @@ export default async function TratamentosAdminPage({
       })}
 
       {(plans ?? []).length === 0 && (
-        <Card>
-          <div className="px-5 py-10 text-center text-sm opacity-50">
-            Nenhum plano de acompanhamento ainda.
-          </div>
-        </Card>
+        <EmptyState
+          icon={<Icon name="activity" />}
+          title="Nenhum plano de acompanhamento ainda"
+        />
       )}
     </div>
   );

@@ -1,3 +1,5 @@
+import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/icons";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,7 +60,7 @@ export default async function FaturamentoPage({
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent>
-            <p className="text-xs opacity-50 uppercase tracking-wider">MRR</p>
+            <p className="text-xs text-muted">MRR</p>
             <p className="mt-1 text-2xl font-semibold">
               {mrr.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </p>
@@ -67,7 +69,7 @@ export default async function FaturamentoPage({
         </Card>
         <Card>
           <CardContent>
-            <p className="text-xs opacity-50 uppercase tracking-wider">ARR (projeção)</p>
+            <p className="text-xs text-muted">ARR (projeção)</p>
             <p className="mt-1 text-2xl font-semibold">
               {(mrr * 12).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </p>
@@ -76,7 +78,7 @@ export default async function FaturamentoPage({
         </Card>
         <Card>
           <CardContent>
-            <p className="text-xs opacity-50 uppercase tracking-wider">Total de empresas</p>
+            <p className="text-xs text-muted">Total de empresas</p>
             <p className="mt-1 text-2xl font-semibold">{rows.length}</p>
             <p className="text-xs opacity-50">
               {rows.filter((t) => t.status === "pending").length} aguardando pagamento
@@ -218,14 +220,22 @@ export default async function FaturamentoPage({
                     </span>
                   </td>
                   <td className="py-3 text-xs opacity-50">
-                    {t.asaas_subscription_id ? "✓ assinatura" : "—"}
+                    {t.asaas_subscription_id ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><Icon name="check" className="h-3.5 w-3.5" /> assinatura</span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center opacity-40">
-                    Nenhuma empresa cadastrada.
+                  <td colSpan={5}>
+                    <EmptyState
+                      bare
+                      icon={<Icon name="building" />}
+                      title="Nenhuma empresa cadastrada"
+                    />
                   </td>
                 </tr>
               )}

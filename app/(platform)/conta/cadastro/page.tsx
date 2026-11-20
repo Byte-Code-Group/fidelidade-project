@@ -59,7 +59,7 @@ export default async function CadastroPage({
 
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Crie sua conta</h1>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted">
               Configure seu portal e ative com o plano que preferir.
             </p>
           </div>
@@ -68,7 +68,7 @@ export default async function CadastroPage({
 
           <CadastroForm />
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-muted">
             Já tem conta?{" "}
             <Link href="/conta/login" className="font-semibold text-blue-600 hover:underline">
               Entrar

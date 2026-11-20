@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ValidationsList, type CompletionRow } from "@/components/validations-list";
@@ -15,9 +16,7 @@ export default async function OwnerValidationsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Validações</h1>
-      </div>
+      <PageHeader icon="checkCircle" title="Validações" subtitle="Missões que pedem sua confirmação antes de liberar os pontos." />
       <ValidationsList
         completions={completions ?? []}
         approveAction={ownerApproveMissionCompletion}

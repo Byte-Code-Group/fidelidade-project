@@ -10,7 +10,7 @@ export default function SuperadminLoading() {
       </div>
 
       <Card>
-        <div className="divide-y divide-black/5">
+        <div className="divide-y divide-line">
           {Array.from({ length: 5 }).map((_, i) => (
             <CardContent key={i} className="flex items-center gap-3 py-3.5">
               <Skeleton className="h-4 flex-1" />

@@ -37,7 +37,7 @@ export function DocumentTabs({ documents }: { documents: DocumentItem[] }) {
 
   return (
     <div className="space-y-5">
-      <div className="inline-flex rounded-xl border border-black/5 bg-black/[0.03] p-1 dark:bg-white/5">
+      <div className="inline-flex rounded-xl border border-line bg-surface-2 p-1 dark:bg-white/5">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -63,14 +63,14 @@ export function DocumentTabs({ documents }: { documents: DocumentItem[] }) {
         />
       ) : (
         <Card>
-          <div className="divide-y divide-black/5">
+          <div className="divide-y divide-line">
             {filtered.map((doc) => (
               <a
                 key={doc.id}
                 href={doc.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 px-5 py-4 transition hover:bg-black/[0.02] dark:hover:bg-white/5"
+                className="flex items-center gap-4 px-5 py-4 transition hover:bg-surface-2 dark:hover:bg-white/5"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
                   <Icon name="document" className="h-5 w-5" />

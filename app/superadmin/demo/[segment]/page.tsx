@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePlatformAdmin } from "@/lib/superadmin";
@@ -29,9 +30,9 @@ export default async function TemplateDemoPage({
   return (
     <div className="relative">
       {/* Barra fina indicando que é demo do template */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-amber-50 px-4 py-2 text-sm text-amber-700">
         <span>
-          Demo do template <strong>{tpl.emoji} {tpl.label}</strong> · dados de
+          Demo do template <strong>{tpl.label}</strong> · dados de
           exemplo, sem login
         </span>
         <div className="flex items-center gap-4">
@@ -43,7 +44,7 @@ export default async function TemplateDemoPage({
                 themeMode === "light" ? "bg-amber-500 text-white" : ""
               }`}
             >
-              ☀️ Claro
+              <Icon name="sun" className="h-4 w-4" /> Claro
             </Link>
             <Link
               href={`/superadmin/demo/${segment}?page=${activePage}&theme=dark`}
@@ -51,7 +52,7 @@ export default async function TemplateDemoPage({
                 themeMode === "dark" ? "bg-amber-500 text-white" : ""
               }`}
             >
-              🌙 Escuro
+              <Icon name="moon" className="h-4 w-4" /> Escuro
             </Link>
           </div>
           <Link
@@ -67,7 +68,7 @@ export default async function TemplateDemoPage({
         active={activePage}
         config={{
           segmentLabel: tpl.label,
-          emoji: tpl.emoji,
+          icon: tpl.icon,
           primaryColor: d.primary_color,
           secondaryColor: d.secondary_color,
           themeMode,

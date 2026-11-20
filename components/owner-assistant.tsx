@@ -71,9 +71,9 @@ export function OwnerAssistant() {
         <div
           role="dialog"
           aria-label="Assistente de IA"
-          className="fixed inset-x-4 bottom-24 z-50 flex h-[min(70vh,560px)] flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl sm:left-auto sm:right-6 sm:w-96 dark:border-white/10 dark:bg-[var(--background)]"
+          className="fixed inset-x-4 bottom-24 z-50 flex h-[min(70vh,560px)] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl sm:left-auto sm:right-6 sm:w-96 dark:border-white/10 dark:bg-surface"
         >
-          <div className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3 dark:border-white/10">
             <p className="flex items-center gap-2 font-semibold">
               <Icon name="sparkles" className="h-5 w-5 text-[var(--primary)]" /> Assistente
             </p>
@@ -101,7 +101,7 @@ export function OwnerAssistant() {
                 <div
                   className={cn(
                     "max-w-[85%] rounded-2xl px-3.5 py-2",
-                    m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-black/5 dark:bg-white/10",
+                    m.role === "user" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-surface-2",
                   )}
                 >
                   {m.role === "user" ? (
@@ -121,7 +121,7 @@ export function OwnerAssistant() {
               e.preventDefault();
               send();
             }}
-            className="flex items-end gap-2 border-t border-black/10 p-3 dark:border-white/10"
+            className="flex items-end gap-2 border-t border-line p-3 dark:border-white/10"
           >
             <textarea
               ref={inputRef}
@@ -137,7 +137,7 @@ export function OwnerAssistant() {
               maxLength={2000}
               placeholder="Escreva sua mensagem…"
               aria-label="Mensagem"
-              className="max-h-32 flex-1 resize-none rounded-xl border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--primary)] dark:border-white/15"
+              className="max-h-32 flex-1 resize-none rounded-xl border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--primary)] dark:border-white/15"
             />
             <button
               type="submit"

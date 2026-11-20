@@ -1,3 +1,4 @@
+import { membershipStatus } from "@/lib/membership-status";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -27,12 +28,6 @@ import {
   ownerSetMemberPoints,
   ownerToggleMemberStatus,
 } from "../../actions";
-
-const statusStyle: Record<string, string> = {
-  active: "bg-green-500/10 text-green-600",
-  expired: "bg-amber-500/10 text-amber-600",
-  suspended: "bg-red-500/10 text-red-600",
-};
 
 const redemptionStatusStyle: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-600",
@@ -204,7 +199,7 @@ export default async function OwnerClientDetailPage({
     subtitle: `${r.points_spent} pts · ${formatDate(r.created_at)}`,
     badge: {
       label: redemptionStatusLabel[r.status] ?? r.status,
-      className: redemptionStatusStyle[r.status] ?? "bg-black/5",
+      className: redemptionStatusStyle[r.status] ?? "bg-surface-2",
     },
     search: `${r.reward_name} ${redemptionStatusLabel[r.status] ?? r.status}`.toLowerCase(),
     filter: r.status,
@@ -216,7 +211,7 @@ export default async function OwnerClientDetailPage({
     subtitle: `${c.missions?.points ?? 0} pts${c.completed_at ? ` · ${formatDate(c.completed_at)}` : ""}`,
     badge: {
       label: completionStatusLabel[c.status] ?? c.status,
-      className: completionStatusStyle[c.status] ?? "bg-black/5",
+      className: completionStatusStyle[c.status] ?? "bg-surface-2",
     },
     search: `${c.missions?.title ?? ""} ${completionStatusLabel[c.status] ?? c.status}`.toLowerCase(),
     filter: c.status,
@@ -239,7 +234,7 @@ export default async function OwnerClientDetailPage({
     note: a.notes ?? undefined,
     badge: {
       label: appointmentStatusLabel[a.status] ?? a.status,
-      className: appointmentStatusStyle[a.status] ?? "bg-black/5",
+      className: appointmentStatusStyle[a.status] ?? "bg-surface-2",
     },
     search: `${a.title} ${a.notes ?? ""} ${appointmentStatusLabel[a.status] ?? a.status}`.toLowerCase(),
     filter: a.status,
@@ -268,14 +263,14 @@ export default async function OwnerClientDetailPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{client.full_name ?? "—"}</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted">
             {client.email ?? "sem e-mail"} · cliente desde {formatDate(client.created_at)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {membership && (
-            <Badge className={statusStyle[membership.status] ?? "bg-black/5 opacity-70"}>
-              {membership.status}
+            <Badge tone={membershipStatus(membership.status).tone}>
+              {membershipStatus(membership.status).label}
             </Badge>
           )}
           <Link
@@ -297,26 +292,26 @@ export default async function OwnerClientDetailPage({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
-                <p className="text-xs uppercase tracking-wider opacity-50">Código</p>
+                <p className="text-xs text-muted">Código</p>
                 <p className="mt-0.5 font-medium">{membership.member_code}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider opacity-50">Pontos</p>
+                <p className="text-xs text-muted">Pontos</p>
                 <p className="mt-0.5 font-medium tabular-nums">{membership.points_total}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider opacity-50">Modalidade</p>
+                <p className="text-xs text-muted">Modalidade</p>
                 <p className="mt-0.5 font-medium capitalize">{membership.modality}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider opacity-50">Válido até</p>
+                <p className="text-xs text-muted">Válido até</p>
                 <p className="mt-0.5 font-medium">
                   {membership.valid_until ? formatDate(membership.valid_until) : "sem prazo"}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 border-t border-black/10 pt-4 dark:border-white/10">
+            <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4 dark:border-white/10">
               <form
                 action={ownerSetMemberPoints.bind(null, membership.id)}
                 className="flex items-center gap-1.5"
@@ -327,7 +322,7 @@ export default async function OwnerClientDetailPage({
                   name="points"
                   min={0}
                   defaultValue={membership.points_total}
-                  className="w-24 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
+                  className="w-24 rounded-lg border border-line bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
                 />
                 <Button type="submit" variant="outline" className="px-3 py-1.5 text-sm">
                   Salvar pontos
@@ -371,7 +366,7 @@ export default async function OwnerClientDetailPage({
                     <dl className="grid grid-cols-2 gap-4">
                       {(fields ?? []).map((f) => (
                         <div key={f.id}>
-                          <dt className="text-xs uppercase tracking-wider opacity-50">{f.label}</dt>
+                          <dt className="text-xs text-muted">{f.label}</dt>
                           <dd className="mt-0.5 text-sm font-medium">
                             {valueByField.get(f.id) || "—"}
                           </dd>

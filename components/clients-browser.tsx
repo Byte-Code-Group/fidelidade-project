@@ -1,4 +1,6 @@
 "use client";
+import { membershipStatus } from "@/lib/membership-status";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -26,12 +28,6 @@ interface ClientsBrowserProps {
   plans: PlanOption[];
 }
 
-const statusStyle: Record<string, string> = {
-  active: "bg-green-500/10 text-green-600",
-  expired: "bg-amber-500/10 text-amber-600",
-  suspended: "bg-red-500/10 text-red-600",
-  inactive: "bg-black/10 text-gray-500 dark:bg-white/10",
-};
 
 const PAGE_SIZE = 8;
 
@@ -103,7 +99,7 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
 
   const reset = () => setPage(1);
   const selectClass =
-    "rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10";
+    "rounded-lg border border-line bg-transparent px-3 py-2 text-sm outline-none dark:border-white/10";
 
   return (
     <div className="space-y-4">
@@ -120,7 +116,7 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
               reset();
             }}
             placeholder="Buscar por nome, e-mail ou código..."
-            className="w-full rounded-lg border border-black/10 bg-transparent py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[var(--primary)] dark:border-white/10"
+            className="w-full rounded-lg border border-line bg-transparent py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[var(--primary)] dark:border-white/10"
           />
         </div>
 
@@ -135,7 +131,7 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
           <option value="">Todos os status</option>
           {statuses.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {membershipStatus(s).label}
             </option>
           ))}
         </select>
@@ -171,8 +167,8 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-black/5 dark:border-white/5">
-        <div className="flex items-center gap-3 border-b border-black/5 px-5 py-2.5 text-xs uppercase tracking-wider opacity-50 dark:border-white/5">
+      <div className="overflow-hidden rounded-xl border border-line">
+        <div className="flex items-center gap-3 border-b border-line px-5 py-2.5 text-xs text-muted dark:border-white/5">
           <span className="flex-1">Cliente</span>
           <span className="w-20 text-right">Pontos</span>
           <span className="w-24 text-center">Status</span>
@@ -180,16 +176,19 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
         </div>
 
         {pageRows.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm opacity-50">
-            Nenhum cliente encontrado.
-          </p>
+          <EmptyState
+            bare
+            icon={<Icon name="searchX" />}
+            title="Nenhum cliente encontrado"
+            description="Ajuste a busca ou os filtros, ou cadastre um cliente novo."
+          />
         ) : (
-          <div className="divide-y divide-black/5 dark:divide-white/5">
+          <div className="divide-y divide-line">
             {pageRows.map((c) => (
               <Link
                 key={c.id}
                 href={`/painel/clientes/${c.id}`}
-                className="flex items-center gap-3 px-5 py-3 transition hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
+                className="flex items-center gap-3 px-5 py-3 transition hover:bg-surface-2 dark:hover:bg-white/[0.03]"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary)]/10 text-xs font-semibold text-[var(--primary)]">
                   {initials(c.name)}
@@ -205,8 +204,8 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
                   {c.points} pts
                 </span>
                 <span className="flex w-24 justify-center">
-                  <Badge className={statusStyle[c.status] ?? "bg-black/5 opacity-70"}>
-                    {c.status || "sem carteirinha"}
+                  <Badge tone={membershipStatus(c.status).tone}>
+                    {membershipStatus(c.status).label}
                   </Badge>
                 </span>
                 <Icon name="chevronRight" className="h-4 w-4 shrink-0 opacity-40" />
@@ -242,7 +241,7 @@ export function ClientsBrowser({ clients, plans }: ClientsBrowserProps) {
                 className={`min-w-9 rounded-md px-3 py-1.5 text-sm tabular-nums transition ${
                   n === currentPage
                     ? "bg-[var(--primary)] text-white"
-                    : "hover:bg-black/5 dark:hover:bg-white/10"
+                    : "hover:bg-surface-2"
                 }`}
               >
                 {n}
@@ -279,7 +278,7 @@ function PageBtn({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="min-w-9 rounded-md px-3 py-1.5 text-sm transition disabled:opacity-30 hover:bg-black/5 dark:hover:bg-white/10"
+      className="min-w-9 rounded-md px-3 py-1.5 text-sm transition disabled:opacity-30 hover:bg-surface-2"
     >
       {label}
     </button>

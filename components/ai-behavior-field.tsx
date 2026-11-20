@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@/components/icons";
 
 import { useMemo, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,7 +63,7 @@ export function AiBehaviorField({
         </span>
       </div>
 
-      <div className="rounded-lg bg-black/[0.03] p-3 dark:bg-white/5">
+      <div className="rounded-lg bg-surface-2 p-3 dark:bg-white/5">
         <p className="mb-2 text-xs opacity-60">
           Comece por um modelo pronto e troque o que está entre [COLCHETES]
           pelos dados da clínica. Pode misturar vários, editar e apagar tudo à
@@ -81,10 +82,10 @@ export function AiBehaviorField({
                 className={`rounded-full border px-2.5 py-1 text-xs transition ${
                   ativo
                     ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                    : "border-black/10 hover:border-[var(--primary)] hover:text-[var(--primary)] dark:border-white/15"
+                    : "border-line hover:border-[var(--primary)] hover:text-[var(--primary)] dark:border-white/15"
                 }`}
               >
-                {ativo ? "✓ " : "+ "}
+                <Icon name={ativo ? "check" : "plus"} className="h-3.5 w-3.5" />
                 {p.label}
               </button>
             );

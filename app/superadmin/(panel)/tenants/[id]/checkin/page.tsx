@@ -38,9 +38,9 @@ export default async function CheckinTabPage({
           <img
             src={qrDataUrl}
             alt="QR Code de check-in"
-            className="h-56 w-56 rounded-lg border border-black/5"
+            className="h-56 w-56 rounded-lg border border-line"
           />
-          <code className="break-all rounded-lg bg-black/5 px-3 py-2 text-center text-xs">
+          <code className="break-all rounded-lg bg-surface-2 px-3 py-2 text-center text-xs">
             {url}
           </code>
         </CardContent>

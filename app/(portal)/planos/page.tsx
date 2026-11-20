@@ -104,7 +104,7 @@ export default async function PlanosPage({
 
       {membership?.subscription_status &&
         STATUS_ASSINATURA[membership.subscription_status] && (
-          <p className="mb-4 rounded-lg bg-black/5 px-3 py-2 text-sm dark:bg-white/10">
+          <p className="mb-4 rounded-lg bg-surface-2 px-3 py-2 text-sm dark:bg-white/10">
             {STATUS_ASSINATURA[membership.subscription_status]}
           </p>
         )}
@@ -133,17 +133,17 @@ export default async function PlanosPage({
                     "relative flex w-72 shrink-0 flex-col rounded-2xl border bg-white p-6 dark:bg-white/5",
                     plan.is_popular
                       ? "border-[var(--primary)] ring-1 ring-[var(--primary)]"
-                      : "border-black/5",
+                      : "border-line",
                   )}
                 >
                   {plan.is_popular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary-foreground)]">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-[11px] font-semibold text-[var(--primary-foreground)]">
                       Popular
                     </span>
                   )}
 
                   <h3 className="text-lg font-bold">{plan.name}</h3>
-                  <p className="text-[11px] uppercase tracking-wider opacity-50">
+                  <p className="text-[11px] text-muted">
                     {tenant.name}
                   </p>
 

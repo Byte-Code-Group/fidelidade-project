@@ -222,7 +222,7 @@ export function CampaignFields({
         </div>
       )}
 
-      <div className="space-y-3 rounded-xl border border-black/10 p-3 dark:border-white/10">
+      <div className="space-y-3 rounded-xl border border-line p-3 dark:border-white/10">
         <p className="text-sm font-medium">Quem recebe</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Situação da carteirinha">
@@ -271,7 +271,7 @@ export function CampaignFields({
             />
           </Field>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted">
           Quem não tem telefone cadastrado ou pediu pra sair nunca entra na
           lista, independente dos filtros.
         </p>

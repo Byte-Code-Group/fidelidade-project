@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getContaWhatsApp } from "@/lib/tenant-whatsapp";
@@ -58,13 +59,7 @@ export default async function OwnerCampanhasPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Campanhas</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Mensagens em massa pelo WhatsApp do seu negócio, com filtro de público
-          e acompanhamento de entrega.
-        </p>
-      </div>
+      <PageHeader icon="chat" title="Campanhas" subtitle="Mensagens em massa pelo WhatsApp do seu negócio, com filtro de público e acompanhamento de entrega." />
 
       <WhatsAppAccountCard
         conta={conta}

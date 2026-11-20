@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/use-theme";
+import { motion } from "motion/react";
 import { Icon, type IconKey } from "@/components/icons";
 
 export interface NavItem {
@@ -38,12 +39,12 @@ export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: Por
   return (
     <>
       {/* Topbar mobile */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-black/5 bg-[var(--background)]/90 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-surface/85 px-4 py-3 backdrop-blur-md md:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Abrir menu"
-          className="rounded-lg p-1.5 hover:bg-black/5"
+          className="rounded-lg p-1.5 hover:bg-surface-2"
         >
           <Icon name="menu" />
         </button>
@@ -53,7 +54,7 @@ export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: Por
       {/* Backdrop mobile */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
@@ -61,7 +62,7 @@ export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: Por
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-black/5 bg-white transition-transform dark:bg-white/[0.03]",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface transition-transform duration-300 ease-[var(--ease-out)]",
           "md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
@@ -72,13 +73,13 @@ export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: Por
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Fechar menu"
-            className="rounded-lg p-1.5 hover:bg-black/5 md:hidden"
+            className="rounded-lg p-1.5 hover:bg-surface-2 md:hidden"
           >
             <Icon name="close" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
           {items.map((item) => {
             const active = isActive(item.href);
             const href = basePath + item.href;
@@ -87,25 +88,31 @@ export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: Por
                 key={item.href}
                 href={href}
                 onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                  active
-                    ? "bg-[var(--primary)]/10 text-[var(--primary)]"
-                    : "opacity-70 hover:bg-black/5 hover:opacity-100",
+                  "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                  active ? "text-[var(--primary)]" : "text-muted hover:bg-surface-2 hover:text-foreground",
                 )}
               >
-                <Icon name={item.icon} />
-                {item.label}
+                {active && (
+                  <motion.span
+                    layoutId="portal-nav-active"
+                    className="absolute inset-0 rounded-xl bg-[var(--primary)]/10"
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  />
+                )}
+                <Icon name={item.icon} className="relative h-[18px] w-[18px]" />
+                <span className="relative">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-black/5 dark:border-white/5 p-3 space-y-1">
+        <div className="space-y-0.5 border-t border-line p-3">
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium opacity-70 transition hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-foreground"
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} />
             {theme === "dark" ? "Modo claro" : "Modo escuro"}
@@ -113,7 +120,7 @@ export function PortalSidebar({ brand, items, signOutAction, defaultTheme }: Por
           <form action={signOutAction}>
             <button
               type="submit"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
             >
               <Icon name="logout" />
               Sair
@@ -154,7 +161,7 @@ function Brand({
       <div className="min-w-0">
         <p className="truncate text-sm font-bold leading-tight">{brand.name}</p>
         {!compact && (
-          <p className="truncate text-[10px] uppercase tracking-wider opacity-50">
+          <p className="truncate text-xs text-muted">
             {brand.subtitle}
           </p>
         )}

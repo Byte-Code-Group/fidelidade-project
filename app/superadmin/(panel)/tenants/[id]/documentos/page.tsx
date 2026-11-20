@@ -119,7 +119,7 @@ export default async function DocumentosAdminPage({
                   type="file"
                   required
                   accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-                  className="block w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--primary)]/10 file:px-3 file:py-1 file:text-sm file:font-medium file:text-[var(--primary)] dark:border-white/10"
+                  className="block w-full rounded-xl border border-line px-4 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--primary)]/10 file:px-3 file:py-1 file:text-sm file:font-medium file:text-[var(--primary)] dark:border-white/10"
                 />
                 <p className="text-xs opacity-50">PDF, imagem ou Word · máx. 10 MB</p>
               </label>
@@ -134,7 +134,7 @@ export default async function DocumentosAdminPage({
       {/* Lista */}
       {documentRows.length > 0 && (
         <Card>
-          <div className="divide-y divide-black/5">
+          <div className="divide-y divide-line">
             {documentRows.map((doc) => (
               <div key={doc.id} className="flex items-center gap-3 px-5 py-3.5">
                 <div className="min-w-0 flex-1">
@@ -144,7 +144,7 @@ export default async function DocumentosAdminPage({
                     {fmtDate(doc.created_at)}
                   </p>
                 </div>
-                <Badge className="bg-black/5">
+                <Badge className="bg-surface-2">
                   {CATEGORIES.find(([v]) => v === doc.category)?.[1] ??
                     doc.category}
                 </Badge>

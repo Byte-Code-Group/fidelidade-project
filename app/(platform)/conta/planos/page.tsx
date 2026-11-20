@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,11 +27,11 @@ export default async function PlanosPage({
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <div className="mb-1 text-xs font-medium uppercase tracking-wider text-blue-600">
+        <div className="mb-1 text-xs font-medium text-blue-600">
           Passo 2 de 2
         </div>
         <h1 className="text-2xl font-bold">Escolha seu plano</h1>
-        <p className="mt-1 text-sm text-gray-500">Cancele a qualquer momento.</p>
+        <p className="mt-1 text-sm text-muted">Cancele a qualquer momento.</p>
       </div>
 
       <div className="mx-auto max-w-lg">
@@ -56,13 +57,14 @@ export default async function PlanosPage({
               <h2 className="text-lg font-bold">{plan.name}</h2>
               <p className="mt-1">
                 <span className="text-3xl font-bold">R$ {plan.price}</span>
-                <span className="text-sm text-gray-400">/mês</span>
+                <span className="text-sm text-muted">/mês</span>
               </p>
 
               <ul className="mt-4 flex-1 space-y-2">
                 {plan.features.map((f) => (
-                  <li key={f} className="text-sm text-gray-500">
-                    ✓ {f}
+                  <li key={f} className="flex items-start gap-2 text-sm text-muted">
+                    <Icon name="check" className="mt-0.5 h-4 w-4 text-[var(--primary)]" />
+                    {f}
                   </li>
                 ))}
               </ul>

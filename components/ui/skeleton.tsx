@@ -4,7 +4,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-lg bg-black/[0.06] dark:bg-white/10",
+        "rounded-lg bg-[linear-gradient(90deg,var(--surface-2)_0%,var(--line)_50%,var(--surface-2)_100%)] bg-[length:200%_100%] [animation:shimmer_1.4s_linear_infinite]",
         className,
       )}
     />

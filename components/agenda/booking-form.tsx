@@ -107,7 +107,7 @@ export function BookingForm({
 
   if (providers.length === 0 || procedures.length === 0) {
     return (
-      <p className="rounded-xl bg-black/5 px-4 py-3 text-sm opacity-70 dark:bg-white/10">
+      <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm opacity-70 dark:bg-white/10">
         A agenda online ainda não está aberta. Fale com a recepção para marcar.
       </p>
     );
@@ -133,7 +133,7 @@ export function BookingForm({
                   "rounded-xl border px-3 py-2.5 text-left transition",
                   p.id === procedureId
                     ? "border-[var(--primary)] bg-[var(--primary)]/5"
-                    : "border-black/10 hover:border-[var(--primary)]/50 dark:border-white/15",
+                    : "border-line hover:border-[var(--primary)]/50 dark:border-white/15",
                 )}
               >
                 <p className="text-sm font-medium">{p.name}</p>
@@ -167,7 +167,7 @@ export function BookingForm({
                   "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition",
                   p.id === providerId
                     ? "border-[var(--primary)] bg-[var(--primary)]/5"
-                    : "border-black/10 hover:border-[var(--primary)]/50 dark:border-white/15",
+                    : "border-line hover:border-[var(--primary)]/50 dark:border-white/15",
                 )}
               >
                 <span
@@ -204,7 +204,7 @@ export function BookingForm({
         </p>
 
         {slots !== null && slots.length === 0 ? (
-          <p className="rounded-xl bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
+          <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
             Nenhum horário livre nesse dia. Tente outra data.
           </p>
         ) : (
@@ -219,7 +219,7 @@ export function BookingForm({
                   "rounded-lg border px-3 py-1.5 text-sm tabular-nums transition",
                   slot === time
                     ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                    : "border-black/10 hover:border-[var(--primary)] dark:border-white/15",
+                    : "border-line hover:border-[var(--primary)] dark:border-white/15",
                 )}
               >
                 {slot}

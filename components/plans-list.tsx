@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { useRef, useState, useTransition } from "react";
 import { Reorder, useDragControls } from "motion/react";
@@ -42,6 +43,13 @@ export function PlansList({
 
   return (
     <div className="space-y-2">
+      {items.length === 0 && (
+        <EmptyState
+          icon={<Icon name="receipt" />}
+          title="Nenhum plano criado"
+          description="Planos são assinaturas que o cliente contrata pelo portal. Crie o primeiro logo abaixo."
+        />
+      )}
       <Reorder.Group axis="y" values={items} onReorder={persistOrder} className="space-y-2">
         {items.map((p) => (
           <PlanRow key={p.id} plan={p} updateAction={updateAction} deleteAction={deleteAction} />
@@ -69,7 +77,7 @@ function NewPlanForm({
           className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
         />
       </summary>
-      <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
+      <div className="space-y-3 border-t border-line px-4 py-4 dark:border-white/10">
         <form
           className="space-y-3"
           onSubmit={(e) => {
@@ -117,7 +125,7 @@ function PlanRow({
       value={p}
       dragListener={false}
       dragControls={controls}
-      className="rounded-xl border border-black/10 bg-[var(--background)] dark:border-white/10"
+      className="rounded-xl border border-line bg-surface dark:border-white/10"
       whileDrag={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
       onDragStart={() => {
         draggedRef.current = true;
@@ -156,7 +164,7 @@ function PlanRow({
             className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
           />
         </summary>
-        <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
+        <div className="space-y-3 border-t border-line px-4 py-4 dark:border-white/10">
           <form
             className="space-y-3"
             onSubmit={(e) => {

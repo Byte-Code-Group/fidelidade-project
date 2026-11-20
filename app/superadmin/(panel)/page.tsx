@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +10,12 @@ import { SEGMENT_TEMPLATES } from "@/lib/segment-templates";
 import type { Tenant } from "@/lib/types";
 
 const ACTIVITY_PAGE_SIZE = 15;
+
+const TENANT_STATUS_LABEL: Record<string, string> = {
+  active: "Ativa",
+  pending: "Aguardando pagamento",
+  suspended: "Suspensa",
+};
 
 const statusStyle: Record<string, string> = {
   active: "bg-green-500/15 text-green-600",
@@ -125,9 +132,11 @@ export default async function DashboardPage({
               <p className="text-sm opacity-60">Check-ins nos últimos 30 dias</p>
             </div>
             {bars.length === 0 ? (
-              <p className="py-8 text-center text-sm opacity-50">
-                Sem check-ins no período.
-              </p>
+              <EmptyState
+                bare
+                icon={<Icon name="stamp" />}
+                title="Sem check-ins nos últimos 30 dias"
+              />
             ) : (
               <div className="space-y-3">
                 {bars.map((b) => (
@@ -135,7 +144,7 @@ export default async function DashboardPage({
                     <span className="w-28 shrink-0 truncate opacity-70">
                       {b.name}
                     </span>
-                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-2">
                       <div
                         className="h-full rounded-full bg-[var(--primary)]"
                         style={{ width: `${(b.count / maxBar) * 100}%` }}
@@ -158,21 +167,21 @@ export default async function DashboardPage({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wider opacity-50">
+                  <tr className="border-b border-line text-left text-xs text-muted">
                     <th className="px-3 py-3 font-medium">Empresa</th>
                     <th className="px-3 py-3 font-medium">Segmento</th>
                     <th className="px-3 py-3 font-medium">Status</th>
                     <th className="px-3 py-3 font-medium">Cadastrada</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5">
+                <tbody className="divide-y divide-line">
                   {all
                     .slice(
                       (currentPage - 1) * ACTIVITY_PAGE_SIZE,
                       currentPage * ACTIVITY_PAGE_SIZE,
                     )
                     .map((t) => (
-                      <tr key={t.id} className="hover:bg-black/[0.02]">
+                      <tr key={t.id} className="hover:bg-surface-2">
                         <td className="px-3 py-3.5">
                           <Link
                             href={`/superadmin/tenants/${t.id}`}
@@ -188,10 +197,10 @@ export default async function DashboardPage({
                         <td className="px-3 py-3.5">
                           <Badge
                             className={
-                              statusStyle[t.status] ?? "bg-black/5"
+                              statusStyle[t.status] ?? "bg-surface-2"
                             }
                           >
-                            {t.status}
+                            {TENANT_STATUS_LABEL[t.status] ?? t.status}
                           </Badge>
                         </td>
                         <td className="px-3 py-3.5 text-xs opacity-70">
@@ -201,11 +210,13 @@ export default async function DashboardPage({
                     ))}
                   {all.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={4}
-                        className="px-3 py-10 text-center opacity-50"
-                      >
-                        Nenhuma empresa ainda.
+                      <td colSpan={4}>
+                        <EmptyState
+                          bare
+                          icon={<Icon name="building" />}
+                          title="Nenhuma empresa ainda"
+                          description="Empresas criadas pelo cadastro ou por aqui aparecem nesta lista."
+                        />
                       </td>
                     </tr>
                   )}

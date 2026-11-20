@@ -138,9 +138,9 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
   const empty = messages.length === 0;
 
   return (
-    <div className="flex h-[72vh] flex-col overflow-hidden rounded-2xl border border-black/5 bg-white dark:bg-white/5">
+    <div className="flex h-[72vh] flex-col overflow-hidden rounded-2xl border border-line bg-white dark:bg-white/5">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between gap-3 border-b border-black/5 px-5 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
             <Icon name="sparkles" />
@@ -171,7 +171,7 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
               <Icon name="sparkles" className="h-9 w-9" />
             </div>
-            <h2 className="mt-5 text-2xl font-bold">Olá! Eu sou a {aiName} 😊</h2>
+            <h2 className="mt-5 text-2xl font-bold">Olá! Eu sou a {aiName}</h2>
             <p className="mt-2 max-w-md text-sm opacity-60">{welcome}</p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {QUICK_ACTIONS.map((action) => (
@@ -182,7 +182,7 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
                     setDraft(action);
                     inputRef.current?.focus();
                   }}
-                  className="rounded-full border border-black/10 px-4 py-1.5 text-sm font-medium opacity-80 transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                  className="rounded-full border border-line px-4 py-1.5 text-sm font-medium opacity-80 transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
                 >
                   {action}
                 </button>
@@ -204,7 +204,7 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
                     "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
                     m.role === "user"
                       ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                      : "bg-black/5 dark:bg-white/10",
+                      : "bg-surface-2",
                   )}
                 >
                   {m.content ? (
@@ -234,14 +234,14 @@ export function SofiaChat({ aiName, welcome }: SofiaChatProps) {
           e.preventDefault();
           send(draft);
         }}
-        className="flex items-center gap-2 border-t border-black/5 px-4 py-3"
+        className="flex items-center gap-2 border-t border-line px-4 py-3"
       >
         <input
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Digite sua mensagem..."
-          className="flex-1 rounded-xl border border-black/10 px-4 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
+          className="flex-1 rounded-xl border border-line px-4 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
         />
         <button
           type="submit"

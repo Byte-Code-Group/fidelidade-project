@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { RedemptionsList, type RedemptionRow } from "@/components/redemptions-list";
@@ -49,13 +50,7 @@ export default async function OwnerRedemptionsPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Resgates</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Prêmios resgatados pelos clientes na Loja de Resgate do portal.
-          Marque como entregue após dar o prêmio presencialmente.
-        </p>
-      </div>
+      <PageHeader icon="gift" title="Resgates" subtitle="Prêmios resgatados pelos clientes na Loja de Resgate do portal. Marque como entregue após dar o prêmio presencialmente." />
 
       <form method="get" className="flex">
         <input
@@ -63,7 +58,7 @@ export default async function OwnerRedemptionsPage({
           name="q"
           defaultValue={q}
           placeholder="Buscar por cliente ou prêmio…"
-          className="w-full max-w-sm rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-[var(--primary)] dark:border-white/10"
+          className="w-full max-w-sm rounded-lg border border-line bg-transparent px-3 py-2 text-sm outline-none transition focus:border-[var(--primary)] dark:border-white/10"
         />
       </form>
 

@@ -1,3 +1,5 @@
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,17 +40,17 @@ export function RedemptionsList({
 }) {
   if (redemptions.length === 0) {
     return (
-      <Card>
-        <div className="px-5 py-8 text-center text-sm opacity-50">
-          Nenhum resgate encontrado.
-        </div>
-      </Card>
+      <EmptyState
+        icon={<Icon name="gift" />}
+        title="Nenhum resgate por aqui"
+        description="Quando um cliente trocar pontos por um prêmio na Loja, o pedido aparece aqui para você entregar."
+      />
     );
   }
 
   return (
     <Card>
-      <div className="divide-y divide-black/5">
+      <div className="divide-y divide-line">
         {redemptions.map((r) => (
           <div key={r.id} className="flex items-center gap-3 px-5 py-3.5">
             <div className="min-w-0 flex-1">
@@ -58,7 +60,7 @@ export function RedemptionsList({
                 {r.points_spent} pts · {formatDate(r.created_at)}
               </p>
             </div>
-            <Badge className={statusStyle[r.status] ?? "bg-black/5"}>
+            <Badge className={statusStyle[r.status] ?? "bg-surface-2"}>
               {statusLabel[r.status] ?? r.status}
             </Badge>
             {r.status === "pending" && (

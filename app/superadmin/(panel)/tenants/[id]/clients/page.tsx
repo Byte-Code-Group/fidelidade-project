@@ -1,5 +1,7 @@
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 interface MemberRow {
@@ -45,17 +47,14 @@ export default async function ClientsPage({
       </p>
 
       {!members || members.length === 0 ? (
-        <Card>
-          <CardContent>
-            <p className="text-sm opacity-70">
-              Nenhum cliente final ainda. Eles entram via cadastro/login no
-              portal do tenant.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Icon name="users" />}
+          title="Nenhum cliente final ainda"
+          description="Eles entram pelo cadastro ou login no portal do negócio."
+        />
       ) : (
         <Card>
-          <div className="divide-y divide-black/5">
+          <div className="divide-y divide-line">
             {members.map((m) => {
               const ms = m.memberships[0];
               return (
@@ -77,14 +76,14 @@ export default async function ClientsPage({
                       </span>
                       <Badge
                         className={
-                          statusStyle[ms.status] ?? "bg-black/5 opacity-70"
+                          statusStyle[ms.status] ?? "bg-surface-2 opacity-70"
                         }
                       >
                         {ms.status}
                       </Badge>
                     </>
                   ) : (
-                    <Badge className="bg-black/5 opacity-70">sem carteirinha</Badge>
+                    <Badge className="bg-surface-2 opacity-70">sem carteirinha</Badge>
                   )}
                 </div>
               );

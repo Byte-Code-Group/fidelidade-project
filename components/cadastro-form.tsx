@@ -116,7 +116,7 @@ export function CadastroForm() {
       <div className="flex flex-col gap-1">
         {/* Sem <label> envolvendo tudo: os links abrem modais e um clique neles
             dentro do label alternaria o checkbox sem querer. */}
-        <div className="flex items-start gap-2 text-[13px] leading-relaxed text-gray-500">
+        <div className="flex items-start gap-2 text-[13px] leading-relaxed text-muted">
           <input
             id="terms"
             type="checkbox"

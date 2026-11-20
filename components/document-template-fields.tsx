@@ -17,7 +17,7 @@ export function DocumentTemplateFields({ template }: { template?: DocumentTempla
           type="file"
           name="file"
           accept=".pdf,.docx"
-          className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-black/5 file:px-3 file:py-2 file:text-sm file:font-medium dark:file:bg-white/10"
+          className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-2 file:text-sm file:font-medium dark:file:bg-white/10"
         />
         {template?.file_name && (
           <p className="text-xs opacity-60">
@@ -43,7 +43,7 @@ export function DocumentTemplateFields({ template }: { template?: DocumentTempla
           rows={8}
           defaultValue={template?.content ?? ""}
           placeholder={"Atesto que {{nome_cliente}} compareceu à consulta em {{data}}..."}
-          className="w-full rounded-lg border border-black/10 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
+          className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none transition focus:border-[var(--primary)]"
         />
       </Field>
     </>

@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { requireTenantOwner } from "@/lib/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,12 +55,7 @@ export default async function OwnerCustomizacaoPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Customização</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Cores, textos, logo e páginas do seu portal.
-        </p>
-      </div>
+      <PageHeader icon="template" title="Customização" subtitle="Cores, textos, logo e páginas do seu portal." />
 
       <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
 
@@ -73,7 +69,6 @@ export default async function OwnerCustomizacaoPage({
       <CustomizationForm
         tenantName={tenant.name}
         templateLabel={tpl.label}
-        templateEmoji={tpl.emoji}
         portalUrl={tenant.custom_domain ? `https://${tenant.custom_domain}` : `/p/${tenant.slug}`}
         settings={settings}
         allowedModules={allowedModules}

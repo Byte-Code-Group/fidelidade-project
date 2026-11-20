@@ -21,7 +21,7 @@ const enderecoDoAsaas = (ambiente: "sandbox" | "production") =>
 
 function Passos({ children }: { children: React.ReactNode }) {
   return (
-    <ol className="list-decimal space-y-1 pl-4 text-xs text-gray-500 [&_strong]:font-semibold [&_strong]:text-gray-700 dark:[&_strong]:text-gray-300">
+    <ol className="list-decimal space-y-1 pl-4 text-xs text-muted [&_strong]:font-semibold [&_strong]:text-gray-700 dark:[&_strong]:text-gray-300">
       {children}
     </ol>
   );
@@ -73,7 +73,7 @@ export function AsaasAccountCard({
       <CardContent className="space-y-3">
         <div>
           <h2 className="font-semibold">Receber dos seus clientes (Asaas)</h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted">
             Conecte a conta Asaas do seu negócio para cobrar os planos que você
             vende no portal. O dinheiro cai direto na sua conta — a plataforma
             não fica no meio do caminho.
@@ -82,11 +82,11 @@ export function AsaasAccountCard({
 
         {conta && !editando ? (
           <>
-            <div className="rounded-xl border border-black/10 px-3 py-2.5 text-sm dark:border-white/10">
+            <div className="rounded-xl border border-line px-3 py-2.5 text-sm dark:border-white/10">
               <p className="font-medium text-green-600">
                 Conectado{conta.accountName ? ` — ${conta.accountName}` : ""}
               </p>
-              <p className="mt-0.5 text-xs text-gray-500">
+              <p className="mt-0.5 text-xs text-muted">
                 {conta.accountEmail ? `${conta.accountEmail} · ` : ""}
                 {conta.environment === "sandbox" ? "ambiente de teste (sandbox)" : "produção"}
                 {" · desde "}
@@ -106,7 +106,7 @@ export function AsaasAccountCard({
               className={
                 conta.callbackBloqueado
                   ? "rounded-xl border border-amber-400 bg-amber-50 px-3 py-2 dark:bg-amber-900/20"
-                  : "rounded-xl border border-black/10 px-3 py-2 dark:border-white/10"
+                  : "rounded-xl border border-line px-3 py-2 dark:border-white/10"
               }
             >
               <summary className="cursor-pointer text-sm font-medium">
@@ -115,7 +115,7 @@ export function AsaasAccountCard({
                   : "Retorno do cliente pro portal depois de pagar"}
               </summary>
               <div className="mt-2 space-y-2">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted">
                   {conta.callbackBloqueado
                     ? "O Asaas recusou o retorno automático porque sua conta não tem site cadastrado. Sem isso, quem paga continua vendo a tela de cobrança em vez de voltar pro portal."
                     : "É o que devolve o cliente pro portal assim que ele conclui o pagamento."}
@@ -141,7 +141,7 @@ export function AsaasAccountCard({
                   </li>
                   <li>
                     No campo de <strong>site</strong>, coloque{" "}
-                    <code className="rounded bg-black/5 px-1 py-0.5 dark:bg-white/10">
+                    <code className="rounded bg-surface-2 px-1 py-0.5 dark:bg-white/10">
                       {portalUrl ?? "o endereço do seu portal"}
                     </code>{" "}
                     e salve.
@@ -178,7 +178,7 @@ export function AsaasAccountCard({
           </>
         ) : (
           <div className="space-y-2">
-            <div className="rounded-xl bg-black/[0.03] px-3 py-2.5 dark:bg-white/[0.04]">
+            <div className="rounded-xl bg-surface-2 px-3 py-2.5 dark:bg-white/[0.04]">
               <p className="mb-1.5 text-sm font-medium">Onde achar a chave</p>
               <Passos>
                 <li>
@@ -233,7 +233,7 @@ export function AsaasAccountCard({
               </Select>
             </label>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               Guardamos a chave cifrada e usamos só para criar as cobranças dos
               seus planos. Dá pra desconectar quando quiser.
             </p>

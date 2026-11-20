@@ -13,7 +13,6 @@ import type { ProfileField, TenantSettings } from "@/lib/types";
 interface CustomizationFormProps {
   tenantName: string;
   templateLabel: string;
-  templateEmoji: string;
   templateHref?: string;
   portalUrl: string;
   settings: TenantSettings;
@@ -32,7 +31,6 @@ interface CustomizationFormProps {
 export function CustomizationForm({
   tenantName,
   templateLabel,
-  templateEmoji,
   templateHref,
   portalUrl,
   settings,
@@ -111,7 +109,7 @@ export function CustomizationForm({
     paginas: (
       <Section
         title="Páginas do portal"
-        desc={`Limitado ao template ${templateEmoji} ${templateLabel}. Dá pra desativar, não adicionar.`}
+        desc={`Limitado ao template ${templateLabel}. Dá pra desativar, não adicionar.`}
         action={
           templateHref ? (
             <Link
@@ -124,7 +122,7 @@ export function CustomizationForm({
         }
       >
         {allowedModules.length === 0 ? (
-          <p className="rounded-lg bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
+          <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
             Este template não tem páginas opcionais — só as páginas base.
           </p>
         ) : (
@@ -252,7 +250,7 @@ export function CustomizationForm({
   return (
     <div className="space-y-5">
       {/* Barra com link de visualização */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/5 bg-white/70 px-5 py-4 dark:bg-white/5">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-5 py-4">
         <div>
           <h2 className="font-semibold">Customização do portal</h2>
           <p className="text-xs opacity-55">
@@ -298,9 +296,9 @@ function ColorRow({ name, value }: { name: string; value: string }) {
         name={name}
         defaultValue={value}
         aria-label="Escolher cor"
-        className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border border-black/10 bg-transparent p-1"
+        className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent p-1"
       />
-      <span className="font-mono text-sm uppercase opacity-60">{value}</span>
+      <span className="font-mono text-sm opacity-60">{value}</span>
     </div>
   );
 }
@@ -316,7 +314,7 @@ function Toggle({
   defaultChecked: boolean;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-black/10 px-4 py-3 text-sm transition hover:bg-black/[0.02]">
+    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-line px-4 py-3 text-sm transition hover:bg-surface-2">
       <span className="font-medium">{label}</span>
       <span className="relative inline-flex">
         <input

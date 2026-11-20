@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -85,9 +86,11 @@ export function CampaignsList(props: CampaignsListProps) {
       )}
 
       {campaigns.length === 0 ? (
-        <p className="rounded-xl bg-black/5 px-3 py-2.5 text-sm opacity-70 dark:bg-white/10">
-          Nenhuma campanha criada ainda.
-        </p>
+        <EmptyState
+          icon={<Icon name="send" />}
+          title="Nenhuma campanha enviada"
+          description="Crie uma campanha para mandar uma mensagem pelo WhatsApp para um grupo de clientes."
+        />
       ) : (
         campaigns.map((c) => <CampaignRow key={c.id} campaign={c} {...props} />)
       )}
@@ -109,7 +112,7 @@ function NewCampaignForm({ createAction, templates, plans, provider }: Campaigns
           className="h-4 w-4 shrink-0 opacity-50 transition group-open:rotate-90"
         />
       </summary>
-      <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
+      <div className="space-y-3 border-t border-line px-4 py-4 dark:border-white/10">
         <form
           className="space-y-3"
           onSubmit={(e) => {
@@ -215,7 +218,7 @@ function CampaignRow({
     });
 
   return (
-    <div className="rounded-xl border border-black/10 bg-[var(--background)] dark:border-white/10">
+    <div className="rounded-xl border border-line bg-surface dark:border-white/10">
       <details className="group">
         <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -234,7 +237,7 @@ function CampaignRow({
           />
         </summary>
 
-        <div className="space-y-3 border-t border-black/10 px-4 py-4 dark:border-white/10">
+        <div className="space-y-3 border-t border-line px-4 py-4 dark:border-white/10">
           {s && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               <Métrica rotulo="Na fila" valor={s.queued} />
@@ -286,7 +289,7 @@ function CampaignRow({
               </div>
             </form>
           ) : (
-            <div className="rounded-xl bg-black/5 px-3 py-2.5 text-sm dark:bg-white/10">
+            <div className="rounded-xl bg-surface-2 px-3 py-2.5 text-sm dark:bg-white/10">
               <p className="whitespace-pre-wrap">{c.template_body}</p>
               <p className="mt-1 text-xs opacity-60">
                 {c.provider === "evolution"
@@ -299,7 +302,7 @@ function CampaignRow({
           )}
 
           {previa && (
-            <p className="rounded-lg bg-black/5 px-3 py-2 text-xs dark:bg-white/10">
+            <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs dark:bg-white/10">
               <strong>{previa.total}</strong> cliente(s) recebem.{" "}
               {previa.gratuitas > 0 && `${previa.gratuitas} sem custo (janela de 24h). `}
               Custo estimado: <strong>{brl(previa.totalBrl)}</strong> —{" "}
@@ -375,7 +378,7 @@ function CampaignRow({
 
 function Métrica({ rotulo, valor }: { rotulo: string; valor: number }) {
   return (
-    <div className="rounded-lg bg-black/5 px-3 py-2 dark:bg-white/10">
+    <div className="rounded-lg bg-surface-2 px-3 py-2 dark:bg-white/10">
       <p className="text-lg font-semibold">{valor}</p>
       <p className="text-xs opacity-60">{rotulo}</p>
     </div>

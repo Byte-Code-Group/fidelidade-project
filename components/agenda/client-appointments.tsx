@@ -32,7 +32,7 @@ export function ClientAppointments({
 }) {
   return (
     <Card>
-      <div className="divide-y divide-black/5">
+      <div className="divide-y divide-line">
         {agendamentos.map((a) => (
           <Row key={a.id} agendamento={a} timeZone={timeZone} cancelAction={cancelAction} />
         ))}
@@ -56,7 +56,7 @@ function Row({
   return (
     <div className="flex items-start gap-4 px-5 py-4">
       <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--primary)]/10 text-center leading-tight">
-        <span className="text-[10px] font-medium uppercase text-[var(--primary)] opacity-70">
+        <span className="text-xs font-medium text-[var(--primary)] opacity-70">
           {data.toLocaleDateString("pt-BR", { timeZone, month: "short" })}
         </span>
         <span className="text-lg font-bold text-[var(--primary)]">

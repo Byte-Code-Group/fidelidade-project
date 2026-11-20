@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { FlashToast } from "@/components/flash-toast";
@@ -62,21 +63,20 @@ export default async function OwnerClientsPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Clientes</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {clients.length} cliente(s) final(is) encontrado(s).
-          </p>
-        </div>
-        <Link
-          href="/painel/clientes/novo"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition hover:opacity-90"
-        >
-          <Icon name="plus" className="h-4 w-4" />
-          Novo cliente
-        </Link>
-      </div>
+      <PageHeader
+        icon="users"
+        title="Clientes"
+        subtitle={clients.length === 1 ? "1 cliente no programa." : `${clients.length} clientes no programa.`}
+        action={
+          <Link
+            href="/painel/clientes/novo"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-[var(--primary-foreground)] shadow-sm transition hover:brightness-110 active:scale-[0.97]"
+          >
+            <Icon name="plus" className="h-4 w-4" />
+            Novo cliente
+          </Link>
+        }
+      />
       <FlashToast saved={deleted} successMessage="Cliente excluído." />
 
       <ClientsBrowser clients={clients} plans={plans ?? []} />

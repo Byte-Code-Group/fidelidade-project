@@ -37,10 +37,10 @@ export function PortalPreview({ config }: { config: PortalPreviewConfig }) {
   const muted = dark ? "rgba(229,237,245,0.55)" : "rgba(15,23,42,0.55)";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-black/10 shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-line shadow-sm">
       <div className="flex h-[360px] text-[11px]">
         {/* Sidebar */}
-        <div className="flex w-[38%] flex-col border-r border-black/5 bg-white">
+        <div className="flex w-[38%] flex-col border-r border-line bg-white">
           <div className="flex items-center gap-2 px-3 py-3">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -61,7 +61,7 @@ export function PortalPreview({ config }: { config: PortalPreviewConfig }) {
               <p className="truncate font-bold text-slate-800">
                 {tenantName || "Sua marca"}
               </p>
-              <p className="truncate text-[8px] uppercase tracking-wider text-slate-400">
+              <p className="truncate text-[8px] text-slate-400">
                 Programa Fidelidade
               </p>
             </div>
@@ -91,7 +91,7 @@ export function PortalPreview({ config }: { config: PortalPreviewConfig }) {
         {/* Conteúdo */}
         <div className="flex-1 overflow-hidden p-3" style={{ background: mainBg, color: mainFg }}>
           <p style={{ color: muted }}>Bem-vindo de volta,</p>
-          <p className="text-sm font-bold">{memberName} 👋</p>
+          <p className="text-sm font-bold">{memberName}</p>
 
           {/* Carteirinha */}
           <div
@@ -101,10 +101,10 @@ export function PortalPreview({ config }: { config: PortalPreviewConfig }) {
             }}
           >
             <div className="p-3 text-white">
-              <p className="text-[9px] font-semibold uppercase tracking-wider">
+              <p className="text-[9px] font-semibold">
                 {tenantName || "Sua marca"}
               </p>
-              <p className="mt-2 text-[8px] uppercase tracking-wider opacity-70">
+              <p className="mt-2 text-[8px] opacity-70">
                 {labelClient}
               </p>
               <p className="text-sm font-bold leading-tight">{memberName}</p>

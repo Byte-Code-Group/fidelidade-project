@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/empty-state";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -105,14 +106,14 @@ export default async function HistoricoPage() {
       />
 
       {events.length === 0 ? (
-        <Card>
-          <div className="px-5 py-10 text-center text-sm opacity-50">
-            Nenhuma movimentação ainda. Faça seu primeiro check-in!
-          </div>
-        </Card>
+        <EmptyState
+          icon={<Icon name="history" />}
+          title="Nenhuma movimentação ainda"
+          description="Seus pontos ganhos e trocados aparecem aqui. Comece fazendo um check-in."
+        />
       ) : (
         <Card>
-          <div className="divide-y divide-black/5">
+          <div className="divide-y divide-line">
             {events.map((ev) => {
               const meta = kindMeta[ev.kind];
               const positive = ev.points >= 0;

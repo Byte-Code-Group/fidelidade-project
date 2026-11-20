@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,7 +91,7 @@ export default async function EditTenantPage({
           </Field>
           <Field
             label="Domínio próprio"
-            hint={tenant.custom_domain ? "✓ configurado" : "opcional"}
+            hint={tenant.custom_domain ? "configurado" : "opcional"}
           >
             <Input
               name="custom_domain"
@@ -186,7 +187,6 @@ export default async function EditTenantPage({
       <CustomizationForm
         tenantName={tenant.name}
         templateLabel={tpl.label}
-        templateEmoji={tpl.emoji}
         templateHref={`/superadmin/templates/${tenant.segment_template}`}
         portalUrl={tenant.custom_domain ? `https://${tenant.custom_domain}` : `/p/${tenant.slug}`}
         settings={settings}
@@ -245,19 +245,20 @@ function CustomDomainInstructions({ domain }: { domain: string }) {
   return (
     <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-base">🌐</span>
+        <Icon name="globe" className="h-4 w-4 text-muted" />
         <p className="font-semibold">Configuração do domínio próprio</p>
       </div>
 
       {isApex ? (
-        <div className="rounded-md bg-amber-100 border border-amber-200 px-3 py-2 text-amber-800 text-xs">
-          ⚠️ <strong>{domain}</strong> é um domínio raiz. CNAME no apex não é suportado pela maioria dos registradores. Use um subdomínio, ex:{" "}
-          <code className="font-mono">fidelidade.{domain}</code>.
+        <div className="flex gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+          <Icon name="alert" className="h-4 w-4 shrink-0" />
+          <span><strong>{domain}</strong> é um domínio raiz. CNAME no apex não é suportado pela maioria dos registradores. Use um subdomínio, ex:{" "}
+          <code className="font-mono">fidelidade.{domain}</code>.</span>
         </div>
       ) : (
         <>
           <div className="space-y-1.5">
-            <p className="font-medium text-xs uppercase tracking-wide opacity-60">
+            <p className="font-medium text-xs opacity-60">
               Passo 1 — Cliente: configurar DNS
             </p>
             <p className="text-xs">
@@ -289,7 +290,7 @@ function CustomDomainInstructions({ domain }: { domain: string }) {
           </div>
 
           <div className="space-y-1.5">
-            <p className="font-medium text-xs uppercase tracking-wide opacity-60">
+            <p className="font-medium text-xs opacity-60">
               Passo 2 — Você: adicionar na Vercel
             </p>
             <p className="text-xs">
@@ -300,7 +301,7 @@ function CustomDomainInstructions({ domain }: { domain: string }) {
           </div>
 
           <div className="space-y-1.5">
-            <p className="font-medium text-xs uppercase tracking-wide opacity-60">
+            <p className="font-medium text-xs opacity-60">
               Passo 3 — Pronto
             </p>
             <p className="text-xs">

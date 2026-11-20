@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { BackLink } from "@/components/ui/back-link";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireTenantOwner } from "@/lib/owner";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import {
@@ -45,14 +46,12 @@ export default async function ConfiguracoesAgendaPage() {
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/painel/agenda" className="text-sm opacity-60 hover:opacity-100">
-          ← Agenda
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">Configurações da agenda</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Quem atende, em quais horários e quais procedimentos existem. É daqui
-          que saem os horários livres oferecidos no agendamento.
-        </p>
+        <BackLink href="/painel/agenda">Agenda</BackLink>
+        <PageHeader
+          icon="settings"
+          title="Configurações da agenda"
+          subtitle="Quem atende, em quais horários e quais procedimentos existem. É daqui que saem os horários livres do agendamento."
+        />
       </div>
 
       <Section

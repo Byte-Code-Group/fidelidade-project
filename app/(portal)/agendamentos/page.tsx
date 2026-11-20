@@ -112,7 +112,7 @@ export default async function AgendamentosPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold opacity-60">Histórico ({past.length})</h2>
           <Card>
-            <div className="divide-y divide-black/5">
+            <div className="divide-y divide-line">
               {past.map((a) => (
                 <div key={a.id} className="flex items-center gap-4 px-5 py-3.5 opacity-70">
                   <div className="min-w-0 flex-1">
@@ -122,7 +122,7 @@ export default async function AgendamentosPage() {
                       {a.providers ? ` · ${a.providers.name}` : ""}
                     </p>
                   </div>
-                  <Badge className={statusStyle[a.status] ?? "bg-black/5"}>
+                  <Badge className={statusStyle[a.status] ?? "bg-surface-2"}>
                     {statusLabel[a.status] ?? a.status}
                   </Badge>
                 </div>

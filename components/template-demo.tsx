@@ -1,4 +1,4 @@
-import { Icon } from "@/components/icons";
+import { Icon, type IconKey } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import type { Membership, TenantContext } from "@/lib/types";
 
 export interface DemoConfig {
   segmentLabel: string;
-  emoji: string;
+  icon: IconKey;
   primaryColor: string;
   secondaryColor: string;
   themeMode: "light" | "dark";
@@ -103,7 +103,7 @@ export function TemplateDemo({
   return (
     <div
       data-theme={config.themeMode}
-      className="flex h-[calc(100dvh-37px)] bg-[var(--background)] text-[var(--foreground)]"
+      className="flex h-[calc(100dvh-37px)] bg-surface text-[var(--foreground)]"
       style={
         {
           "--primary": config.primaryColor,
@@ -113,17 +113,17 @@ export function TemplateDemo({
       }
     >
       {/* Sidebar — mesmas classes/dimensões do portal real */}
-      <aside className="flex w-64 shrink-0 flex-col border-r border-black/5 bg-white dark:bg-white/[0.03]">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-line bg-surface">
         <div className="flex items-center gap-3 px-5 py-5">
           <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--primary-foreground)]"
             style={{ background: "var(--primary)" }}
           >
-            {config.emoji}
+            <Icon name={config.icon} />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold leading-tight">Sua marca</p>
-            <p className="truncate text-[10px] uppercase tracking-wider opacity-50">
+            <p className="truncate text-xs text-muted">
               Programa Fidelidade
             </p>
           </div>
@@ -141,7 +141,7 @@ export function TemplateDemo({
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                   isActive
                     ? "bg-[var(--primary)]/10 text-[var(--primary)]"
-                    : "opacity-70 hover:bg-black/5 hover:opacity-100",
+                    : "opacity-70 hover:bg-surface-2 hover:opacity-100",
                 )}
               >
                 <Icon name={item.icon} />
@@ -151,7 +151,7 @@ export function TemplateDemo({
           })}
         </nav>
 
-        <div className="border-t border-black/5 p-3">
+        <div className="border-t border-line p-3">
           <span className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500">
             <Icon name="logout" /> Sair
           </span>
@@ -248,11 +248,11 @@ function Inicio({ ctx }: { ctx: Ctx }) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm opacity-60">Bem-vindo de volta,</p>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Nome do Cliente 👋</h1>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Nome do Cliente</h1>
         </div>
-        <div className="flex items-center gap-3 rounded-full border border-black/5 bg-white px-3 py-1.5 dark:bg-white/5">
+        <div className="flex items-center gap-3 rounded-full border border-line bg-white px-3 py-1.5 dark:bg-white/5">
           <div className="text-right leading-tight">
-            <p className="text-[10px] uppercase tracking-wider opacity-50">Pontos</p>
+            <p className="text-xs text-muted">Pontos</p>
             <p className="font-bold text-[var(--primary)]">{points}</p>
           </div>
           <div
@@ -302,8 +302,8 @@ function Inicio({ ctx }: { ctx: Ctx }) {
 function Atendente({ ctx }: { ctx: Ctx }) {
   const { aiName, aiWelcome } = ctx.config;
   return (
-    <div className="flex h-[72vh] flex-col overflow-hidden rounded-2xl border border-black/5 bg-white dark:bg-white/5">
-      <div className="flex items-center justify-between gap-3 border-b border-black/5 px-5 py-3">
+    <div className="flex h-[72vh] flex-col overflow-hidden rounded-2xl border border-line bg-white dark:bg-white/5">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
             <Icon name="sparkles" />
@@ -322,16 +322,16 @@ function Atendente({ ctx }: { ctx: Ctx }) {
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
           <Icon name="sparkles" className="h-9 w-9" />
         </div>
-        <h2 className="mt-5 text-2xl font-bold">Olá! Eu sou a {aiName} 😊</h2>
+        <h2 className="mt-5 text-2xl font-bold">Olá! Eu sou a {aiName}</h2>
         <p className="mt-2 max-w-md text-sm opacity-60">{aiWelcome}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           {["Agendar", "Reagendar", "Receituário", "Documento"].map((a) => (
-            <span key={a} className="rounded-full border border-black/10 px-4 py-1.5 text-sm font-medium opacity-80">{a}</span>
+            <span key={a} className="rounded-full border border-line px-4 py-1.5 text-sm font-medium opacity-80">{a}</span>
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-2 border-t border-black/5 px-4 py-3">
-        <div className="flex-1 rounded-xl border border-black/10 px-4 py-2.5 text-sm opacity-50">Digite sua mensagem...</div>
+      <div className="flex items-center gap-2 border-t border-line px-4 py-3">
+        <div className="flex-1 rounded-xl border border-line px-4 py-2.5 text-sm opacity-50">Digite sua mensagem...</div>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
           <Icon name="send" />
         </div>
@@ -344,7 +344,7 @@ function Documentos() {
   return (
     <div>
       <PageHeader title="Documentos" subtitle="Acesse seus arquivos, termos e receituários." />
-      <div className="mb-5 inline-flex rounded-xl border border-black/5 bg-black/[0.03] p-1 dark:bg-white/5">
+      <div className="mb-5 inline-flex rounded-xl border border-line bg-surface-2 p-1 dark:bg-white/5">
         {["Documentos", "Termos", "Receituários"].map((t, i) => (
           <span
             key={t}
@@ -380,7 +380,7 @@ function Engajamento({ ctx }: { ctx: Ctx }) {
         title="Engajamento"
         subtitle="Complete missões, acumule pontos e troque na Loja."
         action={
-          <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 dark:bg-white/5">
+          <div className="flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 dark:bg-white/5">
             <Icon name="award" className="h-5 w-5 text-[var(--primary)]" />
             <span className="font-bold text-[var(--primary)]">{points}</span>
             <span className="text-sm opacity-60">pontos</span>
@@ -423,7 +423,7 @@ function Loja({ ctx }: { ctx: Ctx }) {
         title="Loja de Resgate"
         subtitle="Troque seus pontos por recompensas."
         action={
-          <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white px-4 py-2 dark:bg-white/5">
+          <div className="flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 dark:bg-white/5">
             <Icon name="award" className="h-5 w-5 text-[var(--primary)]" />
             <span className="font-bold text-[var(--primary)]">{points}</span>
             <span className="text-sm opacity-60">pontos</span>
@@ -434,7 +434,7 @@ function Loja({ ctx }: { ctx: Ctx }) {
         {rewards.map((r) => {
           const canAfford = points >= r.cost;
           return (
-            <div key={r.name} className="flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white dark:bg-white/5">
+            <div key={r.name} className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white dark:bg-white/5">
               <div className="flex h-32 items-center justify-center bg-[var(--primary)]/10">
                 <Icon name="gift" className="h-10 w-10 text-[var(--primary)]" />
               </div>
@@ -473,11 +473,11 @@ function Planos() {
             key={pl.name}
             className={cn(
               "relative flex flex-col rounded-2xl border bg-white p-6 dark:bg-white/5",
-              pl.popular ? "border-[var(--primary)] ring-1 ring-[var(--primary)]" : "border-black/5",
+              pl.popular ? "border-[var(--primary)] ring-1 ring-[var(--primary)]" : "border-line",
             )}
           >
             {pl.popular && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--primary-foreground)]">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-[11px] font-semibold text-[var(--primary-foreground)]">
                 Popular
               </span>
             )}

@@ -63,7 +63,7 @@ export default async function EsqueciSenhaPage({
         </SubmitButton>
       </form>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-muted">
         Lembrou a senha?{" "}
         <Link href="/conta/login" className="font-semibold text-blue-600 hover:underline">
           Voltar ao login

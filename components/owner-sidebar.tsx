@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/use-theme";
 import { Icon, type IconKey } from "@/components/icons";
 import { Logo } from "@/components/logo";
+import { motion } from "motion/react";
 
 interface NavItem {
   href: string;
@@ -15,20 +16,41 @@ interface NavItem {
   exact?: boolean;
 }
 
-const ITEMS: NavItem[] = [
-  { href: "/painel", label: "Dashboard", icon: "chart", exact: true },
-  { href: "/painel/agenda", label: "Agenda", icon: "calendar" },
-  { href: "/painel/customizacao", label: "Customização", icon: "template" },
-  { href: "/painel/missoes", label: "Missões", icon: "award" },
-  { href: "/painel/validacoes", label: "Validações", icon: "check" },
-  { href: "/painel/loja", label: "Loja", icon: "store" },
-  { href: "/painel/resgates", label: "Resgates", icon: "gift" },
-  { href: "/painel/planos", label: "Planos", icon: "receipt" },
-  { href: "/painel/clientes", label: "Clientes", icon: "users" },
-  { href: "/painel/campanhas", label: "Campanhas", icon: "chat" },
-  { href: "/painel/documentos", label: "Documentos", icon: "document" },
-  { href: "/painel/conexoes", label: "Conexões", icon: "send" },
-  { href: "/painel/assinatura", label: "Assinatura", icon: "card" },
+// Agrupado pelo que o dono está tentando fazer, não pela ordem em que as telas surgiram.
+const GROUPS: { label?: string; items: NavItem[] }[] = [
+  { items: [{ href: "/painel", label: "Dashboard", icon: "chart", exact: true }] },
+  {
+    label: "Atendimento",
+    items: [
+      { href: "/painel/clientes", label: "Clientes", icon: "users" },
+      { href: "/painel/agenda", label: "Agenda", icon: "calendar" },
+      { href: "/painel/documentos", label: "Documentos", icon: "document" },
+    ],
+  },
+  {
+    label: "Programa de fidelidade",
+    items: [
+      { href: "/painel/missoes", label: "Missões", icon: "award" },
+      { href: "/painel/validacoes", label: "Validações", icon: "checkCircle" },
+      { href: "/painel/loja", label: "Loja", icon: "store" },
+      { href: "/painel/resgates", label: "Resgates", icon: "gift" },
+      { href: "/painel/planos", label: "Planos", icon: "receipt" },
+    ],
+  },
+  {
+    label: "Comunicação",
+    items: [
+      { href: "/painel/campanhas", label: "Campanhas", icon: "chat" },
+      { href: "/painel/conexoes", label: "Conexões", icon: "link" },
+    ],
+  },
+  {
+    label: "Negócio",
+    items: [
+      { href: "/painel/customizacao", label: "Customização", icon: "template" },
+      { href: "/painel/assinatura", label: "Assinatura", icon: "card" },
+    ],
+  },
 ];
 
 export interface OwnedTenantOption {
@@ -61,12 +83,12 @@ export function OwnerSidebar({
   return (
     <>
       {/* Topbar mobile */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-black/5 bg-[var(--background)]/90 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-surface/85 px-4 py-3 backdrop-blur-md md:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Abrir menu"
-          className="rounded-lg p-1.5 hover:bg-black/5"
+          className="rounded-lg p-1.5 hover:bg-surface-2"
         >
           <Icon name="menu" />
         </button>
@@ -75,14 +97,14 @@ export function OwnerSidebar({
 
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-black/5 bg-white transition-transform dark:bg-white/[0.03]",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface transition-transform duration-300 ease-[var(--ease-out)]",
           "md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
@@ -93,7 +115,7 @@ export function OwnerSidebar({
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Fechar menu"
-            className="rounded-lg p-1.5 hover:bg-black/5 md:hidden"
+            className="rounded-lg p-1.5 hover:bg-surface-2 md:hidden"
           >
             <Icon name="close" />
           </button>
@@ -110,36 +132,48 @@ export function OwnerSidebar({
           )}
         </div>
 
-        <p className="px-6 pb-2 text-[10px] font-medium uppercase tracking-wider opacity-40">
-          Meu negócio
-        </p>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-          {ITEMS.map((item) => {
-            const active = isActive(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                  active
-                    ? "bg-[var(--primary)]/10 text-[var(--primary)]"
-                    : "opacity-70 hover:bg-black/5 hover:opacity-100",
-                )}
-              >
-                <Icon name={item.icon} />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4 pt-1">
+          {GROUPS.map((group, i) => (
+            <div key={group.label ?? i}>
+              {group.label && (
+                <p className="px-3 pb-1.5 text-xs font-medium text-muted">{group.label}</p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = isActive(item);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                        active ? "text-[var(--primary)]" : "text-muted hover:bg-surface-2 hover:text-foreground",
+                      )}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="owner-nav-active"
+                          className="absolute inset-0 rounded-xl bg-[var(--primary)]/10"
+                          transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                        />
+                      )}
+                      <Icon name={item.icon} className="relative h-[18px] w-[18px]" />
+                      <span className="relative">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        <div className="border-t border-black/5 dark:border-white/5 p-3 space-y-1">
+        <div className="space-y-0.5 border-t border-line p-3">
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium opacity-70 transition hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-foreground"
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} />
             {theme === "dark" ? "Modo claro" : "Modo escuro"}
@@ -147,7 +181,7 @@ export function OwnerSidebar({
           <form action={signOutAction}>
             <button
               type="submit"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
             >
               <Icon name="logout" />
               Sair
@@ -191,7 +225,7 @@ function TenantSwitcher({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium opacity-80 transition hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100"
+        className="flex w-full items-center gap-3 rounded-xl border border-line bg-surface-2/60 px-3 py-2.5 text-sm font-medium transition hover:border-[var(--primary)]/30"
       >
         <Icon name="building" className="h-4 w-4 shrink-0" />
         <span className="min-w-0 flex-1 truncate text-left">
@@ -204,7 +238,7 @@ function TenantSwitcher({
       </button>
 
       {open && (
-        <div className="absolute inset-x-0 top-full z-10 mt-1 space-y-0.5 rounded-xl border border-black/10 bg-white p-1.5 shadow-lg dark:border-white/10 dark:bg-[#111]">
+        <div className="animate-rise absolute inset-x-0 top-full z-10 mt-1 space-y-0.5 rounded-xl border border-line bg-surface p-1.5 shadow-xl">
           {tenants.map((t) => (
             <form key={t.id} action={switchTenantAction.bind(null, t.id)}>
               <button
@@ -213,7 +247,7 @@ function TenantSwitcher({
                   "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm truncate transition",
                   t.id === activeTenantId
                     ? "bg-[var(--primary)]/10 text-[var(--primary)] font-medium"
-                    : "opacity-75 hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100",
+                    : "opacity-75 hover:bg-surface-2 hover:opacity-100",
                 )}
               >
                 {t.id === activeTenantId && <Icon name="check" className="h-3.5 w-3.5 shrink-0" />}
@@ -222,7 +256,7 @@ function TenantSwitcher({
             </form>
           ))}
 
-          <div className="my-1 border-t border-black/10 dark:border-white/10" />
+          <div className="my-1 border-t border-line" />
 
           {canCreateAnother ? (
             <Link
@@ -235,7 +269,7 @@ function TenantSwitcher({
           ) : (
             <Link
               href="/painel/assinatura"
-              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs opacity-60 hover:bg-black/5 dark:hover:bg-white/5"
+              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs opacity-60 hover:bg-surface-2"
             >
               <Icon name="crown" className="h-3.5 w-3.5 shrink-0" />
               Seu plano não permite mais negócios
@@ -250,7 +284,7 @@ function TenantSwitcher({
 function Brand({ businessName }: { businessName?: string }) {
   return (
     <Link href="/painel" className="flex min-w-0 items-center gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-black/10 dark:border-white/15">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm">
         <Logo className="h-5 w-5" />
       </div>
       <div className="min-w-0">
@@ -261,8 +295,8 @@ function Brand({ businessName }: { businessName?: string }) {
             </>
           )}
         </p>
-        <p className="truncate text-[10px] uppercase tracking-wider opacity-50">
-          Painel do Negócio
+        <p className="truncate text-xs text-muted">
+          Painel do negócio
         </p>
       </div>
     </Link>

@@ -70,7 +70,7 @@ export default async function LoginPage({
         </SubmitButton>
       </form>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-muted">
         Não tem conta?{" "}
         <Link href="/conta/cadastro" className="font-semibold text-blue-600 hover:underline">
           Criar conta

@@ -1,4 +1,5 @@
 "use client";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -61,10 +62,12 @@ export function ProvidersManager(props: ProvidersManagerProps) {
   return (
     <div className="space-y-3">
       {providers.length === 0 && !novo && (
-        <p className="rounded-xl border border-dashed border-black/10 px-4 py-6 text-center text-sm opacity-60 dark:border-white/15">
-          Nenhum profissional cadastrado. Comece por aqui — sem profissional não
-          existe horário para marcar.
-        </p>
+        <EmptyState
+          bare
+          icon={<Icon name="user" />}
+          title="Nenhum profissional cadastrado"
+          description="Comece por aqui: sem profissional não existe horário para marcar."
+        />
       )}
 
       {providers.map((p) => (
@@ -136,7 +139,7 @@ function ProviderCard({
         : `${nomesProcedimentos.slice(0, 3).join(", ")} +${nomesProcedimentos.length - 3}`;
 
   return (
-    <div className="rounded-xl border border-black/10 dark:border-white/10">
+    <div className="rounded-xl border border-line">
       <div className="flex items-center gap-3 p-3">
         <span
           className="h-8 w-8 shrink-0 rounded-lg"
@@ -151,7 +154,7 @@ function ProviderCard({
           <p className="flex items-center gap-2 truncate text-sm font-semibold">
             {provider.name}
             {!provider.is_active && (
-              <span className="rounded bg-black/10 px-1.5 py-0.5 text-[10px] font-medium uppercase opacity-70 dark:bg-white/15">
+              <span className="rounded bg-black/10 px-1.5 py-0.5 text-xs font-medium opacity-70 dark:bg-white/15">
                 inativo
               </span>
             )}
@@ -170,7 +173,7 @@ function ProviderCard({
         <button
           type="button"
           onClick={() => setEditando((v) => !v)}
-          className="rounded-lg p-1.5 opacity-50 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
+          className="rounded-lg p-1.5 opacity-50 transition hover:bg-surface-2 hover:opacity-100 dark:hover:bg-white/10"
           aria-label="Editar profissional"
         >
           <Icon name="edit" className="h-4 w-4" />
@@ -193,14 +196,14 @@ function ProviderCard({
         <button
           type="button"
           onClick={() => setAberto((v) => !v)}
-          className="rounded-lg px-2 py-1 text-xs opacity-60 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
+          className="rounded-lg px-2 py-1 text-xs opacity-60 transition hover:bg-surface-2 hover:opacity-100 dark:hover:bg-white/10"
         >
           {aberto ? "Fechar" : "Horários"}
         </button>
       </div>
 
       {editando && (
-        <div className="border-t border-black/5 p-3 dark:border-white/10">
+        <div className="border-t border-line p-3 dark:border-white/10">
           <ProviderForm
             provider={provider}
             procedures={procedures}
@@ -221,7 +224,7 @@ function ProviderCard({
       )}
 
       {aberto && (
-        <div className="space-y-4 border-t border-black/5 p-3 dark:border-white/10">
+        <div className="space-y-4 border-t border-line p-3 dark:border-white/10">
           <WeekSchedule
             provider={provider}
             horarios={meusHorarios}
@@ -271,7 +274,7 @@ function ProviderForm({
           await onSalvar(formData);
         });
       }}
-      className="space-y-3 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.04]"
+      className="space-y-3 rounded-xl bg-surface-2 p-3 dark:bg-white/[0.04]"
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
@@ -311,7 +314,7 @@ function ProviderForm({
       <div>
         <p className="mb-1 text-sm font-medium">Procedimentos que atende</p>
         {procedures.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-black/10 px-3 py-2 text-xs opacity-60 dark:border-white/15">
+          <p className="rounded-lg border border-dashed border-line px-3 py-2 text-xs opacity-60 dark:border-white/15">
             Nenhum procedimento cadastrado ainda. Cadastre em “Procedimentos”,
             logo abaixo, e depois edite este profissional para marcar quais ele
             atende.
@@ -341,11 +344,11 @@ function ProviderForm({
                       "rounded-lg border px-2.5 py-1 text-xs transition",
                       ativo
                         ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                        : "border-black/10 opacity-70 hover:opacity-100 dark:border-white/15",
+                        : "border-line opacity-70 hover:opacity-100 dark:border-white/15",
                       !p.is_active && "line-through",
                     )}
                   >
-                    {ativo ? "✓ " : "+ "}
+                    <Icon name={ativo ? "check" : "plus"} className="h-3.5 w-3.5" />
                     {p.name}
                     <span className="ml-1 opacity-60">{p.duration_min}min</span>
                   </button>
@@ -410,7 +413,7 @@ function WeekSchedule({
           return (
             <div
               key={weekday}
-              className="flex flex-wrap items-center gap-2 rounded-lg bg-black/[0.03] px-3 py-2 dark:bg-white/[0.04]"
+              className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 dark:bg-white/[0.04]"
             >
               <span className="w-16 shrink-0 text-xs font-medium opacity-70">{label}</span>
 
@@ -517,7 +520,7 @@ function ExceptionsBlock({
           {folgas.map((f) => (
             <li
               key={f.id}
-              className="flex items-center gap-2 rounded-lg bg-black/[0.03] px-3 py-1.5 text-xs dark:bg-white/[0.04]"
+              className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 text-xs dark:bg-white/[0.04]"
             >
               <span className="font-medium">{formatarDataLonga(f.exception_date)}</span>
               <span className="opacity-60">
@@ -560,7 +563,7 @@ function ExceptionsBlock({
             setDataFolga("");
           });
         }}
-        className="flex flex-wrap items-end gap-2 rounded-lg bg-black/[0.03] p-2.5 dark:bg-white/[0.04]"
+        className="flex flex-wrap items-end gap-2 rounded-lg bg-surface-2 p-2.5 dark:bg-white/[0.04]"
       >
         <div className="text-xs">
           <span className="mb-1 block font-medium opacity-70">Data</span>

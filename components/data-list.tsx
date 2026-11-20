@@ -69,7 +69,7 @@ export function DataList({
   return (
     <div>
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/5 px-4 py-3 dark:border-white/5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 dark:border-white/5">
           <div className="relative min-w-0 flex-1">
             <Icon
               name="search"
@@ -79,14 +79,14 @@ export function DataList({
               value={query}
               onChange={(e) => onQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full rounded-lg border border-black/10 bg-transparent py-1.5 pl-8 pr-2 text-sm dark:border-white/10"
+              className="w-full rounded-lg border border-line bg-transparent py-1.5 pl-8 pr-2 text-sm dark:border-white/10"
             />
           </div>
           {filters && filters.length > 0 && (
             <select
               value={filter}
               onChange={(e) => onFilter(e.target.value)}
-              className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
+              className="rounded-lg border border-line bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
             >
               <option value="">Todos</option>
               {filters.map((f) => (
@@ -106,7 +106,7 @@ export function DataList({
             : emptyText}
         </p>
       ) : (
-        <div className="divide-y divide-black/5 dark:divide-white/5">
+        <div className="divide-y divide-line">
           {pageRows.map((r) => {
             const inner = (
               <>
@@ -132,7 +132,7 @@ export function DataList({
                 href={r.href}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-3 px-6 py-3 hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
+                className="flex items-center gap-3 px-6 py-3 hover:bg-surface-2 dark:hover:bg-white/[0.03]"
               >
                 {inner}
               </a>
@@ -146,7 +146,7 @@ export function DataList({
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-black/5 px-4 py-2.5 text-sm dark:border-white/5">
+        <div className="flex items-center justify-between border-t border-line px-4 py-2.5 text-sm dark:border-white/5">
           <span className="opacity-60">
             {start + 1}–{Math.min(start + pageSize, filtered.length)} de {filtered.length}
           </span>
@@ -155,7 +155,7 @@ export function DataList({
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage <= 1}
-              className="rounded-md px-2 py-1 disabled:opacity-30 hover:bg-black/5 dark:hover:bg-white/10"
+              className="rounded-md px-2 py-1 disabled:opacity-30 hover:bg-surface-2"
             >
               <Icon name="chevronLeft" className="h-4 w-4" />
             </button>
@@ -166,7 +166,7 @@ export function DataList({
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
-              className="rounded-md px-2 py-1 disabled:opacity-30 hover:bg-black/5 dark:hover:bg-white/10"
+              className="rounded-md px-2 py-1 disabled:opacity-30 hover:bg-surface-2"
             >
               <Icon name="chevronRight" className="h-4 w-4" />
             </button>
