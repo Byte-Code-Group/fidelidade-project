@@ -28,6 +28,7 @@ import { BUCKETS, documentPath } from "@/lib/storage";
 import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
 import { enviarLinkDeRecuperacao } from "@/lib/password-reset";
 import { siteUrl } from "@/lib/urls";
+import { entrarComSenha } from "@/lib/sign-in";
 
 // ---------- Auth ----------
 
@@ -35,15 +36,14 @@ export async function superSignIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    redirect(`/superadmin/login?error=${encodeURIComponent(traduzirErro(error.message))}`);
-  }
+  const { error } = await entrarComSenha(email, password);
+  if (error) redirect(`/superadmin/login?error=${encodeURIComponent(error)}`);
 
   // Autenticou — mas é platform admin? Senão, desloga e barra.
+  // (Admin com verificação em duas etapas é levado ao código por getPlatformAdmin.)
   const admin = await getPlatformAdmin();
   if (!admin) {
+    const supabase = await createClient();
     await supabase.auth.signOut();
     redirect(
       `/superadmin/login?error=${encodeURIComponent("Acesso restrito à plataforma.")}`,

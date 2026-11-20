@@ -14,6 +14,7 @@ const PAGES = [
   "/painel/missoes",
   "/painel/planos",
   "/painel/resgates",
+  "/painel/seguranca",
   "/painel/validacoes",
   "/conta/planos",
 ];

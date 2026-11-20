@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { precisaVerificarMfa } from "@/lib/mfa";
 
 // Usuário autenticado SE for platform admin (senão null).
 // Checagem via service role (platform_admins tem RLS sem policies).
@@ -18,7 +19,10 @@ export const getPlatformAdmin = cache(async (): Promise<User | null> => {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  return data ? user : null;
+  if (!data) return null;
+  // Admin com verificação em duas etapas pendente: só depois do código.
+  if (await precisaVerificarMfa(user)) redirect("/superadmin/verificar");
+  return user;
 });
 
 // Gate para páginas/actions do /superadmin. Redireciona se não autorizado.

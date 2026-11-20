@@ -5,6 +5,7 @@ import { AuthShell } from "@/components/auth-shell";
 import { FlashToast } from "@/components/flash-toast";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { getAuthUser } from "@/lib/supabase/server";
+import { precisaVerificarMfa } from "@/lib/mfa";
 import { updatePlatformPassword } from "../actions";
 
 export default async function RedefinirSenhaPage({
@@ -34,11 +35,13 @@ export default async function RedefinirSenhaPage({
   // não há nada pra redefinir.
   const user = await getAuthUser();
   if (!user) redirect("/conta/esqueci-senha?error=link_invalido");
+  // Com verificação em duas etapas, o GoTrue só troca a senha depois do código.
+  if (await precisaVerificarMfa(user)) redirect("/conta/verificar?next=/conta/redefinir-senha");
 
   return (
     <AuthShell
       title="Criar nova senha"
-      subtitle="Escolha uma senha com pelo menos 6 caracteres."
+      subtitle="Escolha uma senha com pelo menos 8 caracteres."
     >
       <FlashToast error={error} />
 
@@ -51,7 +54,7 @@ export default async function RedefinirSenhaPage({
             id="password"
             name="password"
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
             placeholder="••••••••"
           />
@@ -65,7 +68,7 @@ export default async function RedefinirSenhaPage({
             id="confirm"
             name="confirm"
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
             placeholder="••••••••"
           />

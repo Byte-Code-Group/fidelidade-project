@@ -25,18 +25,35 @@ import {
   cancelAppointmentAsClient,
 } from "@/lib/appointments";
 import { addPoints } from "@/lib/points";
+import { entrarComSenha } from "@/lib/sign-in";
+import { validarSenha } from "@/lib/password-policy";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await entrarComSenha(email, password);
+  if (error) redirect(`/login?error=${encodeURIComponent(error)}`);
 
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(traduzirErro(error.message))}`);
+  // O login é da plataforma toda; o portal só aceita quem é deste negócio
+  // (cliente, ou dono/equipe testando o próprio portal).
+  const ctx = await getCurrentTenant();
+  const user = await getAuthUser();
+  if (ctx && user && !(await pertenceAoTenant(user.id, ctx.tenant.id))) {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    redirect(`/login?error=${encodeURIComponent("Esta conta não está cadastrada neste negócio.")}`);
   }
   redirect("/");
+}
+
+async function pertenceAoTenant(userId: string, tenantId: string): Promise<boolean> {
+  const db = createAdminClient();
+  const [{ data: cliente }, { data: equipe }] = await Promise.all([
+    db.from("users").select("id").eq("id", userId).eq("tenant_id", tenantId).maybeSingle(),
+    db.from("platform_users").select("id").eq("user_id", userId).eq("tenant_id", tenantId).maybeSingle(),
+  ]);
+  return !!(cliente || equipe);
 }
 
 export async function signOut() {
@@ -93,9 +110,8 @@ export async function signUp(formData: FormData) {
   if (!fullName || !email || !password) {
     redirect("/cadastro?error=" + encodeURIComponent("Preencha todos os campos."));
   }
-  if (password.length < 6) {
-    redirect("/cadastro?error=" + encodeURIComponent("A senha precisa ter pelo menos 6 caracteres."));
-  }
+  const senhaInvalida = await validarSenha(password, email);
+  if (senhaInvalida) redirect("/cadastro?error=" + encodeURIComponent(senhaInvalida));
 
   const supabase = await createClient();
   const { data: authData, error: authErr } = await supabase.auth.signUp({

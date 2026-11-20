@@ -54,6 +54,7 @@ const GROUPS: { label?: string; items: NavItem[] }[] = [
     items: [
       { href: "/painel/customizacao", label: "Customização", icon: "template" },
       { href: "/painel/assinatura", label: "Assinatura", icon: "card" },
+      { href: "/painel/seguranca", label: "Segurança", icon: "lock" },
     ],
   },
 ];

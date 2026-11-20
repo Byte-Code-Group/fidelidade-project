@@ -53,7 +53,7 @@ export default async function CadastroPage({
           <PasswordInput
             name="password"
             required
-            placeholder="Senha (mínimo 6 caracteres)"
+            placeholder="Senha (mínimo 8 caracteres)"
             autoComplete="new-password"
           />
           <FormError error={error} />

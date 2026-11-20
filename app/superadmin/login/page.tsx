@@ -31,10 +31,11 @@ export default async function SuperLoginPage({
           <p className="mt-1 text-sm opacity-70">Acesso restrito.</p>
 
           <form action={superSignIn} className="mt-5 space-y-3">
-            <Input name="email" type="email" required placeholder="E-mail" />
+            <Input name="email" type="email" required autoComplete="email" placeholder="E-mail" />
             <PasswordInput
               name="password"
               required
+              autoComplete="current-password"
               placeholder="Senha"
             />
             <FormError error={error} />

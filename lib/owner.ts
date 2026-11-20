@@ -5,6 +5,11 @@ import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 import { getAuthUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { precisaVerificarMfa } from "@/lib/mfa";
+
+// Sessão com verificação em duas etapas pendente não entra no painel (nem em
+// actions/rotas que dependem do dono) até informar o código.
+export const MFA_VERIFY_PATH_OWNER = "/conta/verificar";
 
 export const ACTIVE_TENANT_COOKIE = "owner_active_tenant";
 
@@ -50,6 +55,7 @@ async function resolveActiveTenantId(tenants: OwnedTenant[]): Promise<string | n
 export async function getTenantOwner(): Promise<TenantOwnerContext | null> {
   const user = await getAuthUser();
   if (!user) return null;
+  if (await precisaVerificarMfa(user)) redirect(MFA_VERIFY_PATH_OWNER);
 
   const tenants = await getOwnerTenants(user.id);
   const tenantId = await resolveActiveTenantId(tenants);
@@ -64,6 +70,7 @@ export async function requireTenantOwner(opts?: {
 }): Promise<TenantOwnerContext> {
   const user = await getAuthUser();
   if (!user) redirect("/conta/login");
+  if (await precisaVerificarMfa(user)) redirect(MFA_VERIFY_PATH_OWNER);
 
   const tenants = await getOwnerTenants(user.id);
   const tenantId = await resolveActiveTenantId(tenants);

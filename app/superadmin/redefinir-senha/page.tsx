@@ -5,8 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
-import { createClient } from "@/lib/supabase/client";
-import { traduzirErro } from "@/lib/error-messages";
+import { atualizarSenha } from "@/lib/auth-actions";
 import { FormAlert } from "@/components/ui/form-alert";
 
 export default function SuperadminRedefinirSenhaPage() {
@@ -19,8 +18,8 @@ export default function SuperadminRedefinirSenhaPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (password.length < 6) {
-      setErrorMsg("A senha precisa ter pelo menos 6 caracteres.");
+    if (password.length < 8) {
+      setErrorMsg("A senha precisa ter pelo menos 8 caracteres.");
       return;
     }
     if (password !== confirm) {
@@ -29,11 +28,11 @@ export default function SuperadminRedefinirSenhaPage() {
     }
 
     setStatus("loading");
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password });
+    // No servidor: valida a política de senha (inclui senha vazada) antes de gravar.
+    const { error } = await atualizarSenha(password, confirm);
 
     if (error) {
-      setErrorMsg(traduzirErro(error.message));
+      setErrorMsg(error);
       setStatus("error");
     } else {
       setStatus("done");

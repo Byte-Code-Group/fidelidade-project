@@ -12,7 +12,7 @@ const CODIGOS: Record<string, string> = {
   indisponivel: "Esse prêmio não está mais disponível.",
   sem_carteirinha: "Você ainda não tem uma carteirinha ativa.",
   link_invalido: "Link expirado ou inválido. Solicite um novo.",
-  senha_curta: "A senha precisa ter pelo menos 6 caracteres.",
+  senha_curta: "A senha precisa ter pelo menos 8 caracteres.",
   senhas_diferentes: "As senhas não coincidem.",
 };
 

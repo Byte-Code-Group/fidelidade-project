@@ -8,8 +8,8 @@ describe("cadastros", () => {
     waitHydrated('input[name="name"]');
     cy.get('input[name="name"]').type("Dono E2E");
     cy.get('input[name="email"]').type(`dono+${stamp}@teste.com`);
-    cy.get('input[name="password"]').type("senha123");
-    cy.get('input[name="confirm"]').type("senha123");
+    cy.get('input[name="password"]').type(`Fidel-${stamp}-ok`);
+    cy.get('input[name="confirm"]').type(`Fidel-${stamp}-ok`);
     cy.get("#terms").check();
     cy.get('form button[type="submit"]').click();
     cy.location("pathname", { timeout: 20000 }).should("match", /^\/(painel|conta\/configurar)/);
@@ -31,7 +31,7 @@ describe("cadastros", () => {
     waitHydrated('input[name="full_name"]');
     cy.get('input[name="full_name"]').type("Cliente Portal E2E");
     cy.get('input[name="email"]').type(`cliente+${stamp}@teste.com`);
-    cy.get('input[name="password"]').type("senha123");
+    cy.get('input[name="password"]').type(`Fidel-${stamp}-ok`);
     cy.get('input[name="full_name"]').closest("form").find('button[type="submit"]').click();
     cy.location("pathname", { timeout: 20000 }).should("not.contain", "cadastro");
     cy.contains("Cliente Portal E2E");

@@ -22,6 +22,9 @@ import {
 import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
 import { enviarLinkDeRecuperacao } from "@/lib/password-reset";
 import { siteUrl } from "@/lib/urls";
+import { entrarComSenha } from "@/lib/sign-in";
+import { validarSenha } from "@/lib/password-policy";
+import { atualizarSenha } from "@/lib/auth-actions";
 
 function slugify(s: string) {
   return s
@@ -54,9 +57,11 @@ export async function platformSignUp(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!name || !email || password.length < 6) {
+  if (!name || !email || !password) {
     redirect("/conta/cadastro?error=campos");
   }
+  const senhaInvalida = await validarSenha(password, email);
+  if (senhaInvalida) redirect(`/conta/cadastro?error=${encodeURIComponent(senhaInvalida)}`);
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -95,12 +100,8 @@ export async function platformSignIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    redirect(`/conta/login?error=${encodeURIComponent(traduzirErro(error.message))}`);
-  }
+  const { error } = await entrarComSenha(email, password);
+  if (error) redirect(`/conta/login?error=${encodeURIComponent(error)}`);
 
   redirect("/painel");
 }
@@ -143,19 +144,8 @@ export async function updatePlatformPassword(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
 
-  if (password.length < 6) {
-    redirect("/conta/redefinir-senha?error=senha_curta");
-  }
-  if (password !== confirm) {
-    redirect("/conta/redefinir-senha?error=senhas_diferentes");
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
-
-  if (error) {
-    redirect(`/conta/redefinir-senha?error=${encodeURIComponent(traduzirErro(error.message))}`);
-  }
+  const { error } = await atualizarSenha(password, confirm);
+  if (error) redirect(`/conta/redefinir-senha?error=${encodeURIComponent(error)}`);
 
   redirect("/conta/redefinir-senha?ok=1");
 }

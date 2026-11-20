@@ -4,6 +4,7 @@ const PAGES = [
   "/superadmin/empresas",
   "/superadmin/faturamento",
   "/superadmin/relatorios",
+  "/superadmin/seguranca",
   "/superadmin/templates",
   "/superadmin/templates/odonto",
   "/superadmin/demo/odonto",

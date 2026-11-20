@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { resetPasswordEmail } from "@/lib/emails/reset-password";
+import { ipDaRequest, mensagemDeBloqueio, minutosBloqueado, registrarTentativa } from "@/lib/rate-limit";
 
 export interface EnviarLinkOptions {
   email: string;
@@ -33,6 +34,13 @@ export async function enviarLinkDeRecuperacao({
   brandName,
   primaryColor,
 }: EnviarLinkOptions): Promise<EnviarLinkResultado> {
+  // Cada pedido dispara um e-mail: limita por endereço e por IP (abuso de envio).
+  const ip = await ipDaRequest();
+  const chaves = [`reset:conta:${email.trim().toLowerCase()}`, ...(ip ? [`reset:ip:${ip}`] : [])];
+  const bloqueio = Math.max(minutosBloqueado(chaves[0], 3), ip ? minutosBloqueado(chaves[1], 10) : 0);
+  if (bloqueio) return { ok: false, error: mensagemDeBloqueio(bloqueio) };
+  chaves.forEach((c) => registrarTentativa(c, 15 * 60 * 1000));
+
   const db = createAdminClient();
   const { data, error } = await db.auth.admin.generateLink({
     type: "recovery",

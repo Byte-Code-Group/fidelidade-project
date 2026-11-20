@@ -28,7 +28,7 @@ export function CadastroForm() {
   function validate() {
     const next: typeof errors = {};
     if (!EMAIL_RE.test(email.trim())) next.email = "Digite um e-mail válido.";
-    if (password.length < 6) next.password = "Mínimo de 6 caracteres.";
+    if (password.length < 8) next.password = "Mínimo de 8 caracteres.";
     if (confirm !== password) next.confirm = "As senhas não coincidem.";
     if (!terms) next.terms = "Você precisa aceitar os termos.";
     setErrors(next);
@@ -82,7 +82,7 @@ export function CadastroForm() {
           name="password"
           required
           autoComplete="new-password"
-          placeholder="Mín. 6 caracteres"
+          placeholder="Mín. 8 caracteres"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           aria-invalid={!!errors.password}
