@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { addPoints } from "@/lib/points";
 
 export async function approveRedemption(tenantId: string, redemptionId: string) {
   const db = createAdminClient();
@@ -31,12 +32,7 @@ export async function rejectRedemption(tenantId: string, redemptionId: string) {
       .limit(1)
       .maybeSingle<{ id: string; points_total: number }>();
 
-    if (membership) {
-      await db
-        .from("memberships")
-        .update({ points_total: membership.points_total + r.points_spent })
-        .eq("id", membership.id);
-    }
+    if (membership) await addPoints(membership.id, r.points_spent);
   }
 
   await db

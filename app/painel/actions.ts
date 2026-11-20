@@ -88,6 +88,7 @@ import {
 import { getTenantTimezone, applyTenantTimezoneUpdate } from "@/lib/tenant-settings";
 import type { AppointmentStatus } from "@/lib/types";
 import { traduzirErroDesconhecido } from "@/lib/error-messages";
+import { addPoints } from "@/lib/points";
 
 // Agenda do painel + agendamentos do portal do cliente saem do mesmo dado.
 function revalidateAgenda() {
@@ -362,24 +363,20 @@ export async function ownerReorderPlans(orderedIds: string[]): Promise<{ error?:
 
 export async function ownerAdjustMemberPoints(membershipId: string, formData: FormData) {
   const { tenantId } = await requireTenantOwner();
-  const delta = Number(formData.get("delta") ?? 0);
+  const delta = Math.round(Number(formData.get("delta") ?? 0));
   if (!Number.isFinite(delta) || delta === 0) return;
 
   const db = createAdminClient();
+  // Confere que a carteirinha é deste negócio antes de mexer.
   const { data: m } = await db
     .from("memberships")
-    .select("points_total")
+    .select("id")
     .eq("id", membershipId)
     .eq("tenant_id", tenantId)
-    .maybeSingle<{ points_total: number }>();
+    .maybeSingle<{ id: string }>();
   if (!m) return;
 
-  const next = Math.max(0, m.points_total + delta);
-  await db
-    .from("memberships")
-    .update({ points_total: next })
-    .eq("id", membershipId)
-    .eq("tenant_id", tenantId);
+  await addPoints(membershipId, delta);
   revalidatePath("/painel/clientes");
 }
 

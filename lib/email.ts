@@ -1,5 +1,5 @@
 import "server-only";
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 
 // OCI Email Delivery por SMTP (STARTTLS na 587). O remetente precisa ser um
 // "Approved Sender" no console da Oracle — qualquer outro é recusado.
@@ -17,7 +17,7 @@ export interface SendEmailResult {
   error?: string;
 }
 
-let transport: nodemailer.Transporter | null = null;
+let transport: Transporter | null = null;
 
 function getTransport() {
   const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;

@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { addPoints } from "@/lib/points";
 
 // Lógica de negócio pura (sem gate de auth) reaproveitada tanto pelo
 // Super Admin quanto pelo painel do dono.
@@ -36,12 +37,7 @@ export async function approveCompletion(tenantId: string, completionId: string) 
       .limit(1)
       .maybeSingle<{ id: string; points_total: number }>();
 
-    if (membership) {
-      await db
-        .from("memberships")
-        .update({ points_total: membership.points_total + mission.points })
-        .eq("id", membership.id);
-    }
+    if (membership) await addPoints(membership.id, mission.points);
   }
 }
 

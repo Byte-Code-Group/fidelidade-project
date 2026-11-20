@@ -24,6 +24,7 @@ import {
   createAppointmentValidado,
   cancelAppointmentAsClient,
 } from "@/lib/appointments";
+import { addPoints } from "@/lib/points";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -324,6 +325,18 @@ export async function redeemReward(rewardId: string) {
   // Debita com compare-and-swap: o update só passa se os pontos ainda forem
   // os mesmos que acabamos de ler. Sem isso, dois cliques simultâneos liam o
   // mesmo saldo e saíam com dois resgates pelo preço de um.
+  // Reserva o estoque antes de debitar, com o mesmo filtro pelo valor lido:
+  // resgates simultâneos do último item não saem os dois.
+  if (reward.stock !== null) {
+    const { data: reservado } = await db
+      .from("rewards")
+      .update({ stock: reward.stock - 1 })
+      .eq("id", reward.id)
+      .eq("stock", reward.stock)
+      .select("id");
+    if (!reservado?.length) redirect("/loja?error=esgotado");
+  }
+
   const { data: debitado } = await db
     .from("memberships")
     .update({ points_total: pointsRemaining })
@@ -331,7 +344,14 @@ export async function redeemReward(rewardId: string) {
     .eq("points_total", membership.points_total)
     .select("id");
 
-  if (!debitado?.length) redirect("/loja?error=pontos");
+  if (!debitado?.length) {
+    // Devolve a reserva: o saldo mudou no meio do caminho.
+    if (reward.stock !== null) {
+      const { data: atual } = await db.from("rewards").select("stock").eq("id", reward.id).maybeSingle<{ stock: number | null }>();
+      if (atual?.stock != null) await db.from("rewards").update({ stock: atual.stock + 1 }).eq("id", reward.id);
+    }
+    redirect("/loja?error=pontos");
+  }
 
   await db.from("reward_redemptions").insert({
     tenant_id: ctx.tenant.id,
@@ -342,15 +362,6 @@ export async function redeemReward(rewardId: string) {
     status: "pending",
   });
 
-  if (reward.stock !== null) {
-    // Mesmo cuidado do saldo: sem o filtro pelo estoque lido, resgates
-    // simultâneos deixavam o estoque negativo.
-    await db
-      .from("rewards")
-      .update({ stock: reward.stock - 1 })
-      .eq("id", reward.id)
-      .eq("stock", reward.stock);
-  }
 
   if (profile?.email) {
     const origin = portalUrl(ctx.tenant.slug);
@@ -417,14 +428,7 @@ export async function doCheckin(token: string) {
     .limit(1)
     .maybeSingle<Pick<Membership, "id" | "points_total">>();
 
-  if (membership) {
-    await db
-      .from("memberships")
-      .update({
-        points_total: membership.points_total + settings.loyalty_points_per_checkin,
-      })
-      .eq("id", membership.id);
-  }
+  if (membership) await addPoints(membership.id, settings.loyalty_points_per_checkin);
 
   revalidatePath("/engajamento");
   revalidatePath("/");

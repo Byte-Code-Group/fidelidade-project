@@ -1,4 +1,4 @@
-import { fillRequired } from "../support/fill";
+import { fillRequired, waitHydrated } from "../support/fill";
 
 const stamp = Date.now();
 
@@ -35,6 +35,15 @@ describe("painel — fluxos de escrita", () => {
     cy.contains("button", "Cadastrar cliente").click();
     cy.location("pathname", { timeout: 20000 }).should("match", /^\/painel\/clientes\/[0-9a-f-]{36}$/);
     cy.contains(name);
+    cy.assertPageOk();
+  });
+
+  // Extração de texto do PDF depende de pdf-parse + @napi-rs/canvas no servidor.
+  it("envia modelo de documento em PDF", () => {
+    cy.visit("/painel/documentos");
+    waitHydrated('input[type="file"]');
+    cy.get('input[type="file"]').first().selectFile("cypress/fixtures/modelo.pdf", { force: true });
+    cy.location("pathname", { timeout: 30000 }).should("match", /^\/painel\/documentos\/[0-9a-f-]{36}$/);
     cy.assertPageOk();
   });
 

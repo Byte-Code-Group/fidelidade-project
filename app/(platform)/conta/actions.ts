@@ -16,6 +16,7 @@ import {
   createSubscription,
   getSubscriptionFirstPayment,
   isRemovedCustomerError,
+  PLAN_PRICES,
   type BillingType,
 } from "@/lib/asaas";
 import { traduzirErro, traduzirErroDesconhecido } from "@/lib/error-messages";
@@ -290,6 +291,8 @@ export async function initiatePayment(formData: FormData) {
   const { user, tenantId } = await requireTenantOwner();
 
   const plan = String(formData.get("plan") ?? "starter");
+  // Plano define limites do negócio: valor fora do catálogo não pode ser gravado.
+  if (!Object.hasOwn(PLAN_PRICES, plan)) redirect(`/conta/planos?error=${encodeURIComponent("Plano inválido.")}`);
   // Assinatura do SaaS é só no cartão — PIX não permite cobrança recorrente automática.
   const billingType: BillingType = "CREDIT_CARD";
 
