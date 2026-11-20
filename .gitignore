@@ -43,3 +43,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .pnpm-store/
+
+# cypress
+/cypress/screenshots
+/cypress/videos
+/cypress/downloads

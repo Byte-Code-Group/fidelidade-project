@@ -19,16 +19,24 @@ export function FlashToast({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Depende de error/saved: uma action que redireciona pra mesma página
+  // (ex.: login errado → /conta/login?error=...) não remonta o componente.
   useEffect(() => {
-    if (error) {
-      toast.error(traduzirErro(decodeURIComponent(error)));
-      router.replace(pathname);
-    } else if (saved) {
-      toast.success(successMessage);
-      router.replace(pathname);
-    }
+    if (!error && !saved) return;
+    let cancelled = false;
+    // Microtask: no 1º load este effect roda antes do <Toaster> assinar o
+    // store do sonner, e toast criado antes disso some.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (error) toast.error(traduzirErro(decodeURIComponent(error)));
+      else toast.success(successMessage);
+    });
+    router.replace(pathname);
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [error, saved]);
 
   return null;
 }

@@ -130,6 +130,23 @@ a ativação pós-pagamento pararem de funcionar, cheque primeiro se
 | `pnpm db:reset` | recria o banco local a partir das migrations |
 | `pnpm seed:superadmin` | cria o usuário de superadmin |
 | `pnpm seed:auth` | cria tenant + cliente de exemplo |
+| `pnpm test:e2e` | testes E2E (Cypress) contra o `pnpm dev` local |
+
+## Testes E2E (Cypress)
+
+Com Supabase local, seeds (`seed:superadmin`, `seed:auth`) e `pnpm dev` rodando:
+
+```bash
+pnpm test:e2e          # headless, no Chrome
+pnpm exec cypress open # modo interativo
+```
+
+- Roda no **Chrome**: no Electron headless o `requestAnimationFrame` não
+  dispara e o React nunca revela o conteúdo dos `loading.tsx` (Suspense).
+- O dono do tenant demo (`dono@oraldents.com.br` / `senha123`) é criado pela
+  task `seedOwner` em `cypress.config.ts`.
+- Os testes criam dados (clientes, missões, prêmios, contas) no banco local a
+  cada execução; `pnpm db:reset` limpa.
 
 ## Deploy
 

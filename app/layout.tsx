@@ -43,6 +43,8 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      // data-theme é setado pelo script do <head> antes da hidratação.
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>

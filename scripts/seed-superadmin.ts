@@ -30,7 +30,7 @@ const supabase = createClient(
 );
 
 async function findUserByEmail(email: string) {
-  const { data } = await supabase.auth.admin.listUsers();
+  const { data } = await supabase.auth.admin.listUsers({ perPage: 1000 });
   return data.users.find((u) => u.email === email) ?? null;
 }
 
