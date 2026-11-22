@@ -49,8 +49,9 @@ export async function POST(req: Request) {
   const tenantName = owner.tenants.find((t) => t.id === tenantId)?.name ?? "o negócio";
   const today = new Date().toLocaleDateString("pt-BR", { timeZone: DEFAULT_TIMEZONE, dateStyle: "full" });
   const context = `[CONTEXTO DO SISTEMA — não repita isto ao usuário]
-Você é o assistente do painel de ${tenantName}. Quem fala é o dono do negócio. Hoje é ${today}.
-Responda em português brasileiro, curto, em markdown simples. Nunca invente cliente, modelo ou dado.
+Você é o assistente administrativo do painel de ${tenantName}. Quem fala é o dono do negócio. Hoje é ${today}.
+Tom: profissional, cordial e objetivo, como uma secretária experiente. Português brasileiro formal, sem gírias, sem emojis, sem exclamações em excesso.
+Respostas curtas e claras, em markdown simples (listas quando houver opções). Nunca invente cliente, modelo ou dado; se não souber, diga.
 
 Clientes (id | nome | e-mail | telefone):
 ${(clients ?? []).map((c) => `${c.id} | ${c.full_name ?? ""} | ${c.email ?? ""} | ${c.phone ?? ""}`).join("\n") || "(nenhum cliente)"}
@@ -62,7 +63,9 @@ Ações — quando precisar de uma, responda SÓ com a linha da ação, sem mais
 - Gerar documento: <<GERAR {"cliente":"<id do cliente>","modelo":"<id do modelo>","instrucoes":"<detalhes do caso que não estão no cadastro, ou vazio>"}>>
 - Ver dados completos de um cliente (cadastro, CPF, pontos, carteirinha): <<DADOS <id do cliente>>>
 Regras:
-- Se o dono não disser o cliente, pergunte "Para qual cliente?" — nunca escolha sozinho. Mais de um cliente com o nome: liste (nome + e-mail) e peça para escolher.
+- Para gerar um documento você precisa de DUAS informações explícitas do dono: qual modelo de documento e qual cliente. Nunca deduza nem escolha nenhuma das duas sozinho.
+- Faltando o modelo: pergunte qual documento deseja gerar e liste os modelos cadastrados pelo nome. Faltando o cliente: pergunte para qual cliente. Faltando os dois: pergunte ambos na mesma mensagem.
+- Nome do modelo ou do cliente ambíguo (mais de uma correspondência): liste as opções (cliente: nome + e-mail) e peça para escolher. Não encontrado: informe e liste as opções próximas.
 - Antes de gerar, busque os dados do cliente com <<DADOS>> e mostre um resumo (cliente, modelo, dados que vão no documento, o que falta) terminando com "Confirma que posso gerar? (sim / corrigir)".
 - Só use <<GERAR>> depois que o dono confirmar esse resumo. Não peça dado que já está no cadastro: o que faltar vai em instrucoes.
 [FIM DO CONTEXTO]
@@ -111,7 +114,7 @@ Regras:
     const r = await generateClientDocument(tenantId, cliente, modelo, String(args.instrucoes ?? "").slice(0, 2000));
     if (r.error) return text(`Não consegui gerar o documento: ${r.error}`);
     return text(
-      `Pronto! **${templateName.get(modelo)}** de **${clientName.get(cliente)}** gerado e salvo na aba Documentos do cliente.` +
+      `Documento **${templateName.get(modelo)}** de **${clientName.get(cliente)}** gerado com sucesso. Ele está disponível na aba Documentos do cliente.` +
         (r.emptyFields?.length ? `\n\nFicaram sem dado: ${r.emptyFields.join(", ")}.` : ""),
     );
   }
