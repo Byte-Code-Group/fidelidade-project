@@ -14,7 +14,7 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 grid grid-cols-1 overflow-y-auto bg-white md:grid-cols-2">
+    <div data-theme="light" className="fixed inset-0 z-50 grid grid-cols-1 overflow-y-auto bg-white md:grid-cols-2">
       {/* Painel de marca (esquerda) */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-blue-600 p-12 text-white md:flex">
         <div className="pointer-events-none absolute -right-44 -top-44 h-[480px] w-[480px] rounded-full border border-white/25" />
