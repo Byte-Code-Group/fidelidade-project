@@ -2,7 +2,7 @@
 
 /* dark: passa a seguir o data-theme (e não o prefers-color-scheme), pra o tema
    por tenant/preview valer de verdade nos utilitários dark:. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *):not(:where(.force-light, .force-light *)));
 
 :root {
   --background: #f5f6f8;
@@ -32,6 +32,17 @@
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-bricolage);
   --ease-out-soft: var(--ease-out);
+}
+
+/* Telas sempre claras (auth da plataforma, landing) mesmo com
+   <html data-theme="dark">. Tokens de tenant ficam fora. */
+.force-light {
+  --background: #f5f6f8;
+  --foreground: #15171c;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --line: #e3e6eb;
+  --muted: #687083;
 }
 
 [data-theme="dark"] {

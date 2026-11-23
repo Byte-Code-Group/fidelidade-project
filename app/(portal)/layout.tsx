@@ -48,7 +48,7 @@ export default async function PortalLayout({
   // Apex domain (sem subdomínio) → landing page de marketing.
   if (!ctx) {
     return (
-      <div data-theme="light" className="min-h-dvh bg-white text-gray-900">
+      <div className="force-light min-h-dvh bg-white text-gray-900">
         {children}
       </div>
     );
