@@ -35,14 +35,20 @@
 }
 
 /* Telas sempre claras (auth da plataforma, landing) mesmo com
-   <html data-theme="dark">. Tokens de tenant ficam fora. */
-.force-light {
-  --background: #f5f6f8;
-  --foreground: #15171c;
-  --surface: #ffffff;
-  --surface-2: #f0f2f5;
-  --line: #e3e6eb;
-  --muted: #687083;
+   <html data-theme="dark">. Tokens de tenant ficam fora. color precisa ser
+   setado de novo: o herdado do body já vem resolvido com o --foreground dark.
+   Em @layer base pra utilitários tipo text-gray-900 continuarem valendo. */
+@layer base {
+  .force-light {
+    --background: #f5f6f8;
+    --foreground: #15171c;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --line: #e3e6eb;
+    --muted: #687083;
+    color: var(--foreground);
+    color-scheme: light;
+  }
 }
 
 [data-theme="dark"] {
