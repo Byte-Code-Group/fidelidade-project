@@ -121,6 +121,14 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Domínio raiz sem tenant: as telas de auth do portal não têm de quem ser —
+  // manda pras da plataforma (senão renderiza o form solto, sem layout).
+  if (!slug && /^\/(login|cadastro|esqueci-senha|redefinir-senha)\/?$/.test(pathname)) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/conta${pathname.replace(/\/$/, "")}`;
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const requestHeaders = new Headers(request.headers);
   if (slug) {
     requestHeaders.set(TENANT_SLUG_HEADER, slug);
