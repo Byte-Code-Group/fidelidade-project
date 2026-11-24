@@ -54,17 +54,10 @@ export default async function OwnerCustomizacaoPage({
     .returns<ProfileField[]>();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader icon="template" title="Customização" subtitle="Cores, textos, logo e páginas do seu portal." />
+    <div>
+      <PageHeader icon="template" title="Customização" subtitle="Deixe o portal com a cara do seu negócio." />
 
       <FlashToast error={error} saved={saved} successMessage="Alterações salvas." />
-
-      <BusinessInfoForm
-        name={tenant.name}
-        segment={tenant.segment_template}
-        cpfCnpj={tenant.owner_cpf_cnpj ?? ""}
-        saveAction={ownerUpdateBusinessInfo}
-      />
 
       <CustomizationForm
         tenantName={tenant.name}
@@ -74,6 +67,14 @@ export default async function OwnerCustomizacaoPage({
         allowedModules={allowedModules}
         saveAction={ownerUpdateTenantSettings}
         uploadAction={ownerUploadLogo}
+        businessPanel={
+          <BusinessInfoForm
+            name={tenant.name}
+            segment={tenant.segment_template}
+            cpfCnpj={tenant.owner_cpf_cnpj ?? ""}
+            saveAction={ownerUpdateBusinessInfo}
+          />
+        }
         profileFields={profileFields ?? []}
         createProfileFieldAction={ownerCreateProfileField}
         updateProfileFieldAction={ownerUpdateProfileField}

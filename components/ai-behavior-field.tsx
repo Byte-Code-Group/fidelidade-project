@@ -54,20 +54,10 @@ export function AiBehaviorField({
 
   return (
     <div className="space-y-2">
-      <div>
-        <span className="text-sm font-medium">Comportamento</span>
-        <span className="ml-2 text-sm opacity-50">
-          Instruções extras pra IA seguir nesta clínica (o que priorizar, o que
-          evitar, jeito de conduzir a conversa). Some às regras fixas de
-          segurança, nunca as substitui.
-        </span>
-      </div>
-
       <div className="rounded-lg bg-surface-2 p-3 dark:bg-white/5">
         <p className="mb-2 text-xs opacity-60">
-          Comece por um modelo pronto e troque o que está entre [COLCHETES]
-          pelos dados da clínica. Pode misturar vários, editar e apagar tudo à
-          mão — o campo é livre.
+          Adicione modelos prontos e troque o que está entre [COLCHETES] pelos
+          dados do seu negócio. O texto é livre para editar.
         </p>
         <div className="flex flex-wrap gap-1.5">
           {presets.map((p) => {
@@ -79,7 +69,7 @@ export function AiBehaviorField({
                 title={p.desc}
                 aria-pressed={ativo}
                 onClick={() => (ativo ? remover(p) : inserir(p))}
-                className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition ${
                   ativo
                     ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                     : "border-line hover:border-[var(--primary)] hover:text-[var(--primary)] dark:border-white/15"
@@ -96,6 +86,7 @@ export function AiBehaviorField({
       <Textarea
         ref={areaRef}
         name="ai_behavior"
+        aria-label="Comportamento do assistente"
         rows={10}
         maxLength={AI_BEHAVIOR_MAX_LENGTH}
         className="font-mono text-xs leading-relaxed"

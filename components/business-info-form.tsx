@@ -19,7 +19,7 @@ export function BusinessInfoForm({
   return (
     <Section title="Dados do negócio" desc="Nome, segmento e documento do negócio.">
       <form action={saveAction} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Nome do negócio">
             <Input name="business_name" required defaultValue={name} />
           </Field>
@@ -43,7 +43,7 @@ export function BusinessInfoForm({
           />
         </Field>
         <div className="flex justify-end">
-          <Button type="submit" pendingLabel="Salvando…">Salvar</Button>
+          <Button type="submit" pendingLabel="Salvando…">Salvar negócio</Button>
         </div>
       </form>
     </Section>
