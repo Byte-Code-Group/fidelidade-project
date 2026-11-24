@@ -1,8 +1,10 @@
 import type { CSSProperties } from "react";
 import { Icon } from "@/components/icons";
 import { MembershipCard } from "@/components/membership-card";
+import { FieldWrapper, ProfileFieldInputs } from "@/components/profile-field-inputs";
+import { Input } from "@/components/ui/input";
 import { buildPortalNav } from "@/lib/portal-nav";
-import type { Membership, Tenant, TenantSettings } from "@/lib/types";
+import type { Membership, ProfileField, Tenant, TenantSettings } from "@/lib/types";
 
 const MEMBERSHIP: Membership = {
   id: "preview",
@@ -27,10 +29,12 @@ export function CustomizationPreview({
   tenantName,
   settings,
   view,
+  profileFields = [],
 }: {
   tenantName: string;
   settings: TenantSettings;
   view: string;
+  profileFields?: ProfileField[];
 }) {
   const dark = settings.theme_mode === "dark";
   const tenant = { name: tenantName } as Tenant;
@@ -85,6 +89,30 @@ export function CustomizationPreview({
               Perfil de {settings.label_client || "Cliente"}. Próximo: {settings.label_appointment || "Agendamento"}.
             </p>
           </>
+        ) : view === "cadastro" ? (
+          // Mesmos campos e ordem de app/(portal)/perfil; inert: só demonstração.
+          <div inert className="space-y-4">
+            <p className="text-sm font-semibold">Dados do cadastro</p>
+            <FieldWrapper label="Nome completo" required>
+              <Input placeholder="Seu nome" />
+            </FieldWrapper>
+            <FieldWrapper label="E-mail">
+              <Input defaultValue="cliente@email.com" disabled />
+            </FieldWrapper>
+            <FieldWrapper label="WhatsApp">
+              <Input placeholder="(00) 00000-0000" />
+            </FieldWrapper>
+            <FieldWrapper label="Avisos no WhatsApp">
+              <span className="flex items-start gap-2 text-sm">
+                <input type="checkbox" defaultChecked className="mt-0.5 h-4 w-4 shrink-0" />
+                Quero receber novidades e lembretes de {tenantName} no WhatsApp.
+              </span>
+            </FieldWrapper>
+            <ProfileFieldInputs fields={profileFields} values={new Map()} />
+            <span className="block rounded-xl bg-[var(--primary)] py-2.5 text-center text-sm font-medium text-[var(--primary-foreground)]">
+              Salvar alterações
+            </span>
+          </div>
         ) : (
           <>
             {view === "aparencia" && (

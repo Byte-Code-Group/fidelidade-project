@@ -37,7 +37,7 @@ interface CustomizationFormProps {
 type Values = Record<string, string>;
 
 const FORM_TABS = ["aparencia", "paginas", "fidelidade", "ia", "contato"];
-const PREVIEW_TABS = ["aparencia", "paginas", "fidelidade", "ia"];
+const PREVIEW_TABS = ["aparencia", "paginas", "fidelidade", "ia", "cadastro"];
 
 const PALETTES = [
   { name: "Azul", primary: "#2563eb", secondary: "#1e40af" },
@@ -410,7 +410,12 @@ export function CustomizationForm({
                 Abrir portal <Icon name="external" className="h-3.5 w-3.5" />
               </a>
             </div>
-            <CustomizationPreview tenantName={tenantName} settings={liveSettings} view={active} />
+            <CustomizationPreview
+              tenantName={tenantName}
+              settings={liveSettings}
+              view={active}
+              profileFields={profileFields}
+            />
           </aside>
         )}
       </div>

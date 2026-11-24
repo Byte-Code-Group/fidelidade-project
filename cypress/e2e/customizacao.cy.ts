@@ -52,6 +52,14 @@ describe("customização do portal", () => {
     cy.get('[name="loyalty_goal"]').should("be.visible");
   });
 
+  it("mostra na prévia o cadastro do cliente", () => {
+    aba("Cadastro");
+    cy.get("aside[aria-label='Prévia do portal']")
+      .should("contain", "Dados do cadastro")
+      .and("contain", "Nome completo")
+      .and("contain", "WhatsApp");
+  });
+
   it("cabe no celular", () => {
     cy.viewport(390, 844);
     cy.document().then((d) => expect(d.documentElement.scrollWidth).to.be.at.most(390));
